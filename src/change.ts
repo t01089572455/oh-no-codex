@@ -86,24 +86,44 @@ function parseBeginOptions(args: string[]): ParsedOptions {
   };
 }
 
-function requiredPathsDigest(requiredPaths: string[]): string {
+function pendingAuthorityDigest(
+  state: ProjectState,
+  nonce: string,
+): string {
   return createHash("sha256")
-    .update(JSON.stringify(requiredPaths))
+    .update(JSON.stringify({
+      schema_version: state.schema_version,
+      goal: state.goal,
+      status: state.status,
+      active_task: state.active_task,
+      last_verification: state.last_verification,
+      completed: state.completed,
+      document_sync: {
+        status: state.document_sync.status,
+        required_paths: state.document_sync.required_paths,
+      },
+      nonce,
+    }))
     .digest("hex");
 }
 
-function changeIdFor(requiredPaths: string[]): string {
-  return `change-${requiredPathsDigest(requiredPaths).slice(0, 16)}-${randomUUID()}`;
+function changeIdFor(state: ProjectState): string {
+  const nonce = randomUUID();
+  return `change-${pendingAuthorityDigest(state, nonce).slice(0, 16)}-${nonce}`;
 }
 
 function assertPendingIdentity(
   changeId: string,
-  requiredPaths: string[],
+  state: ProjectState,
 ): void {
-  const expectedPrefix =
-    `change-${requiredPathsDigest(requiredPaths).slice(0, 16)}-`;
-  if (!changeId.startsWith(expectedPrefix)) {
-    throw new Error("pending state drift: required paths no longer match change id");
+  const match = /^change-([a-f0-9]{16})-([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})$/u
+    .exec(changeId);
+  if (
+    match === null
+    || match[1] !== pendingAuthorityDigest(state, match[2] as string)
+      .slice(0, 16)
+  ) {
+    throw new Error("pending state drift: current authority no longer matches change id");
   }
 }
 
@@ -171,6 +191,7 @@ export async function beginChange(
   const options = parseBeginOptions(args);
   const state = await readState(projectPath);
   if (state.document_sync.status === "PENDING_REVIEW") {
+    assertPendingIdentity(state.document_sync.change_id, state);
     throw new Error(
       `document sync ${state.document_sync.change_id} is already pending`,
     );
@@ -182,12 +203,37 @@ export async function beginChange(
     options.concerns,
     options.candidates,
   );
-  const changeId = changeIdFor(requiredPaths);
-  const nextState: ProjectState = {
+  const selectedPlanPaths = truth.targets
+    .filter((target) => (
+      target.concerns.includes("plan")
+      && requiredPaths.includes(target.path)
+    ))
+    .map((target) => target.path);
+  if (selectedPlanPaths.length === 0) {
+    const example = truth.targets.find(
+      (target) => target.concerns.includes("plan"),
+    )?.path;
+    throw new Error(
+      "replacement plan is required; rerun with "
+      + `--candidates <plan Truth path>${example === undefined ? "" : ` such as ${example}`}`,
+    );
+  }
+
+  const pendingStateWithoutIdentity: ProjectState = {
     ...state,
     status: "BLOCKED_DOC_SYNC",
     active_task: null,
     last_verification: null,
+    document_sync: {
+      status: "PENDING_REVIEW",
+      change_id: "pending-identity",
+      required_paths: requiredPaths,
+      reviewed_diff_digest: null,
+    },
+  };
+  const changeId = changeIdFor(pendingStateWithoutIdentity);
+  const nextState: ProjectState = {
+    ...pendingStateWithoutIdentity,
     document_sync: {
       status: "PENDING_REVIEW",
       change_id: changeId,
@@ -195,6 +241,7 @@ export async function beginChange(
       reviewed_diff_digest: null,
     },
   };
+  assertPendingIdentity(changeId, nextState);
   await writeStateAtomic(projectPath, nextState);
   return [
     `Started ${changeId}`,
@@ -210,7 +257,7 @@ export async function displayChangeDiff(
   const pending = pendingState(await readState(projectPath));
   assertPendingIdentity(
     pending.sync.change_id,
-    pending.sync.required_paths,
+    pending.state,
   );
   const snapshot = diffSnapshot(projectPath, pending.sync.required_paths);
   const nextState: ProjectState = {
@@ -247,7 +294,7 @@ export async function acceptChange(
   }
   assertPendingIdentity(
     pending.sync.change_id,
-    pending.sync.required_paths,
+    pending.state,
   );
   if (
     !/^[a-f0-9]{64}$/u.test(suppliedDigest)
@@ -308,6 +355,17 @@ export async function acceptChange(
   const currentState = await readState(projectPath);
   if (JSON.stringify(currentState) !== JSON.stringify(pending.state)) {
     throw new Error("pending state drifted during acceptance");
+  }
+
+  const finalSnapshot = diffSnapshot(
+    projectPath,
+    pending.sync.required_paths,
+  );
+  if (
+    finalSnapshot.digest !== suppliedDigest
+    || finalSnapshot.missingPaths.length > 0
+  ) {
+    throw new Error("required document diff changed since display");
   }
 
   const cleanState: ProjectState = {

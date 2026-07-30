@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import {
   appendFile,
   mkdir,
+  readFile,
   rm,
   writeFile,
 } from "node:fs/promises";
@@ -63,6 +64,71 @@ function runCliBytes(cwd, args) {
     cwd,
     encoding: null,
   });
+}
+
+function runCliWithEnvironment(cwd, args, environment) {
+  return spawnSync(process.execPath, [cliPath, ...args], {
+    cwd,
+    encoding: "utf8",
+    env: {
+      ...process.env,
+      ...environment,
+    },
+  });
+}
+
+function quoteForGitCommand(value) {
+  return `"${value.replaceAll("\\", "/").replaceAll("\"", "\\\"")}"`;
+}
+
+async function createMutatingGitTextconv(projectPath) {
+  const helperDirectory = resolve(projectPath, "git-textconv");
+  const helperPath = resolve(helperDirectory, "mutate-on-fifth-call.mjs");
+  const countPath = resolve(helperDirectory, "call-count.txt");
+  const mutatePath = resolve(projectPath, "docs", "PLAN.md");
+  await mkdir(helperDirectory, { recursive: true });
+  await writeFile(
+    helperPath,
+    [
+      'import { appendFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";',
+      "const inputPath = process.argv[2];",
+      "let count = 0;",
+      "if (existsSync(process.env.OHNO_TEST_GIT_COUNT)) {",
+      "  count = Number(readFileSync(process.env.OHNO_TEST_GIT_COUNT, \"utf8\"));",
+      "}",
+      "count += 1;",
+      "writeFileSync(process.env.OHNO_TEST_GIT_COUNT, `${count}\\n`, \"utf8\");",
+      "if (count === 5) {",
+      "  appendFileSync(process.env.OHNO_TEST_MUTATE_PATH, \"changed during accept\\n\", \"utf8\");",
+      "}",
+      "process.stdout.write(readFileSync(inputPath));",
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+  await writeFile(
+    resolve(projectPath, ".gitattributes"),
+    [
+      "docs/PRODUCT.md diff=ohno-test",
+      "docs/PLAN.md diff=ohno-test",
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+  runGit(projectPath, [
+    "config",
+    "diff.ohno-test.textconv",
+    `${quoteForGitCommand(process.execPath)} ${quoteForGitCommand(helperPath)}`,
+  ]);
+
+  return {
+    countPath,
+    environment: {
+      OHNO_TEST_GIT_COUNT: countPath,
+      OHNO_TEST_MUTATE_PATH: mutatePath,
+    },
+    mutatePath,
+  };
 }
 
 async function writeTruth(projectPath, truth = {
@@ -245,6 +311,30 @@ test("change begin fails closed for missing, corrupt, non-v1, or unsafe Truth", 
       },
     },
     {
+      name: "exact parent target",
+      write: async (projectPath) => {
+        await writeTruth(projectPath, {
+          schema_version: 1,
+          targets: [{
+            path: "..",
+            concerns: ["requirements"],
+          }],
+        });
+      },
+    },
+    {
+      name: "drive-relative target",
+      write: async (projectPath) => {
+        await writeTruth(projectPath, {
+          schema_version: 1,
+          targets: [{
+            path: "C:relative.md",
+            concerns: ["requirements"],
+          }],
+        });
+      },
+    },
+    {
       name: "Git pathspec target",
       write: async (projectPath) => {
         await writeTruth(projectPath, {
@@ -258,6 +348,7 @@ test("change begin fails closed for missing, corrupt, non-v1, or unsafe Truth", 
     },
   ];
 
+  const unexpectedlyAccepted = [];
   for (const variant of cases) {
     const projectPath = await createProject(t);
     await initialize(projectPath);
@@ -265,10 +356,18 @@ test("change begin fails closed for missing, corrupt, non-v1, or unsafe Truth", 
     const before = await readStateBytes(projectPath);
 
     const result = runCli(projectPath, beginArguments());
-    assert.notEqual(result.status, 0, variant.name);
+    if (result.status === 0) {
+      unexpectedlyAccepted.push(variant.name);
+      continue;
+    }
     assert.match(result.stderr, /\btruth\b/i, variant.name);
     assert.deepEqual(await readStateBytes(projectPath), before, variant.name);
   }
+  assert.deepEqual(
+    unexpectedlyAccepted,
+    [],
+    `unsafe Truth targets were accepted: ${unexpectedlyAccepted.join(", ")}`,
+  );
 });
 
 test("known confirmed concerns select the de-duplicated union of matching targets", async (t) => {
@@ -346,6 +445,29 @@ test("Agent candidates are additive Truth targets and cannot shrink the Owner se
   assert.notEqual(rejected.status, 0);
   assert.match(rejected.stderr, /candidate.*truth/i);
   assert.deepEqual(await readStateBytes(invalidProject), before);
+
+  const noPlanProject = await createGovernedProject(t);
+  const noPlanBefore = await readStateBytes(noPlanProject);
+  const noPlan = runCli(
+    noPlanProject,
+    beginArguments({ concerns: "public-capability" }),
+  );
+  assert.notEqual(noPlan.status, 0);
+  assert.match(noPlan.stderr, /--candidates.*plan.*truth path/i);
+  assert.deepEqual(await readStateBytes(noPlanProject), noPlanBefore);
+
+  const withPlan = runCli(
+    noPlanProject,
+    beginArguments({
+      candidates: "docs/PLAN.md",
+      concerns: "public-capability",
+    }),
+  );
+  assert.equal(withPlan.status, 0, withPlan.stderr);
+  assert.deepEqual(
+    (await readState(noPlanProject)).document_sync.required_paths,
+    ["README.md", "docs/PRODUCT.md", "docs/PLAN.md"],
+  );
 });
 
 test("Owner change supersedes ACTIVE work and pending sync blocks task start", async (t) => {
@@ -590,6 +712,91 @@ test("accept rejects a diff changed after display or drifted pending state", asy
   assert.notEqual(driftedAccept.status, 0);
   assert.match(driftedAccept.stderr, /pending state.*drift/i);
   assert.deepEqual(await readStateBytes(driftedProject), driftedBytes);
+
+  const goalDriftProject = await createGovernedProject(t);
+  beginChange(goalDriftProject, { concerns: "requirements" });
+  await appendRequiredChanges(goalDriftProject);
+  const goalDriftDisplay = displayDiff(goalDriftProject);
+  const goalDriftState = await readState(goalDriftProject);
+  goalDriftState.goal = "A different but valid Owner goal";
+  const goalDriftBytes = Buffer.from(
+    `${JSON.stringify(goalDriftState, null, 2)}\n`,
+  );
+  await writeFile(
+    resolve(goalDriftProject, ".ohno", "state.json"),
+    goalDriftBytes,
+  );
+  const goalDriftAccept = runCli(
+    goalDriftProject,
+    acceptArguments(
+      goalDriftState.document_sync.change_id,
+      goalDriftDisplay.digest,
+    ),
+  );
+  assert.notEqual(goalDriftAccept.status, 0);
+  assert.match(goalDriftAccept.stderr, /pending state.*drift/i);
+  assert.deepEqual(await readStateBytes(goalDriftProject), goalDriftBytes);
+
+  const idDriftProject = await createGovernedProject(t);
+  beginChange(idDriftProject, { concerns: "requirements" });
+  await appendRequiredChanges(idDriftProject);
+  const idDriftDisplay = displayDiff(idDriftProject);
+  const idDriftState = await readState(idDriftProject);
+  const replacementNonce = idDriftState.document_sync.change_id.endsWith(
+    "00000000-0000-4000-8000-000000000000",
+  )
+    ? "11111111-1111-4111-8111-111111111111"
+    : "00000000-0000-4000-8000-000000000000";
+  idDriftState.document_sync.change_id =
+    idDriftState.document_sync.change_id.replace(
+      /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/u,
+      replacementNonce,
+    );
+  const idDriftBytes = Buffer.from(
+    `${JSON.stringify(idDriftState, null, 2)}\n`,
+  );
+  await writeFile(
+    resolve(idDriftProject, ".ohno", "state.json"),
+    idDriftBytes,
+  );
+  const idDriftAccept = runCli(
+    idDriftProject,
+    acceptArguments(
+      idDriftState.document_sync.change_id,
+      idDriftDisplay.digest,
+    ),
+  );
+  assert.notEqual(idDriftAccept.status, 0);
+  assert.match(idDriftAccept.stderr, /pending state.*drift/i);
+  assert.deepEqual(await readStateBytes(idDriftProject), idDriftBytes);
+});
+
+test("accept rechecks the required diff immediately before CLEAN write", async (t) => {
+  const projectPath = await createGovernedProject(t);
+  beginChange(projectPath, { concerns: "requirements" });
+  await appendRequiredChanges(projectPath);
+  const displayed = displayDiff(projectPath);
+  const pending = await readState(projectPath);
+  const before = await readStateBytes(projectPath);
+  const wrapper = await createMutatingGitTextconv(projectPath);
+  await rm(wrapper.countPath, { force: true });
+
+  const accepted = runCliWithEnvironment(
+    projectPath,
+    acceptArguments(pending.document_sync.change_id, displayed.digest),
+    wrapper.environment,
+  );
+  const wrapperCalls = Number(
+    (await readFile(wrapper.countPath, "utf8")).trim(),
+  );
+  assert.ok(wrapperCalls >= 2, "the Git wrapper must reach its mutation point");
+  assert.match(
+    await readFile(wrapper.mutatePath, "utf8"),
+    /changed during accept/,
+  );
+  assert.notEqual(accepted.status, 0);
+  assert.match(accepted.stderr, /changed since display|diff drift/i);
+  assert.deepEqual(await readStateBytes(projectPath), before);
 });
 
 test("exact local acceptance restores CLEAN IDLE, clears old proof, and resumes task start", async (t) => {

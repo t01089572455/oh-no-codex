@@ -146,6 +146,20 @@ Recorded on 2026-07-30 with Node.js v24.11.1:
   bytes and SHA-256, missing coverage and plan replacement, wrong
   identifiers/digests, diff and pending state drift, and exact local
   acceptance back to clean task start.
+- Implementation-review RED: the same command exited 1 with 9 passing and 4
+  failing tests. Exact `..` and drive-relative Truth paths were accepted; a
+  known concern with no selected plan entered a permanently unacceptable
+  pending state; a valid goal mutation was not bound to pending identity; and
+  a required document could change after the acceptance snapshot but before
+  the CLEAN write.
+- Pending-identity review RED: after those four fixes, the same command exited
+  1 with 12 passing and 1 failing test because changing only the valid UUID
+  suffix of `change_id` preserved its authority-digest prefix and was accepted.
+- Review-fix GREEN: the same owning command exited 0 with all 13 tests passing.
+  The pending identifier now binds the complete non-display current authority
+  and its nonce; begin requires an explicitly selected Truth plan target;
+  acceptance rechecks exact digest and coverage immediately before CLEAN; and
+  exact parent, Git pathspec, absolute, and drive-relative targets fail closed.
 - `npm.cmd run typecheck` exited 0.
 - `npm.cmd run build` exited 0.
 - `git diff --check` exited 0 with no output.

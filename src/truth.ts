@@ -33,8 +33,9 @@ function isCanonicalProjectPath(value: unknown): value is string {
     && !/[*?\[]/u.test(value)
     && !value.startsWith(":")
     && !value.startsWith("/")
-    && !/^[A-Za-z]:\//u.test(value)
+    && !/^[A-Za-z]:/u.test(value)
     && value !== "."
+    && value !== ".."
     && !value.startsWith("../")
     && posix.normalize(value) === value;
 }
