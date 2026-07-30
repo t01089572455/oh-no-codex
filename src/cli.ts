@@ -7,6 +7,11 @@ import {
   stateExists,
   writeStateAtomic,
 } from "./state.js";
+import {
+  acceptChange,
+  beginChange,
+  displayChangeDiff,
+} from "./change.js";
 import { serializeNext } from "./next.js";
 import { readModel } from "./read-model.js";
 import { serializeResume } from "./resume.js";
@@ -121,8 +126,27 @@ async function main(): Promise<void> {
     return;
   }
 
+  if (command === "change" && subcommand === "begin") {
+    process.stdout.write(await beginChange(projectPath, args));
+    return;
+  }
+
+  if (
+    command === "change"
+    && subcommand === "diff"
+    && args.length === 0
+  ) {
+    process.stdout.write(await displayChangeDiff(projectPath));
+    return;
+  }
+
+  if (command === "change" && subcommand === "accept") {
+    process.stdout.write(await acceptChange(projectPath, args));
+    return;
+  }
+
   throw new Error(
-    "usage: ohno init --goal <goal> | ohno task start --id <id> --expect <behavior> --test <command> --stop <condition> --files <globs> --minutes <integer> --next <action> | ohno verify | ohno status [--json] | ohno resume | ohno next",
+    "usage: ohno init --goal <goal> | ohno task start --id <id> --expect <behavior> --test <command> --stop <condition> --files <globs> --minutes <integer> --next <action> | ohno verify | ohno status [--json] | ohno resume | ohno next | ohno change begin --summary <owner words> [--concerns <labels>] [--candidates <Truth paths>] | ohno change diff | ohno change accept --change <id> --diff <displayed digest>",
   );
 }
 

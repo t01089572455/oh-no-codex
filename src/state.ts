@@ -303,10 +303,11 @@ function isProjectState(value: unknown): value is ProjectState {
   ) {
     return false;
   }
-  if (value.completed.length === 0) {
-    return value.last_verification === null;
+  if (value.last_verification === null) {
+    return true;
   }
-  return value.last_verification?.result === "PASS";
+  return value.completed.length > 0
+    && value.last_verification.result === "PASS";
 }
 
 export function initialState(goal: string): ProjectState {

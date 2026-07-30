@@ -1,6 +1,6 @@
 # Codex-only V1 implementation plan
 
-Status: **IMPLEMENTATION_IN_PROGRESS — TASK_3_LOCAL_PASS**
+Status: **IMPLEMENTATION_IN_PROGRESS — TASK_4_LOCAL_PASS**
 
 Owner authorization: Tasks 1–7 below, including 6A–6C, were authorized as the
 complete V1 implementation scope on 2026-07-30. Execute them sequentially.
@@ -13,7 +13,7 @@ Do not add another task or publish a package without new authorization.
 | Task 1 — task-start contract and atomic state | LOCAL_PASS | A01, A02, part of A12 |
 | Task 2 — exact verification, finish, and one next action | LOCAL_PASS | A03, A04, A05 |
 | Task 3 — status, resume, next, and bounded capsule | LOCAL_PASS | A06, A07, part of A15 |
-| Task 4 — Truth-driven requirement-change sync | NOT_STARTED | A10, A11 |
+| Task 4 — Truth-driven requirement-change sync | LOCAL_PASS | A10, A11 |
 | Task 5 — Codex hooks and Git pre-commit | NOT_STARTED | A08, A09, A16 |
 | Task 6A — locked Cockpit design contract | NOT_STARTED | design prerequisite for A13, A14 |
 | Task 6B — read-only Cockpit implementation | NOT_STARTED | A13, part of P06 |
@@ -122,13 +122,46 @@ This earns local evidence for A06, A07, and the Task 3 read-path portion of
 A15 only. It does not earn hooks, requirement-change commands, Cockpit,
 performance, trial, or production claims.
 
+## Task 4 local evidence
+
+Recorded on 2026-07-30 with Node.js v24.11.1:
+
+- RED: `node --test test/blackbox/requirement-change.test.mjs` exited 1 with
+  0 passing and 11 failing tests because the public `ohno change
+  begin|diff|accept` interface and Truth loading were absent.
+- Initial GREEN: the same owning command exited 0 with all 11 tests passing.
+- Structural review RED: the same command exited 1 with 11 passing and 1
+  failing test because deletion produced Git diff coverage and was incorrectly
+  accepted as a replacement current plan.
+- Path-safety review RED: the same command exited 1 with 11 passing and 1
+  failing test because a Git pathspec was accepted where Truth requires an
+  exact named governing-document path.
+- Test-contract review RED: the same command exited 1 with 11 passing and 1
+  failing test because `change begin` rejected an active task and left
+  implementation running against requirements the Owner had just changed.
+- Final GREEN: the same owning command exited 0 with all 12 tests passing.
+  It covers fail-closed Truth loading, known concern union, mixed
+  unknown/empty concern fallback, additive candidates, the single pending
+  next action after superseding active work, staged-plus-unstaged exact diff
+  bytes and SHA-256, missing coverage and plan replacement, wrong
+  identifiers/digests, diff and pending state drift, and exact local
+  acceptance back to clean task start.
+- `npm.cmd run typecheck` exited 0.
+- `npm.cmd run build` exited 0.
+- `git diff --check` exited 0 with no output.
+
+This earns local evidence for A10 and A11 only. It records cooperative local
+Owner confirmation, not independent identity, semantic prose proof,
+production authority, or hook enforcement.
+
 ## Exact current action
 
 There is exactly one:
 
-> **Task 4:** create `test/blackbox/requirement-change.test.mjs` with the frozen
-> RED cases below, then implement only the Truth-driven requirement-change
-> synchronization required to make it pass.
+> **Task 5:** create `test/blackbox/codex-hooks.test.mjs` and
+> `test/blackbox/git-precommit.test.mjs` with the frozen RED cases below, then
+> implement only the thin cooperative Codex and ordinary Git guardrails
+> required to make them pass.
 
 ## Shared implementation rules
 

@@ -107,11 +107,11 @@ async function completedProofFreshness(
 ): Promise<"FRESH" | "STALE" | "NONE"> {
   const task = state.completed.at(-1);
   const receipt = state.last_verification;
-  if (task === undefined) {
+  if (task === undefined || receipt === null) {
     return "NONE";
   }
   if (
-    receipt?.result !== "PASS"
+    receipt.result !== "PASS"
     || !receiptMatchesTask(receipt, task)
     || receipt.head === null
     || receipt.subject_digest === null

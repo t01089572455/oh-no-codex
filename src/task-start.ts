@@ -118,6 +118,11 @@ export async function startTask(
   if (state.active_task !== null) {
     throw new Error(`active task ${state.active_task.id} already exists`);
   }
+  if (state.document_sync.status === "PENDING_REVIEW") {
+    throw new Error(
+      "document sync is pending; next action is SYNC_GOVERNING_DOCUMENTS",
+    );
+  }
 
   const nextState: ProjectState = {
     ...state,
