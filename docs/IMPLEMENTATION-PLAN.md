@@ -1,6 +1,6 @@
 # Codex-only V1 implementation plan
 
-Status: **IMPLEMENTATION_IN_PROGRESS — TASK_5_LOCAL_PASS**
+Status: **IMPLEMENTATION_IN_PROGRESS — TASK_6A_DESIGN_LOCKED**
 
 Owner authorization: Tasks 1–7 below, including 6A–6C, were authorized as the
 complete V1 implementation scope on 2026-07-30. Execute them sequentially.
@@ -16,7 +16,7 @@ Do not add another task or publish a package without new authorization.
 | Task 4 — Truth-driven requirement-change sync | LOCAL_PASS | A10, A11 |
 | Correction 1 — linear plan and freshness repair | LOCAL_PASS | corrected A01, A04–A06, A09–A11, A15 |
 | Task 5 — Codex hooks and Git pre-commit | LOCAL_PASS | A08, A09, A16 |
-| Task 6A — locked Cockpit design contract | NOT_STARTED | design prerequisite for A13, A14 |
+| Task 6A — locked Cockpit design contract | LOCAL_PASS | design prerequisite for A13, A14 |
 | Task 6B — read-only Cockpit implementation | NOT_STARTED | A13, part of P06 |
 | Task 6C — browser visual and functional acceptance | NOT_STARTED | A14 |
 | Task 7 — cross-project trials and final gate | NOT_STARTED | A12, A15, A16, P01–P06 |
@@ -292,13 +292,43 @@ and ordinary Git can bypass a cooperative hook with `--no-verify`. No hostile
 same-user containment, Cockpit, final performance, or production claim is
 made.
 
+## Task 6A locked design evidence
+
+Recorded on 2026-07-30:
+
+- The required `frontend-design-ui-ux` method was applied as a design-only
+  boundary. The confirmed plush Hero was inspected without modification, and
+  `docs/COCKPIT-DESIGN-CONTRACT.md` locks the single
+  **Calibrated Plush Workshop** industrial/signage direction.
+- The contract freezes the Calibration Rail signature, locally bundled type,
+  exact OKLCH/hex tokens and measured contrast, desktop and narrow wireframes,
+  canonical read-model mapping, full state matrix, keyboard and focus model,
+  reduced motion, GET-only boundary, 12 deterministic screenshot targets, and
+  the P06 measurement interval.
+- Design pre-flight scored 29/32 with no axis below 3. It records explicit
+  anti-slop bans and removes both generic card layout and a competing copy
+  control.
+- Two bounded read-only reviews found five contract ambiguities: Fresh PASS
+  presented completed work as current, skip-link focus contradicted DOM order,
+  a disabled refresh contradicted focus retention, the idle screenshot was
+  not deterministic, and a red X stop gate conflicted with the Hero boundary.
+  All five were corrected in the contract.
+- Placeholder/ambiguity scan found no `TBD`, `TODO`, `FIXME`, or placeholder;
+  `git diff --check` exited 0 with no output.
+- No Cockpit source, asset, endpoint, dependency, or runtime behavior was
+  implemented in this slice.
+
+This locks the design prerequisite only. It does not earn A13, A14, P06, or a
+claim that the Cockpit exists.
+
 ## Exact current action
 
 There is exactly one. **Unique next:**
 
-> **Task 6A:** use `frontend-design-ui-ux` to create and internally review
-> `docs/COCKPIT-DESIGN-CONTRACT.md`, then commit that locked design contract
-> alone. Do not write Cockpit implementation code.
+> **Task 6B:** write the failing public
+> `test/blackbox/cockpit.test.mjs`, then use `frontend-design` to implement
+> exactly the locked read-only Cockpit contract. Do not claim visual
+> acceptance before Task 6C.
 
 ## Shared implementation rules
 
