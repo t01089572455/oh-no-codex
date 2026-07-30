@@ -158,8 +158,8 @@ test("parseable but structurally corrupt state fails closed without overwrite", 
 test("an interrupted atomic replacement leaves old or new valid current JSON", async (t) => {
   const interruptedTaskArguments = [
     ...completeTaskArguments.with(
-      5,
-      `A user-visible outcome ${"x".repeat(20_000)}`,
+      9,
+      `Stop after the atomic replacement ${"x".repeat(20_000)}`,
     ),
   ];
   const knownGoodProject = await createProject(t);

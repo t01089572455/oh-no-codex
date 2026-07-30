@@ -34,6 +34,13 @@ Recorded on 2026-07-30 with Node.js v24.11.1:
 - Review GREEN: the same owning command exited 0 with all 19 tests passing,
   including exact byte preservation for corrupt input and signal-interrupted
   old/new atomic replacement.
+- Task 3 compatibility RED: the same owning command exited 1 with 18 passing
+  and 1 failing test because its 20 KiB atomic-write payload occupied the newly
+  bounded, user-visible `--expect` field.
+- Task 3 compatibility GREEN: the same owning command exited 0 with all 19
+  tests passing after moving that payload to the non-displayed `--stop` field.
+  The test still observes the temporary file, terminates the writer by signal,
+  and requires exact known-good old or new state bytes.
 - `D:\Program Files\nodejs\npm.cmd run typecheck` exited 0.
 - `D:\Program Files\nodejs\npm.cmd run build` exited 0.
 - `git diff --check` exited 0 with no output.
