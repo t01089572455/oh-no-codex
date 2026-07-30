@@ -21,13 +21,23 @@ export interface TaskContract {
   contract_digest: string;
 }
 
+export interface VerificationReceipt {
+  result: "PASS" | "FAIL" | "UNKNOWN";
+  command: string;
+  contract_digest: string;
+  head: string | null;
+  subject_digest: string | null;
+  exit_code: number | null;
+  finished_at: string;
+}
+
 export interface ProjectState {
   schema_version: 1;
   goal: string;
   status: "IDLE" | "ACTIVE";
   active_task: TaskContract | null;
-  last_verification: null;
-  completed: [];
+  last_verification: VerificationReceipt | null;
+  completed: TaskContract[];
   document_sync: {
     status: "CLEAN";
     change_id: null;
@@ -119,6 +129,53 @@ function isTaskContract(value: unknown): value is TaskContract {
   return contractDigest === expectedDigest;
 }
 
+function isSha256(value: unknown): value is string {
+  return typeof value === "string" && /^[a-f0-9]{64}$/.test(value);
+}
+
+function isVerificationReceipt(
+  value: unknown,
+): value is VerificationReceipt {
+  if (
+    !isRecord(value)
+    || !hasExactKeys(value, [
+      "result",
+      "command",
+      "contract_digest",
+      "head",
+      "subject_digest",
+      "exit_code",
+      "finished_at",
+    ])
+    || !["PASS", "FAIL", "UNKNOWN"].includes(String(value.result))
+    || !isNonBlankString(value.command)
+    || !isSha256(value.contract_digest)
+    || !(
+      value.head === null
+      || value.head === "UNBORN"
+      || (typeof value.head === "string" && /^[a-f0-9]{40,64}$/.test(value.head))
+    )
+    || !(value.subject_digest === null || isSha256(value.subject_digest))
+    || !isNonBlankString(value.finished_at)
+    || Number.isNaN(Date.parse(value.finished_at))
+  ) {
+    return false;
+  }
+
+  if (value.result === "PASS") {
+    return value.head !== null
+      && value.subject_digest !== null
+      && value.exit_code === 0;
+  }
+  if (value.result === "FAIL") {
+    return value.head !== null
+      && value.subject_digest !== null
+      && Number.isSafeInteger(value.exit_code)
+      && (value.exit_code as number) !== 0;
+  }
+  return value.exit_code === null;
+}
+
 function isDocumentSync(
   value: unknown,
 ): value is ProjectState["document_sync"] {
@@ -150,16 +207,27 @@ function isProjectState(value: unknown): value is ProjectState {
     ])
     || value.schema_version !== 1
     || !isNonBlankString(value.goal)
-    || value.last_verification !== null
+    || !(
+      value.last_verification === null
+      || isVerificationReceipt(value.last_verification)
+    )
     || !Array.isArray(value.completed)
-    || value.completed.length !== 0
+    || !value.completed.every(isTaskContract)
     || !isDocumentSync(value.document_sync)
   ) {
     return false;
   }
 
-  return (value.status === "IDLE" && value.active_task === null)
-    || (value.status === "ACTIVE" && isTaskContract(value.active_task));
+  if (value.status === "ACTIVE") {
+    return isTaskContract(value.active_task);
+  }
+  if (value.status !== "IDLE" || value.active_task !== null) {
+    return false;
+  }
+  if (value.completed.length === 0) {
+    return value.last_verification === null;
+  }
+  return value.last_verification?.result === "PASS";
 }
 
 export function initialState(goal: string): ProjectState {

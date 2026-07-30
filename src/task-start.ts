@@ -30,7 +30,7 @@ function requiredValue(args: string[], flag: string): string {
     throw new Error(`${flag} is required and cannot be blank`);
   }
 
-  return value.trim();
+  return flag === "--test" ? value : value.trim();
 }
 
 function parseTaskFields(args: string[]): ParsedTaskFields {

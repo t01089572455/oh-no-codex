@@ -6,6 +6,7 @@ import {
   writeStateAtomic,
 } from "./state.js";
 import { startTask } from "./task-start.js";
+import { verifyTask } from "./verify.js";
 
 function requiredValue(args: string[], flag: string): string {
   const index = args.indexOf(flag);
@@ -45,8 +46,17 @@ async function main(): Promise<void> {
     return;
   }
 
+  if (command === "verify" && subcommand === undefined) {
+    const outcome = await verifyTask(projectPath);
+    if (outcome.result === "PASS") {
+      process.stdout.write(`${outcome.nextAction}\n`);
+      return;
+    }
+    throw new Error(outcome.message);
+  }
+
   throw new Error(
-    "usage: ohno init --goal <goal> | ohno task start --id <id> --expect <behavior> --test <command> --stop <condition> --files <globs> --minutes <integer> --next <action>",
+    "usage: ohno init --goal <goal> | ohno task start --id <id> --expect <behavior> --test <command> --stop <condition> --files <globs> --minutes <integer> --next <action> | ohno verify",
   );
 }
 
