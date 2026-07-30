@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <meta name="theme-color" content="#EEF1E5">
+    <title>Oh No, Codex! Cockpit</title>
+    <link rel="stylesheet" href="/assets/cockpit.css">
+    <script src="/assets/cockpit.js" defer></script>
+  </head>
+  <body data-tone="neutral">
+    <a class="skip-link" href="#now-heading">Skip to current state</a>
+
+    <div class="cockpit-shell">
+      <header class="masthead">
+        <figure class="brand-aperture" aria-hidden="true">
+          <img
+            src="/brand/oh-no-codex-plush-hero.png"
+            alt=""
+            width="112"
+            height="72"
+          >
+        </figure>
+
+        <div class="brand-copy">
+          <h1>OH NO, CODEX!</h1>
+          <p class="goal" id="goal-value">Reading local state...</p>
+        </div>
+
+        <div class="masthead-controls">
+          <span class="locality">LOCAL / READ ONLY</span>
+          <button id="refresh-button" type="button">REFRESH</button>
+        </div>
+      </header>
+
+      <main id="current-state" aria-busy="true">
+        <section
+          class="unavailable-gate"
+          id="unavailable-gate"
+          role="alert"
+          hidden
+        >
+          <p class="instrument-label">STATE</p>
+          <h2>LOCAL STATE UNAVAILABLE</h2>
+          <p>
+            The local state is missing, corrupt, or unsupported. Repair
+            <code>.ohno/state.json</code>, then refresh.
+          </p>
+        </section>
+
+        <div class="measurement-layout">
+          <section
+            class="calibration-rail"
+            id="calibration-rail"
+            aria-labelledby="rail-heading"
+          >
+            <div class="rail-copy">
+              <p class="instrument-label" id="rail-heading">
+                CALIBRATION RAIL
+              </p>
+              <p class="rail-summary" id="rail-summary">
+                READING LOCAL STATE
+              </p>
+              <p class="revision">
+                PLAN <span id="plan-revision">NONE</span>
+              </p>
+            </div>
+            <div class="rail-track" aria-hidden="true">
+              <span class="rail-ticks"></span>
+              <span class="rail-jaw"></span>
+              <span class="rail-stop"></span>
+            </div>
+          </section>
+
+          <div class="instrument-frame">
+            <section
+              class="instrument now-instrument"
+              aria-labelledby="now-heading"
+            >
+              <p class="instrument-label">NOW</p>
+              <h2 id="now-heading" tabindex="-1">READING LOCAL STATE</h2>
+              <p class="status-line">
+                STATUS <strong id="status-value">UNAVAILABLE</strong>
+              </p>
+              <p class="behavior" id="behavior-value">
+                Waiting for the canonical read model.
+              </p>
+              <div class="test-well" id="test-well" hidden>
+                <p class="instrument-label">EXACT TEST</p>
+                <code id="test-value">NONE</code>
+              </div>
+            </section>
+
+            <section
+              class="instrument signal-instrument proof-instrument"
+              aria-labelledby="proof-heading"
+            >
+              <p class="instrument-label" id="proof-heading">PROOF</p>
+              <p class="signal-value" id="proof-value">NONE</p>
+            </section>
+
+            <section
+              class="instrument signal-instrument drift-instrument"
+              aria-labelledby="drift-heading"
+            >
+              <p class="instrument-label" id="drift-heading">DRIFT</p>
+              <p class="signal-value" id="blocker-value">NONE</p>
+            </section>
+
+            <section
+              class="instrument next-instrument"
+              aria-labelledby="next-heading"
+            >
+              <p class="instrument-label" id="next-heading">NEXT</p>
+              <p class="next-value" id="next-value">NONE</p>
+            </section>
+
+            <section
+              class="instrument recent-instrument"
+              aria-labelledby="recent-heading"
+            >
+              <div class="recent-heading-row">
+                <p class="instrument-label" id="recent-heading">RECENT</p>
+                <p class="completed-total">
+                  COMPLETED <span id="completed-count">0</span>
+                </p>
+              </div>
+              <ol class="recent-list" id="recent-list">
+                <li class="empty-ledger">NO COMPLETED TASKS</li>
+              </ol>
+            </section>
+          </div>
+        </div>
+      </main>
+
+      <footer>
+        Cooperative local guardrail. This view cannot authorize work or stop a
+        same-user process.
+      </footer>
+    </div>
+
+    <p class="visually-hidden" id="state-announcer" aria-live="polite"></p>
+    <noscript>
+      <p class="noscript-message">
+        JavaScript is required to read the local Cockpit projection.
+      </p>
+    </noscript>
+  </body>
+</html>

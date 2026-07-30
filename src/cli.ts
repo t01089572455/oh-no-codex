@@ -11,6 +11,7 @@ import {
   acceptPlan,
   proposePlan,
 } from "./plan.js";
+import { runCockpit } from "./cockpit/server.js";
 import { classifyTruthAtInit } from "./truth-inventory.js";
 import {
   acceptChange,
@@ -40,6 +41,7 @@ const usageText = [
   "  ohno plan accept --revision <sha256> --diff <sha256>",
   "  ohno task start",
   "  ohno verify | ohno status [--json] | ohno resume | ohno next",
+  "  ohno cockpit",
   "  ohno change begin --summary <owner words> [--concerns <labels>] [--candidates <Truth paths>]",
   "  ohno change diff | ohno change accept --change <id> --diff <displayed digest>",
   "  ohno install | ohno hooks status --json",
@@ -223,6 +225,15 @@ async function main(): Promise<void> {
       return;
     }
     throw new Error(outcome.message);
+  }
+
+  if (
+    command === "cockpit"
+    && subcommand === undefined
+    && args.length === 0
+  ) {
+    await runCockpit(projectPath);
+    return;
   }
 
   if (

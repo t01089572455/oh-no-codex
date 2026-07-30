@@ -1,6 +1,6 @@
 # Codex-only V1 implementation plan
 
-Status: **IMPLEMENTATION_IN_PROGRESS — TASK_6A_DESIGN_LOCKED**
+Status: **IMPLEMENTATION_IN_PROGRESS — TASK_6B_LOCAL_PASS**
 
 Owner authorization: Tasks 1–7 below, including 6A–6C, were authorized as the
 complete V1 implementation scope on 2026-07-30. Execute them sequentially.
@@ -17,7 +17,7 @@ Do not add another task or publish a package without new authorization.
 | Correction 1 — linear plan and freshness repair | LOCAL_PASS | corrected A01, A04–A06, A09–A11, A15 |
 | Task 5 — Codex hooks and Git pre-commit | LOCAL_PASS | A08, A09, A16 |
 | Task 6A — locked Cockpit design contract | LOCAL_PASS | design prerequisite for A13, A14 |
-| Task 6B — read-only Cockpit implementation | NOT_STARTED | A13, part of P06 |
+| Task 6B — read-only Cockpit implementation | LOCAL_PASS | A13, part of P06 |
 | Task 6C — browser visual and functional acceptance | NOT_STARTED | A14 |
 | Task 7 — cross-project trials and final gate | NOT_STARTED | A12, A15, A16, P01–P06 |
 
@@ -321,14 +321,49 @@ Recorded on 2026-07-30:
 This locks the design prerequisite only. It does not earn A13, A14, P06, or a
 claim that the Cockpit exists.
 
+## Task 6B read-only Cockpit evidence
+
+Recorded on 2026-07-30 with Node.js v24.11.1:
+
+- RED: `node --test test/blackbox/cockpit.test.mjs` exited 1 with 0 passing
+  and 5 failing tests because the public `ohno cockpit` command and local HTTP
+  surface were absent.
+- The implementation uses Node's built-in loopback HTTP server, the existing
+  canonical `readModel`, and local vanilla HTML/CSS/JavaScript. It adds no
+  runtime dependency, database, cache, telemetry, browser persistence, or
+  second current-state schema.
+- Harness diagnostic: the first post-implementation run reached all five
+  behaviors but failed cleanup on Windows because disposable-project removal
+  ran before child-server shutdown. Each test now closes its server in
+  `finally`; no product assertion or acceptance class was weakened.
+- GREEN: the owning command exited 0 with all 5 tests passing. It covers the
+  printed loopback URL and listener close, exact equality with
+  `status --json`, no normal Truth-inventory rescan, GET-only static and state
+  surfaces, byte-preserving unavailable-state recovery, and live reflection
+  from no-plan through active to fresh project completion.
+- Six official IBM Plex WOFF2 assets and their SIL Open Font License are
+  vendored locally with package versions, registry integrity values, and
+  SHA-256 provenance in `assets/cockpit/fonts/SOURCE.md`; the page makes no
+  network asset request.
+- A bounded read-only review returned `ACCEPT_AS_BOUNDED`: no false PASS,
+  write-capable route, second authority, cached stale projection, or
+  lifecycle leak was found within Task 6B.
+- `npm.cmd run typecheck`, `npm.cmd run build`, `node --check
+  assets/cockpit/cockpit.js`, `node --check
+  test/blackbox/cockpit.test.mjs`, and `git diff --check` exited 0.
+
+This earns local functional evidence for A13 and the implementation needed to
+measure P06. It does not earn browser visual acceptance A14 or the three-copy
+P06 performance result; both remain explicit Task 6C/7 work.
+
 ## Exact current action
 
 There is exactly one. **Unique next:**
 
-> **Task 6B:** write the failing public
-> `test/blackbox/cockpit.test.mjs`, then use `frontend-design` to implement
-> exactly the locked read-only Cockpit contract. Do not claim visual
-> acceptance before Task 6C.
+> **Task 6C:** run the built Cockpit in a real browser against the locked
+> desktop/narrow, keyboard, focus, contrast, reduced-motion, state-treatment,
+> overflow, and canonical-equality matrix. Record the named screenshots and
+> fix only demonstrated acceptance defects; do not redesign.
 
 ## Shared implementation rules
 
