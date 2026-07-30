@@ -8,9 +8,9 @@
 
 <p align="center">
   <img
-    src="./assets/brand/oh-no-codex-plush-hero.png"
+    src="./assets/brand/oh-no-codex-lockup.png"
     width="900"
-    alt="一只淘气的蓝色编程玩偶正把手伸向电脑，珊瑚红毛绒叉及时将它按停"
+    alt="Oh No, Codex!：淘气的蓝色编程玩偶准备继续操作时，被清晰的红叉及时制止"
   >
 </p>
 

@@ -8,9 +8,9 @@
 
 <p align="center">
   <img
-    src="./assets/brand/oh-no-codex-plush-hero.png"
+    src="./assets/brand/oh-no-codex-lockup.png"
     width="900"
-    alt="A mischievous blue coding plush reaches toward a laptop while a coral-red plush cross stops its paw"
+    alt="Oh No, Codex! — a mischievous blue coding plush is stopped from continuing by a clear red cross"
   >
 </p>
 
