@@ -1,162 +1,273 @@
-# Oh No, Codex!
+<p align="center">
+  <strong>English</strong>
+  ·
+  <a href="./README.zh-CN.md">简体中文</a>
+</p>
 
-> **Born from Codex's sins. Built to stop the next one.**
->
-> Ten executable rules. Four tiny loops. One next action.
+<h1 align="center">Oh No, Codex!</h1>
 
-**Status: design frozen; implementation has not started.**
+<p align="center">
+  <strong>A fast anti-drift harness for Codex vibe coding.</strong>
+</p>
 
-Oh No, Codex! is a fast, cooperative anti-drift harness for Codex vibe coding.
-It behaves like a caliper at task boundaries: define the intended user-visible
-result, name one minimal black-box test, keep the task bounded, and stop when
-the evidence says to stop.
+<p align="center">
+  Born from Codex's sins. Built to stop the next one.
+</p>
 
-It is deliberately **not** a security sandbox, compliance platform, workflow
-engine, or "AI governance operating system."
+<p align="center">
+  <a href="./docs/PRODUCT-CONTRACT.md">
+    <img alt="Status: building v1" src="https://img.shields.io/badge/status-building_v1-F2A93B?style=for-the-badge">
+  </a>
+  <img alt="Codex only" src="https://img.shields.io/badge/Codex-only-171717?style=for-the-badge">
+  <img alt="Node.js 22.20 or newer" src="https://img.shields.io/badge/Node.js-%E2%89%A522.20-339933?style=for-the-badge&logo=node.js&logoColor=white">
+  <a href="./LICENSE">
+    <img alt="MIT License" src="https://img.shields.io/badge/license-MIT-DCE7E1?style=for-the-badge">
+  </a>
+</p>
+
+<p align="center">
+  <a href="#why-oh-no-codex">Why</a>
+  ·
+  <a href="#the-four-loops">Four loops</a>
+  ·
+  <a href="#caliper-cockpit">Cockpit</a>
+  ·
+  <a href="#the-codex-sins">Codex sins</a>
+  ·
+  <a href="#project-contracts">Docs</a>
+</p>
+
+> [!IMPORTANT]
+> **V1 is under active implementation.** The product contract is frozen, but
+> the package is not released. Commands and screenshots in this README are
+> contract previews until their linked acceptance rows are earned.
+
+## Why Oh No, Codex?
+
+Codex can write good code and still let a project drift:
+
+- a small request quietly becomes a new architecture;
+- an internal green test misses the user-visible behavior;
+- “what comes next” is mistaken for permission to continue;
+- a requirement changes, but the governing documents do not;
+- the next session spends its first hour reconstructing the truth.
+
+Oh No, Codex! puts a lightweight caliper around each task boundary. Before
+mutation, it asks for one bounded task and one minimal black-box test. At the
+finish line, fresh evidence—not agent prose—decides whether the task stops.
+
+It is a **cooperative project harness**, not an AI security sandbox or an
+enterprise governance platform.
+
+## The tiny contract
+
+```mermaid
+flowchart LR
+    A["Owner goal"] --> B["One bounded task"]
+    B --> C["One user-visible black-box test"]
+    C --> D{"Fresh PASS?"}
+    D -- "No / Unknown" --> B
+    D -- "Yes" --> E["Stop"]
+    E --> F["Exactly one next action"]
+```
+
+Every active task freezes:
+
+- the expected user-visible behavior;
+- one exact minimal black-box command;
+- allowed file globs and a time budget;
+- an explicit stop condition;
+- exactly one proposed next action.
+
+A failed or unknown test keeps the task active. A fresh PASS closes it. A
+relevant change makes that proof stale.
 
 ## The four loops
 
-| Loop | What the harness requires |
-| --- | --- |
-| Start | Expected user-visible behavior, one minimal black-box test, a stop condition, allowed files, a time budget, and exactly one proposed next action. |
-| Finish | Run the exact test. Failure keeps the current task active. Fresh success closes it and exposes exactly one next action. |
-| Change | Read the owner-maintained Truth applicability list, show the exact governing-document diff, require review, then replace the stale plan. |
-| Resume | `status`, `resume`, and `next` show the same goal, completed work, current task, proof, blocker, and next action. |
+| Loop | What it prevents | What the harness does |
+| --- | --- | --- |
+| **Start** | Coding before the task is understood | Freezes behavior, test, files, budget, stop condition, and one next action. |
+| **Finish** | “Looks done” completion claims | Runs the exact black box and binds PASS to the task, HEAD, and allowed-file digest. |
+| **Change** | Requirements and governing docs drifting apart | Selects required documents from Owner-maintained Truth, shows the exact diff, and blocks coding until review. |
+| **Resume** | New sessions rebuilding state from chat history | Returns the goal, current task, proof freshness, blocker, and one next action from one atomic state file. |
 
-The CLI, Codex hooks, Git hook, and Cockpit will all read one small atomic state
-file. The Cockpit is a projection of that state, never a second source of truth.
+## A thirty-second workflow
 
-## Planned v1 interface
-
-These commands are the frozen public design. **They do not work yet.**
+> The interface below is the frozen V1 contract. It is not an installation
+> claim while the package remains unreleased.
 
 ```bash
-npx oh-no-codex init --goal "Ship reliable draft persistence"
-npx oh-no-codex task start \
+# 1. Anchor the project goal
+ohno init --goal "Ship reliable draft persistence"
+
+# 2. Start one bounded task
+ohno task start \
   --id "draft-persistence" \
-  --expect "A user can save a draft and see it after reload" \
+  --expect "A saved draft survives page reload" \
   --test "npm test -- draft-persistence" \
-  --stop "Stop after that black-box test passes" \
+  --stop "Stop when that black-box test passes" \
   --files "src/drafts/**,test/draft-persistence.test.*" \
   --minutes 60 \
   --next "Add draft deletion"
 
-npx oh-no-codex verify
-npx oh-no-codex status
-npx oh-no-codex resume
-npx oh-no-codex next
-npx oh-no-codex cockpit
+# 3. Let evidence decide
+ohno verify
+
+# 4. Recover the exact operational state in a new session
+ohno resume
+ohno next
 ```
 
-The installed binary name is planned as `ohno`; `npx oh-no-codex` is shown
-until the package exists.
+## One authority, several useful views
 
-## Codex hooks: useful guardrails, honestly described
+```text
+Codex
+  │
+  ▼
+ohno CLI ───── atomic replace ─────▶ .ohno/state.json
+  │                                      │
+  │                                      ├── status / resume / next
+  │                                      ├── Codex lifecycle hooks
+  │                                      ├── Git pre-commit
+  │                                      └── read-only Cockpit
+  │
+  └──── governing documents ◀──── .ohno/truth.json
+```
 
-The thin integration will use project-local `.codex/hooks.json`:
+- `.ohno/state.json` is the sole current runtime authority.
+- `.ohno/truth.json` is the Owner-maintained document applicability list.
+- Hooks, terminal output, receipts, and Cockpit are projections—not competing
+  sources of truth.
+- Normal status paths read bounded state; they do not scan the repository or
+  run the full test suite.
 
-- `SessionStart` and `PostCompact` inject a bounded resume capsule.
-- `PreToolUse` denies supported mutation calls when there is no active task,
-  document sync is pending, or the target is demonstrably outside the file
-  boundary.
-- `Stop` continues the turn when an Oh No completion claim has no fresh exact
-  PASS receipt. The cooperative claim marker is
-  `OHNO_COMPLETE:<active-task-id>`; ordinary prose is not misrepresented as
-  enforceable.
-- A Git `pre-commit` hook rejects stale proof and staged files outside scope.
+## Caliper Cockpit
 
-Codex's current hook documentation says project hooks require trust review,
-`PreToolUse` covers shell, `apply_patch`, MCP, and most local function tools,
-while hosted and some specialized tool paths can bypass that hook path.
-Therefore Oh No reports **cooperative guardrail evidence**, never hostile-agent
-containment or production-grade authority. See the
-[official Codex hooks documentation](https://learn.chatgpt.com/docs/hooks).
+The Cockpit is designed as a **precision caliper crossed with a warning
+beacon**, not a generic SaaS dashboard. The dominant instrument answers:
+**What is happening now, and what is the one next action?** Smaller instruments
+show proof freshness and document drift.
 
-## Codex's eighteen sins / Codex 十八宗罪
+> [!NOTE]
+> **Concept preview—UI not yet implemented.** This reserved panel will be
+> replaced by real desktop and narrow-viewport screenshots only after the
+> running Cockpit passes browser-based visual, responsive, accessibility, and
+> functional acceptance.
 
-"十宗罪" was the original shorthand. A privacy-scrubbed session audit found
-**18 recurring failure patterns**, so the public record keeps all eighteen
-instead of forcing the evidence into a catchy number. These are product and
-workflow failure modes—not claims about every Codex run.
+```text
+┌─ OH NO / CALIPER COCKPIT ───────────────────── LOCAL · READ ONLY ─┐
+│                                                                  │
+│  NOW                                                             │
+│  DRAFT-PERSISTENCE                               ACTIVE · 42 min  │
+│  A saved draft survives page reload                              │
+│  ──────────────────────────────────────────────────────────────  │
+│                                                                  │
+│  PROOF                         DRIFT                              │
+│  ○ UNKNOWN                     ● CLEAN                            │
+│  npm test -- draft-persistence  governing documents aligned      │
+│                                                                  │
+│  NEXT                                                            │
+│  Run the exact black-box test                                    │
+│                                                                  │
+└──────────────────────────────────────────────────────────────────┘
+```
 
-| # | Sin / 罪 | What Oh No turns it into |
+The visual contract calls for warm instrument-paper surfaces, near-black
+typography, signal red for blocked or stale states, calibrated amber for
+active work, and restrained mint only for fresh PASS. It remains read-only and
+never creates a second state store.
+
+## Thin Codex and Git guardrails
+
+Project-local Codex hooks are designed to stay fast and honest:
+
+| Hook | Behavior |
+| --- | --- |
+| `SessionStart` | Inject the bounded resume capsule. |
+| `PostCompact` | Re-inject canonical state after context compaction. |
+| `PreToolUse` | Deny supported mutation paths when no task is active, document sync is pending, or a known target is out of scope. |
+| `Stop` | Continue when the explicit completion marker lacks fresh exact proof. |
+| Git `pre-commit` | Reject stale proof or staged paths outside the active task. |
+
+These are cooperative guardrails. Unsupported or bypassable paths are reported
+as limitations, never mislabeled as hostile-agent containment.
+
+## The Codex sins
+
+The product turns recurring failure patterns into executable constraints,
+acceptance checks, or explicit non-goals.
+
+<details>
+<summary><strong>Open the full list of 18 sins</strong></summary>
+
+| # | Failure pattern | Product countermeasure |
 | ---: | --- | --- |
-| 1 | **Semantic usurpation / 越俎代庖** — the agent decides what the user meant. | Preserve the owner's words; ambiguity cannot silently expand scope. |
-| 2 | **Maximum interpretation / 把含糊词解释到最大** — a harness becomes a governance OS. | Choose the smallest interpretation that satisfies the stated outcome. |
-| 3 | **Never stopping / 完成以后不停** — "next" is treated as fresh authorization. | Acceptance ends the task; the next action is information, not permission. |
-| 4 | **Review becomes edit authority / 把审查当修改权**. | Review and audit are read-only unless fixes are explicitly requested. |
-| 5 | **Zombie authority / 旧权威复活** — an old plan overrides the latest decision. | A short, explicit authority order and stale-plan blocking. |
-| 6 | **Summary replaces truth / 用摘要改写真相**. | Resume capsules point to canonical state; they never become authority. |
-| 7 | **Local green equals complete / 局部绿灯冒充完成**. | Claims name their exact scope; local PASS is never full completion. |
-| 8 | **Self-certified closure / 同一 Agent 自证闭环**. | Evidence comes from exact commands and user-visible outcomes, not prose. |
-| 9 | **Test theatre / 测试戏剧** — internals pass while the product fails. | Every task owns one public, user-visible black-box acceptance. |
-| 10 | **Proxy goals take over / 代理目标反客为主**. | One current owner goal and one bounded active task. |
-| 11 | **Reviewer denominator inflation / Reviewer 扩大分母**. | Review checks the frozen acceptance contract; extra ideas are non-blocking proposals. |
-| 12 | **Control-tax blindness / 对控制税失明**. | Hard latency and capsule-size budgets are product acceptance criteria. |
-| 13 | **Rebuilding the world / 重造轮子**. | No new abstraction without a reproduced failure or current acceptance need. |
-| 14 | **Workspace identity confusion / 工作区身份混乱**. | Handoffs name real path, branch, commit, tree, and clean/dirty state. |
-| 15 | **Handoff tax on the user / 把交接税转嫁给用户**. | `resume` returns a compact operational capsule in one command. |
-| 16 | **UX debt last / 用户体验最后偿还**. | Cockpit design is frozen before implementation and accepted through the browser. |
-| 17 | **Agreement plus overconfidence / 附和与过度自信**. | Honest capability labels, explicit non-goals, and measured performance. |
-| 18 | **Apology without constraint / 道歉没有变成约束**. | Every confirmed failure becomes an executable rule or regression test. |
+| 1 | **Semantic usurpation**—the agent decides what the Owner meant. | Preserve the Owner's words; ambiguity cannot silently broaden scope. |
+| 2 | **Maximum interpretation**—a small harness becomes a governance OS. | Choose the smallest behavior that satisfies frozen acceptance. |
+| 3 | **Never stopping**—a next action becomes fresh authorization. | Acceptance ends the task; next is information, not permission. |
+| 4 | **Review becomes edit authority.** | Review stays read-only unless fixes are explicitly authorized. |
+| 5 | **Zombie authority**—an old plan overrides the current decision. | Canonical current state outranks summaries and historical plans. |
+| 6 | **Summary replaces truth.** | Resume is a projection of atomic state, never a new authority. |
+| 7 | **Local green equals complete.** | Every claim names its exact evidence scope. |
+| 8 | **Self-certified closure.** | Exact commands and subject-bound receipts outrank agent prose. |
+| 9 | **Test theatre**—internals pass while the product fails. | Every task owns a public user-visible black box. |
+| 10 | **Proxy goals take over.** | Keep one Owner goal and one bounded active task. |
+| 11 | **Reviewer denominator inflation.** | Review against frozen acceptance; extra ideas remain proposals. |
+| 12 | **Control-tax blindness.** | Latency and capsule-size budgets are acceptance criteria. |
+| 13 | **Rebuilding the world.** | Add no abstraction without a current reproduced need. |
+| 14 | **Workspace identity confusion.** | Handoffs name real path, branch, commit, tree, and dirty state. |
+| 15 | **Handoff tax on the user.** | `resume` returns one compact operational capsule. |
+| 16 | **UX debt last.** | Freeze Cockpit design before code and accept it in the browser. |
+| 17 | **Agreement plus overconfidence.** | Use honest capability labels and measured evidence. |
+| 18 | **Apology without constraint.** | Convert confirmed failures into executable rules or regressions. |
 
-Read the expanded, sanitized audit in
-[`docs/CODEX-SINS.md`](docs/CODEX-SINS.md).
+Read the expanded bilingual record in
+[`docs/CODEX-SINS.md`](./docs/CODEX-SINS.md).
 
-## The anti-overdesign contract
+</details>
+
+## Deliberately small
 
 V1 has a hard complexity budget:
 
-- one Node.js package and one executable;
-- one canonical current-state file;
-- one owner-maintained Truth applicability file;
+- one Node.js package and one `ohno` executable;
+- one atomic current-state file and one Truth applicability file;
 - one project Codex hook configuration and one Git hook;
-- one local, read-only Cockpit;
-- no database, daemon, hosted service, plugin platform, policy language, or
-  multi-agent scheduler.
+- one local read-only Cockpit;
+- no database, daemon, hosted service, policy language, plugin platform,
+  provider framework, or multi-agent scheduler.
 
-A new module, concept, state machine, or dependency is rejected unless a
-failing public acceptance test requires it. Passing the current acceptance
-means stop.
+No new abstraction earns a place unless a failing public acceptance test
+requires it.
 
-## Performance is evidence, not a promise
+## Evidence, not promises
 
-V1 is accepted only after measurement on three disposable copies of real
-projects:
+The target budgets must be measured on three disposable real-project copies:
 
-- `status` and `next`: local p95 under 250 ms;
-- `resume`: local p95 under 500 ms;
-- resume capsule: under 4 KiB;
-- task-start control overhead: under 2 seconds, excluding the user's test;
-- state-to-Cockpit update: under 250 ms;
-- normal paths do not scan every document or run the full test suite.
+| Surface | V1 target |
+| --- | ---: |
+| `ohno status` / `ohno next` | local p95 below 250 ms |
+| `ohno resume` | local p95 below 500 ms |
+| Resume capsule | below 4 KiB |
+| Task-start harness overhead | below 2 s, excluding the user's test |
+| State-to-Cockpit reflection | local p95 below 250 ms |
 
-## 中文速览
+Until those trials pass, they are targets—not universal speed claims.
 
-这个项目先只支持 **Codex**。它不是要控制一个恶意 Agent，也不承诺“绝对
-不会绕过”；它要解决的是日常 vibe coding 最烦的漂移：
+## Project contracts
 
-1. 开工前先写清用户能看到什么、用哪个最小黑盒测试验证、改哪些文件、何时停。
-2. 测试失败就留在当前任务；测试通过就结束，并只显示一个下一步。
-3. 需求变化时按 Truth 清单找齐规范文件，先展示精确 diff，确认后再替换旧计划。
-4. 新会话运行 `resume`，几百毫秒内知道做到哪、证据是什么、下一步是什么。
+Public truth lives in these documents:
 
-当前仓库只有已经冻结的设计文档，**没有可用实现**。唯一实施起点写在
-[`docs/IMPLEMENTATION-PLAN.md`](docs/IMPLEMENTATION-PLAN.md)。
-
-## Authority and roadmap
-
-Read in this order:
-
-1. [`docs/PRODUCT-CONTRACT.md`](docs/PRODUCT-CONTRACT.md)
-2. [`docs/DESIGN.md`](docs/DESIGN.md)
-3. [`docs/ACCEPTANCE.md`](docs/ACCEPTANCE.md)
-4. [`docs/IMPLEMENTATION-PLAN.md`](docs/IMPLEMENTATION-PLAN.md)
-5. the current task's public black-box test
-
-Historical VibeTether repositories are inspiration and regression references,
-not authority for this clean product.
+1. [Product contract](./docs/PRODUCT-CONTRACT.md)
+2. [V1 design](./docs/DESIGN.md)
+3. [Acceptance contract](./docs/ACCEPTANCE.md)
+4. [Implementation ledger](./docs/IMPLEMENTATION-PLAN.md)
+5. [The Codex sins](./docs/CODEX-SINS.md)
 
 ## License
 
-[MIT](LICENSE)
+[MIT](./LICENSE)
+
+<p align="center">
+  <strong>One goal. One task. One black box. Then stop.</strong>
+</p>
