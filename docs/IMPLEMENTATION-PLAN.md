@@ -52,6 +52,11 @@ Recorded on 2026-07-30 with Node.js v24.11.1:
   preserving it verbatim.
 - GREEN: `node --test test/blackbox/verify-finish.test.mjs` exited 0 with all
   10 tests passing.
+- Review RED: the same owning command exited 1 with 10 passing and 1 failing
+  test because a zero-exit command could corrupt `.ohno/state.json` and the
+  UNKNOWN path overwrote those exact corrupt bytes with cached pre-test state.
+- Review GREEN: the same owning command exited 0 with all 11 tests passing,
+  including fail-closed byte preservation when post-command state is corrupt.
 - The timeout and parent-signal cases use `NODE_ENV=test` with a 150 ms
   test-only bound. Normal verification derives its timeout from the frozen
   task's minute budget.

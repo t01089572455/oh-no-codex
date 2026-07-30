@@ -150,10 +150,18 @@ export async function verifyTask(
   }
 
   let postState: ProjectState;
+  try {
+    postState = await readState(projectPath);
+  } catch {
+    return {
+      result: "UNKNOWN",
+      message: "UNKNOWN: current state became unreadable",
+    };
+  }
+
   let postHead: string;
   let postSubjectDigest: string;
   try {
-    postState = await readState(projectPath);
     postHead = readGitHead(projectPath);
     postSubjectDigest = await digestAllowedFiles(
       projectPath,

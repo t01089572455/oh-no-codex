@@ -258,6 +258,27 @@ test("allowed-file mutation during a zero-exit test is UNKNOWN and cannot close"
   assertActiveWithResult(await readState(projectPath), "UNKNOWN");
 });
 
+test("state corrupted during a zero-exit test fails closed without overwrite", async (t) => {
+  const projectPath = await createProject(t);
+  await writeFile(resolve(projectPath, "subject.txt"), "before\n", "utf8");
+  const corruptStateBytes = Buffer.from('{"schema_version":\n');
+  const script = await writeCommandScript(
+    projectPath,
+    "corrupt-state",
+    [
+      'import { writeFileSync } from "node:fs";',
+      `writeFileSync(".ohno/state.json", Buffer.from("${corruptStateBytes.toString("base64")}", "base64"));`,
+      "",
+    ].join("\n"),
+  );
+  await initializeTask(t, { command: nodeCommand(script), projectPath });
+
+  const result = runCli(projectPath, ["verify"]);
+  assert.notEqual(result.status, 0);
+  assert.match(`${result.stdout}\n${result.stderr}`, /\bUNKNOWN\b/);
+  assert.deepEqual(await readStateBytes(projectPath), corruptStateBytes);
+});
+
 test("allowed-file content changed after PASS makes the receipt visibly STALE", async (t) => {
   const projectPath = await createProject(t);
   await writeFile(resolve(projectPath, "subject.txt"), "verified\n", "utf8");
