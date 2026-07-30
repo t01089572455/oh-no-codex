@@ -23,6 +23,21 @@ function runGit(projectPath: string, args: string[]): string {
   return result.stdout;
 }
 
+function runGitBuffer(projectPath: string, args: string[]): Buffer {
+  const result = spawnSync("git", args, {
+    cwd: projectPath,
+    windowsHide: true,
+  });
+  if (
+    result.error !== undefined
+    || result.status !== 0
+    || !Buffer.isBuffer(result.stdout)
+  ) {
+    throw new Error("Git subject is unreadable");
+  }
+  return result.stdout;
+}
+
 export function readGitHead(projectPath: string): string {
   const head = runGitResult(
     projectPath,
@@ -188,5 +203,88 @@ export async function digestAllowedFiles(
     }
   }
 
+  return hash.digest("hex");
+}
+
+interface IndexEntry {
+  mode: string;
+  object: string;
+  path: string;
+}
+
+function indexEntries(
+  projectPath: string,
+  allowedFiles: string[],
+): IndexEntry[] {
+  const output = runGitBuffer(projectPath, [
+    "ls-files",
+    "--stage",
+    "-z",
+    "--",
+    ...enumerationRoots(allowedFiles),
+  ]);
+  const entries = output
+    .toString("utf8")
+    .split("\0")
+    .filter((entry) => entry !== "")
+    .map((entry) => {
+      const tab = entry.indexOf("\t");
+      if (tab === -1) {
+        throw new Error("Git index subject is unreadable");
+      }
+      const [mode, object, stage, extra] = entry.slice(0, tab).split(" ");
+      const path = entry.slice(tab + 1);
+      if (
+        mode === undefined
+        || object === undefined
+        || stage !== "0"
+        || extra !== undefined
+        || path === ""
+      ) {
+        throw new Error("Git index subject is unreadable");
+      }
+      return {
+        mode,
+        object,
+        path,
+      };
+    })
+    .filter(({ path }) =>
+      allowedFiles.some((pattern) => posix.matchesGlob(path, pattern))
+    )
+    .sort((left, right) =>
+      left.path < right.path ? -1 : left.path > right.path ? 1 : 0
+    );
+
+  if (new Set(entries.map(({ path }) => path)).size !== entries.length) {
+    throw new Error("Git index subject is unreadable");
+  }
+  return entries;
+}
+
+export function digestAllowedIndex(
+  projectPath: string,
+  allowedFiles: string[],
+): string {
+  const hash = createHash("sha256");
+  addFramed(hash, "format", "ohno-allowed-files-v1");
+  for (const pattern of allowedFiles) {
+    addFramed(hash, "pattern", pattern);
+  }
+
+  for (const entry of indexEntries(projectPath, allowedFiles)) {
+    addFramed(hash, "path", entry.path);
+    const content = runGitBuffer(
+      projectPath,
+      ["cat-file", "blob", entry.object],
+    );
+    if (entry.mode === "120000") {
+      addFramed(hash, "symlink", content);
+    } else if (/^100[0-7]{3}$/u.test(entry.mode)) {
+      addFramed(hash, "file", content);
+    } else {
+      throw new Error(`Git index subject is unreadable: ${entry.path}`);
+    }
+  }
   return hash.digest("hex");
 }

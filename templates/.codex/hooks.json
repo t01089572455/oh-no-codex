@@ -1,0 +1,61 @@
+{
+  "description": "Oh No, Codex! cooperative local guardrails.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{OHNO_HOOK_COMMAND}}",
+            "commandWindows": "{{OHNO_HOOK_COMMAND_WINDOWS}}",
+            "timeout": 5,
+            "statusMessage": "Loading the bounded Oh No capsule",
+            "additionalContextLimit": 2048
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "matcher": "manual|auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{OHNO_HOOK_COMMAND}}",
+            "commandWindows": "{{OHNO_HOOK_COMMAND_WINDOWS}}",
+            "timeout": 5,
+            "statusMessage": "Projecting the current Oh No capsule"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "^(?:apply_patch|Edit|Write)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{OHNO_HOOK_COMMAND}}",
+            "commandWindows": "{{OHNO_HOOK_COMMAND_WINDOWS}}",
+            "timeout": 5,
+            "statusMessage": "Checking the bounded mutation scope"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{OHNO_HOOK_COMMAND}}",
+            "commandWindows": "{{OHNO_HOOK_COMMAND_WINDOWS}}",
+            "timeout": 5,
+            "statusMessage": "Checking the cooperative completion marker"
+          }
+        ]
+      }
+    ]
+  }
+}

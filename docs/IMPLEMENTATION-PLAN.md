@@ -1,6 +1,6 @@
 # Codex-only V1 implementation plan
 
-Status: **IMPLEMENTATION_IN_PROGRESS — TASK_4_LOCAL_PASS**
+Status: **IMPLEMENTATION_IN_PROGRESS — TASK_5_LOCAL_PASS**
 
 Owner authorization: Tasks 1–7 below, including 6A–6C, were authorized as the
 complete V1 implementation scope on 2026-07-30. Execute them sequentially.
@@ -14,7 +14,7 @@ Do not add another task or publish a package without new authorization.
 | Task 2 — exact verification, finish, and one next action | LOCAL_PASS | A03, A04, A05 |
 | Task 3 — status, resume, next, and bounded capsule | LOCAL_PASS | A06, A07, part of A15 |
 | Task 4 — Truth-driven requirement-change sync | LOCAL_PASS | A10, A11 |
-| Task 5 — Codex hooks and Git pre-commit | NOT_STARTED | A08, A09, A16 |
+| Task 5 — Codex hooks and Git pre-commit | LOCAL_PASS | A08, A09, A16 |
 | Task 6A — locked Cockpit design contract | NOT_STARTED | design prerequisite for A13, A14 |
 | Task 6B — read-only Cockpit implementation | NOT_STARTED | A13, part of P06 |
 | Task 6C — browser visual and functional acceptance | NOT_STARTED | A14 |
@@ -168,14 +168,62 @@ This earns local evidence for A10 and A11 only. It records cooperative local
 Owner confirmation, not independent identity, semantic prose proof,
 production authority, or hook enforcement.
 
+## Task 5 local evidence
+
+Recorded on 2026-07-30 with Node.js v24.11.1:
+
+- Initial RED: `node --test test/blackbox/codex-hooks.test.mjs` exited 1
+  because the public Codex hook interface and project template were absent.
+  `node --test test/blackbox/git-precommit.test.mjs` likewise exited 1 because
+  the installer and ordinary Git pre-commit interface were absent.
+- Initial GREEN: the Codex owning command exited 0 with all 15 tests passing;
+  the Git owning command exited 0 with all 11 tests passing.
+- Contract-review RED: the Codex command exited 1 with 14 passing and 1
+  failing test because a prefixed, non-token-bounded completion marker was
+  accepted. The Git command exited 1 with 10 passing and 2 failing tests
+  because installation did not disclose every added hook and a fresh
+  worktree receipt incorrectly covered a different staged index subject.
+- Contract-review GREEN: the Codex command exited 0 with all 15 tests passing;
+  the strengthened Git command exited 0 with all 12 tests passing. Coverage
+  now includes exact official matchers, every supported patch header and both
+  rename sides, mixed pending-document mutations, exact marker boundaries,
+  index-versus-worktree proof, existing-hook refusal, and installation
+  disclosure.
+- Trusted-smoke RED: after persistent review and trust in Codex 0.145.0, a
+  disposable project's SessionStart handler exited 1. The installed
+  `commandWindows` succeeded under `cmd.exe` but failed under the PowerShell
+  execution path used by the real session.
+- Windows-runner RED: the Git owning command exited 1 with 11 passing and 1
+  failing test after its installation smoke began executing the installed
+  `commandWindows` directly through non-interactive `powershell.exe`.
+- Final GREEN: `node --test test/blackbox/codex-hooks.test.mjs` exited 0 with
+  all 15 tests passing, and
+  `node --test test/blackbox/git-precommit.test.mjs` exited 0 with all 12 tests
+  passing. The Windows smoke uses the exact installed command, official-shape
+  stdin, and the PowerShell runner rather than `shell: true`.
+- A fresh disposable Git project was reviewed and persistently trusted in the
+  real Codex 0.145.0 TUI. `/hooks` showed all four project hooks installed and
+  active. A new session reported `SessionStart hook (completed)` and displayed
+  hook context containing the exact current goal. A later model request timed
+  out at the network boundary; no model response is claimed as evidence.
+- `npm.cmd run typecheck` exited 0.
+- `npm.cmd run build` exited 0.
+- `git diff --check` exited 0 with no output.
+
+This earns local evidence for A08, A09, and the Task 5 CLI-help portion of A16
+only. Hooks still require project trust, changed definitions invalidate that
+trust, hosted or specialized mutation paths may bypass the supported surface,
+and ordinary Git can bypass a cooperative hook with `--no-verify`. No hostile
+same-user containment, Cockpit, final performance, or production claim is
+made.
+
 ## Exact current action
 
 There is exactly one:
 
-> **Task 5:** create `test/blackbox/codex-hooks.test.mjs` and
-> `test/blackbox/git-precommit.test.mjs` with the frozen RED cases below, then
-> implement only the thin cooperative Codex and ordinary Git guardrails
-> required to make them pass.
+> **Task 6A:** use `frontend-design-ui-ux` to create and internally review
+> `docs/COCKPIT-DESIGN-CONTRACT.md`, then commit that locked design contract
+> alone. Do not write Cockpit implementation code.
 
 ## Shared implementation rules
 

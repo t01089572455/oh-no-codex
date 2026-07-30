@@ -12,12 +12,37 @@ import {
   beginChange,
   displayChangeDiff,
 } from "./change.js";
+import {
+  handleCodexHook,
+  readHookInput,
+} from "./hooks/codex.js";
+import { checkPreCommit } from "./hooks/precommit.js";
+import {
+  hooksIntegrationStatus,
+  installGuardrails,
+} from "./install.js";
 import { serializeNext } from "./next.js";
 import { readModel } from "./read-model.js";
 import { serializeResume } from "./resume.js";
 import { serializeStatus } from "./status.js";
 import { startTask } from "./task-start.js";
 import { verifyTask } from "./verify.js";
+
+const usageText = [
+  "usage:",
+  "  ohno init --goal <goal>",
+  "  ohno task start --id <id> --expect <behavior> --test <command> --stop <condition> --files <globs> --minutes <integer> --next <action>",
+  "  ohno verify | ohno status [--json] | ohno resume | ohno next",
+  "  ohno change begin --summary <owner words> [--concerns <labels>] [--candidates <Truth paths>]",
+  "  ohno change diff | ohno change accept --change <id> --diff <displayed digest>",
+  "  ohno install | ohno hooks status --json",
+  "  ohno hook | ohno git pre-commit",
+  "",
+  "Hook classification: COOPERATIVE_GUARDRAIL.",
+  "Codex hook feature and trust: UNVERIFIED until reviewed in Codex.",
+  "Hosted and specialized mutation paths are outside complete hook coverage.",
+  "",
+].join("\n");
 
 function requiredValue(args: string[], flag: string): string {
   const index = args.indexOf(flag);
@@ -85,6 +110,54 @@ async function main(): Promise<void> {
   const [command, subcommand, ...args] = process.argv.slice(2);
   const projectPath = process.cwd();
 
+  if (
+    (command === "--help" || command === "help")
+    && subcommand === undefined
+  ) {
+    process.stdout.write(usageText);
+    return;
+  }
+
+  if (
+    command === "hook"
+    && subcommand === undefined
+    && args.length === 0
+  ) {
+    const output = await handleCodexHook(await readHookInput());
+    process.stdout.write(`${JSON.stringify(output)}\n`);
+    return;
+  }
+
+  if (
+    command === "hooks"
+    && subcommand === "status"
+    && args.length === 1
+    && args[0] === "--json"
+  ) {
+    process.stdout.write(
+      `${JSON.stringify(await hooksIntegrationStatus(projectPath))}\n`,
+    );
+    return;
+  }
+
+  if (
+    command === "install"
+    && subcommand === undefined
+    && args.length === 0
+  ) {
+    process.stdout.write(await installGuardrails(projectPath));
+    return;
+  }
+
+  if (
+    command === "git"
+    && subcommand === "pre-commit"
+    && args.length === 0
+  ) {
+    process.stdout.write(await checkPreCommit(projectPath));
+    return;
+  }
+
   if (command === "init") {
     await initialize(projectPath, [subcommand, ...args].filter(
       (value): value is string => value !== undefined,
@@ -145,9 +218,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  throw new Error(
-    "usage: ohno init --goal <goal> | ohno task start --id <id> --expect <behavior> --test <command> --stop <condition> --files <globs> --minutes <integer> --next <action> | ohno verify | ohno status [--json] | ohno resume | ohno next | ohno change begin --summary <owner words> [--concerns <labels>] [--candidates <Truth paths>] | ohno change diff | ohno change accept --change <id> --diff <displayed digest>",
-  );
+  throw new Error(usageText.trimEnd());
 }
 
 main().catch((error: unknown) => {
