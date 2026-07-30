@@ -12,8 +12,10 @@ import test from "node:test";
 import {
   cliPath,
   createProject,
+  frozenPlanTask,
   readState,
   runCli,
+  startTaskFromPlan,
 } from "../helpers/blackbox.mjs";
 
 const goal = "Keep Codex mutations inside one bounded task";
@@ -65,24 +67,17 @@ async function startTask(
     command = "node placeholder.mjs",
   } = {},
 ) {
-  const started = runCli(projectPath, [
-    "task",
-    "start",
-    "--id",
-    taskId,
-    "--expect",
-    "Supported local mutation tools stay inside declared files",
-    "--test",
-    command,
-    "--stop",
-    "Stop after the Codex hook black box passes",
-    "--files",
-    files,
-    "--minutes",
-    "60",
-    "--next",
-    "Exercise the ordinary Git pre-commit guardrail",
-  ]);
+  const { started } = startTaskFromPlan(projectPath, frozenPlanTask({
+    id: taskId,
+    title: "Guard supported local Codex mutations",
+    goal: "Keep supported local mutation tools inside declared files",
+    expected_behavior:
+      "Supported local mutation tools stay inside declared files",
+    test_command: command,
+    stop_condition: "Stop after the Codex hook black box passes",
+    allowed_files: [files],
+    time_budget_minutes: 60,
+  }));
   assert.equal(started.status, 0, started.stderr);
 }
 
@@ -183,6 +178,8 @@ async function setPendingDocumentSync(projectPath) {
     change_id: "change-hook-fixture",
     required_paths: ["docs/PLAN.md"],
     reviewed_diff_digest: null,
+    base_plan_revision: state.plan_revision,
+    started_at: new Date().toISOString(),
   };
   await mkdir(resolve(projectPath, ".ohno"), { recursive: true });
   await writeFile(
@@ -259,7 +256,7 @@ test("PreToolUse denies a parseable mutation when no task is active", async (t) 
   const output = preToolUse(projectPath, "apply_patch", {
     command: applyPatchCommand("src/new-file.ts"),
   });
-  assertDenied(output, /no active task.*ohno task start/i);
+  assertDenied(output, /no active task.*next.*PROPOSE_PLAN/i);
 });
 
 test("PreToolUse allows required doc sync and denies unrelated mutation", async (t) => {

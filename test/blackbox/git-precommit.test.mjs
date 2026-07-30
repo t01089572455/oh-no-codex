@@ -13,8 +13,10 @@ import test from "node:test";
 import {
   cliPath,
   createProject,
+  frozenPlanTask,
   readState,
   runCli,
+  startTaskFromPlan,
 } from "../helpers/blackbox.mjs";
 
 function runGit(projectPath, args) {
@@ -50,25 +52,18 @@ async function startTask(
     command = "node placeholder.mjs",
   } = {},
 ) {
-  const result = runCli(projectPath, [
-    "task",
-    "start",
-    "--id",
-    "git-hook-001",
-    "--expect",
-    "Ordinary staged changes stay inside the bounded task",
-    "--test",
-    command,
-    "--stop",
-    "Stop after the Git pre-commit black box passes",
-    "--files",
-    files,
-    "--minutes",
-    "60",
-    "--next",
-    "Lock the Cockpit design contract",
-  ]);
-  assert.equal(result.status, 0, result.stderr);
+  const { started } = startTaskFromPlan(projectPath, frozenPlanTask({
+    id: "git-hook-001",
+    title: "Guard ordinary staged changes",
+    goal: "Keep ordinary commits aligned with the frozen task",
+    expected_behavior:
+      "Ordinary staged changes stay inside the bounded task",
+    test_command: command,
+    stop_condition: "Stop after the Git pre-commit black box passes",
+    allowed_files: [files],
+    time_budget_minutes: 60,
+  }));
+  assert.equal(started.status, 0, started.stderr);
 }
 
 async function stageFile(projectPath, relativePath, content) {
@@ -88,6 +83,8 @@ async function setPendingDocumentSync(projectPath) {
     change_id: "change-git-hook-fixture",
     required_paths: ["docs/PLAN.md"],
     reviewed_diff_digest: null,
+    base_plan_revision: state.plan_revision,
+    started_at: new Date().toISOString(),
   };
   await writeFile(
     resolve(projectPath, ".ohno", "state.json"),

@@ -1,6 +1,6 @@
 # Codex-only V1 implementation plan
 
-Status: **IMPLEMENTATION_IN_PROGRESS — CORRECTION_1_LOCAL_PASS**
+Status: **IMPLEMENTATION_IN_PROGRESS — TASK_5_LOCAL_PASS**
 
 Owner authorization: Tasks 1–7 below, including 6A–6C, were authorized as the
 complete V1 implementation scope on 2026-07-30. Execute them sequentially.
@@ -15,7 +15,7 @@ Do not add another task or publish a package without new authorization.
 | Task 3 — status, resume, next, and bounded capsule | LOCAL_PASS | A06, A07, part of A15 |
 | Task 4 — Truth-driven requirement-change sync | LOCAL_PASS | A10, A11 |
 | Correction 1 — linear plan and freshness repair | LOCAL_PASS | corrected A01, A04–A06, A09–A11, A15 |
-| Task 5 — Codex hooks and Git pre-commit | PROVISIONAL_CHECKPOINT_NOT_ACCEPTED | A08, A09, A16 |
+| Task 5 — Codex hooks and Git pre-commit | LOCAL_PASS | A08, A09, A16 |
 | Task 6A — locked Cockpit design contract | NOT_STARTED | design prerequisite for A13, A14 |
 | Task 6B — read-only Cockpit implementation | NOT_STARTED | A13, part of P06 |
 | Task 6C — browser visual and functional acceptance | NOT_STARTED | A14 |
@@ -217,12 +217,12 @@ Evidence recorded on 2026-07-30 with Node.js v24.11.1:
   or rerun as a review suite.
 - `git diff --check` exited 0 with no output.
 
-The Task 5 commit below predates this corrective decision. Its commit and
-preservation evidence remain intact, but it is not accepted until a separate
-post-Correction adaptation/finalization slice passes its original owning
-black boxes against the corrected semantics.
+The Task 5 checkpoint below predates this corrective decision. Its commit and
+preservation evidence remain intact and were not rewritten; the separate
+post-Correction adaptation/finalization evidence below is what validates the
+capability against the corrected semantics.
 
-## Task 5 provisional checkpoint evidence (not accepted)
+## Task 5 checkpoint and adaptation evidence
 
 Recorded on 2026-07-30 with Node.js v24.11.1:
 
@@ -265,21 +265,40 @@ Recorded on 2026-07-30 with Node.js v24.11.1:
 - `git diff --check` exited 0 with no output.
 
 Commit `2e45850b5eef1a0ec5d221f07169f4b2540d367d` is preserved as
-`TASK5_PROVISIONAL_CHECKPOINT_NOT_ACCEPTED`. These results are historical
-checkpoint evidence only until the corrected plan/read-model/freshness
-semantics are adapted and reverified. Hooks still require project trust,
-changed definitions invalidate that trust, hosted or specialized mutation
-paths may bypass the supported surface, and ordinary Git can bypass a
-cooperative hook with `--no-verify`. No hostile same-user containment,
-Cockpit, final performance, or production claim is made.
+`TASK5_PROVISIONAL_CHECKPOINT_NOT_ACCEPTED`; it remains a historical checkpoint
+rather than being retroactively relabeled or rewritten.
+
+Post-Correction adaptation evidence:
+
+- Compatibility GREEN: after mechanically replacing old caller-supplied task
+  fields with a locally reviewed frozen plan and adding the schema-v2 pending
+  identity fields, the original Codex owning command exited 0 with all 15
+  tests passing and the original Git owning command exited 0 with all 12
+  tests passing.
+- Adaptation RED: the unchanged 15-test Codex denominator then exited 1 with
+  14 passing and 1 failing test because its no-active-task denial still told
+  callers to supply a bounded contract to `task start` instead of projecting
+  the corrected plan-derived `PROPOSE_PLAN` next action.
+- Adaptation GREEN: after the hook used the same read model for that denial,
+  the Codex owning command exited 0 with all 15 tests passing. The Git owning
+  command remained GREEN with all 12 tests passing.
+- `npm.cmd run typecheck` and `npm.cmd run build` exited 0.
+- `git diff --check` exited 0 with no output.
+
+This earns local evidence for A08, A09, and the Task 5 CLI-help portion of A16
+only. Hooks still require project trust, changed definitions invalidate that
+trust, hosted or specialized mutation paths may bypass the supported surface,
+and ordinary Git can bypass a cooperative hook with `--no-verify`. No hostile
+same-user containment, Cockpit, final performance, or production claim is
+made.
 
 ## Exact current action
 
 There is exactly one. **Unique next:**
 
-> **Task 5 adaptation:** adapt and finalize the preserved `2e45850`
-> checkpoint against the corrected plan/read-model/freshness semantics, then
-> rerun only its original Codex-hook and Git pre-commit black boxes.
+> **Task 6A:** use `frontend-design-ui-ux` to create and internally review
+> `docs/COCKPIT-DESIGN-CONTRACT.md`, then commit that locked design contract
+> alone. Do not write Cockpit implementation code.
 
 ## Shared implementation rules
 

@@ -192,8 +192,9 @@ async function handlePreToolUse(
   }
 
   if (state.active_task === null) {
+    const model = await readModel(projectPath);
     return denial(
-      "no active task; run ohno task start with a bounded contract",
+      `no active task; next is ${model.next_action}`,
     );
   }
 
