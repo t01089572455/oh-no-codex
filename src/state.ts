@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import {
   access,
   mkdir,
@@ -44,6 +44,124 @@ function statePath(projectPath: string): string {
   return resolve(stateDirectory(projectPath), "state.json");
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function hasExactKeys(
+  value: Record<string, unknown>,
+  expectedKeys: readonly string[],
+): boolean {
+  const actualKeys = Object.keys(value);
+  return actualKeys.length === expectedKeys.length
+    && actualKeys.every((key) => expectedKeys.includes(key));
+}
+
+function isNonBlankString(value: unknown): value is string {
+  return typeof value === "string" && value.trim() !== "";
+}
+
+function isTaskContract(value: unknown): value is TaskContract {
+  if (
+    !isRecord(value)
+    || !hasExactKeys(value, [
+      "id",
+      "expected_behavior",
+      "test_command",
+      "stop_condition",
+      "allowed_files",
+      "time_budget_minutes",
+      "next_action",
+      "contract_digest",
+    ])
+  ) {
+    return false;
+  }
+
+  const {
+    id,
+    expected_behavior: expectedBehavior,
+    test_command: testCommand,
+    stop_condition: stopCondition,
+    allowed_files: allowedFiles,
+    time_budget_minutes: timeBudgetMinutes,
+    next_action: nextAction,
+    contract_digest: contractDigest,
+  } = value;
+  if (
+    !isNonBlankString(id)
+    || !isNonBlankString(expectedBehavior)
+    || !isNonBlankString(testCommand)
+    || !isNonBlankString(stopCondition)
+    || !Array.isArray(allowedFiles)
+    || allowedFiles.length === 0
+    || !allowedFiles.every(isNonBlankString)
+    || !Number.isSafeInteger(timeBudgetMinutes)
+    || (timeBudgetMinutes as number) <= 0
+    || !isNonBlankString(nextAction)
+    || typeof contractDigest !== "string"
+    || !/^[a-f0-9]{64}$/.test(contractDigest)
+  ) {
+    return false;
+  }
+
+  const expectedDigest = createHash("sha256")
+    .update(JSON.stringify({
+      id,
+      expected_behavior: expectedBehavior,
+      test_command: testCommand,
+      stop_condition: stopCondition,
+      allowed_files: allowedFiles,
+      time_budget_minutes: timeBudgetMinutes,
+      next_action: nextAction,
+    }))
+    .digest("hex");
+  return contractDigest === expectedDigest;
+}
+
+function isDocumentSync(
+  value: unknown,
+): value is ProjectState["document_sync"] {
+  return isRecord(value)
+    && hasExactKeys(value, [
+      "status",
+      "change_id",
+      "required_paths",
+      "reviewed_diff_digest",
+    ])
+    && value.status === "CLEAN"
+    && value.change_id === null
+    && Array.isArray(value.required_paths)
+    && value.required_paths.length === 0
+    && value.reviewed_diff_digest === null;
+}
+
+function isProjectState(value: unknown): value is ProjectState {
+  if (
+    !isRecord(value)
+    || !hasExactKeys(value, [
+      "schema_version",
+      "goal",
+      "status",
+      "active_task",
+      "last_verification",
+      "completed",
+      "document_sync",
+    ])
+    || value.schema_version !== 1
+    || !isNonBlankString(value.goal)
+    || value.last_verification !== null
+    || !Array.isArray(value.completed)
+    || value.completed.length !== 0
+    || !isDocumentSync(value.document_sync)
+  ) {
+    return false;
+  }
+
+  return (value.status === "IDLE" && value.active_task === null)
+    || (value.status === "ACTIVE" && isTaskContract(value.active_task));
+}
+
 export function initialState(goal: string): ProjectState {
   return {
     schema_version: 1,
@@ -86,19 +204,11 @@ export async function readState(projectPath: string): Promise<ProjectState> {
     throw new Error(`cannot read valid state from ${path}`);
   }
 
-  if (
-    typeof parsed !== "object"
-    || parsed === null
-    || !("schema_version" in parsed)
-    || parsed.schema_version !== 1
-    || !("goal" in parsed)
-    || typeof parsed.goal !== "string"
-    || !("active_task" in parsed)
-  ) {
+  if (!isProjectState(parsed)) {
     throw new Error(`unsupported or invalid state in ${path}`);
   }
 
-  return parsed as ProjectState;
+  return parsed;
 }
 
 export async function writeStateAtomic(

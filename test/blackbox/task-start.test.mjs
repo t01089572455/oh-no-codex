@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { once } from "node:events";
 import { watch } from "node:fs";
+import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import test from "node:test";
 
@@ -134,7 +135,46 @@ test("a second task is rejected and preserves the state byte-for-byte", async (t
   assert.deepEqual(await readStateBytes(projectPath), before);
 });
 
+test("parseable but structurally corrupt state fails closed without overwrite", async (t) => {
+  const projectPath = await createProject(t);
+  assert.equal(
+    runCli(projectPath, ["init", "--goal", "Preserve corrupt state evidence"]).status,
+    0,
+  );
+  const corruptStateBytes = Buffer.from(
+    '{\n  "schema_version": 1,\n  "goal": "Preserve corrupt state evidence",\n  "active_task": null\n}\n',
+  );
+  await writeFile(
+    resolve(projectPath, ".ohno", "state.json"),
+    corruptStateBytes,
+  );
+
+  const result = runCli(projectPath, [...completeTaskArguments]);
+  assert.notEqual(result.status, 0, "corrupt state must reject task start");
+  assert.match(result.stderr, /invalid state/i);
+  assert.deepEqual(await readStateBytes(projectPath), corruptStateBytes);
+});
+
 test("an interrupted atomic replacement leaves old or new valid current JSON", async (t) => {
+  const interruptedTaskArguments = [
+    ...completeTaskArguments.with(
+      5,
+      `A user-visible outcome ${"x".repeat(20_000)}`,
+    ),
+  ];
+  const knownGoodProject = await createProject(t);
+  assert.equal(
+    runCli(
+      knownGoodProject,
+      ["init", "--goal", "Keep state valid during interruption"],
+    ).status,
+    0,
+  );
+  assert.equal(
+    runCli(knownGoodProject, interruptedTaskArguments).status,
+    0,
+  );
+  const expectedNewStateBytes = await readStateBytes(knownGoodProject);
   let observedInterruptedWrite = false;
 
   for (let attempt = 0; attempt < 12 && !observedInterruptedWrite; attempt += 1) {
@@ -143,7 +183,7 @@ test("an interrupted atomic replacement leaves old or new valid current JSON", a
       runCli(projectPath, ["init", "--goal", "Keep state valid during interruption"]).status,
       0,
     );
-    const oldState = await readState(projectPath);
+    const oldStateBytes = await readStateBytes(projectPath);
     const directory = resolve(projectPath, ".ohno");
     let child;
     let sawTemporaryFile = false;
@@ -156,29 +196,28 @@ test("an interrupted atomic replacement leaves old or new valid current JSON", a
       }
     });
 
-    child = spawnCli(projectPath, [
-      ...completeTaskArguments.with(
-        5,
-        `A user-visible outcome ${"x".repeat(20_000)}`,
-      ),
-    ]);
+    child = spawnCli(projectPath, interruptedTaskArguments);
     child.stdout.resume();
     child.stderr.resume();
-    await once(child, "exit");
+    const [exitCode, signal] = await once(child, "exit");
     watcher.close();
 
-    if (sawTemporaryFile && killAccepted) {
+    if (sawTemporaryFile && killAccepted && signal !== null) {
       observedInterruptedWrite = true;
-      const currentState = await readState(projectPath);
-      const isOld = JSON.stringify(currentState) === JSON.stringify(oldState);
-      const isNew = currentState.active_task?.id === "task-001";
-      assert.ok(isOld || isNew, "current state must be the old or new valid JSON");
+      assert.equal(exitCode, null, "signal termination must not report an exit code");
+      const currentStateBytes = await readStateBytes(projectPath);
+      const isOld = currentStateBytes.equals(oldStateBytes);
+      const isNew = currentStateBytes.equals(expectedNewStateBytes);
+      assert.ok(
+        isOld || isNew,
+        "current state bytes must exactly match the known-good old or new state",
+      );
     }
   }
 
   assert.equal(
     observedInterruptedWrite,
     true,
-    "the black box must kill a write after observing its same-directory temporary file",
+    "the black box must observe the temporary file and terminate its writer by signal",
   );
 });
