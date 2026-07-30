@@ -57,6 +57,18 @@ Recorded on 2026-07-30 with Node.js v24.11.1:
   UNKNOWN path overwrote those exact corrupt bytes with cached pre-test state.
 - Review GREEN: the same owning command exited 0 with all 11 tests passing,
   including fail-closed byte preservation when post-command state is corrupt.
+- Quality-review RED: the same owning command exited 1 with 11 passing and 5
+  failing tests. Cached pre-test state overwrote non-zero corruption, corrupt
+  detached HEAD was treated as `UNBORN`, exact-file verification enumerated a
+  greater-than-1-MiB unrelated index, concurrent verification let the slower
+  process observe and overwrite the faster result, and date-only receipt
+  timestamps passed validation.
+- Quality-review GREEN: the same owning command exited 0 with all 16 tests
+  passing.
+- The strengthened timeout case traps `SIGTERM` and checks that no descendant
+  survives. It was already green on Windows because `taskkill /T /F` is
+  forceful; the POSIX path now escalates the process group to `SIGKILL` after a
+  fixed 250 ms grace without cancelling escalation when the shell exits.
 - The timeout and parent-signal cases use `NODE_ENV=test` with a 150 ms
   test-only bound. Normal verification derives its timeout from the frozen
   task's minute budget.

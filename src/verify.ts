@@ -1,3 +1,11 @@
+import {
+  open,
+  rm,
+} from "node:fs/promises";
+import type { FileHandle } from "node:fs/promises";
+import { resolve } from "node:path";
+import { isDeepStrictEqual } from "node:util";
+
 import { runExactCommand } from "./process.js";
 import {
   digestAllowedFiles,
@@ -22,6 +30,46 @@ export type VerificationOutcome =
     result: "FAIL" | "UNKNOWN";
     message: string;
   };
+
+type ReleaseVerificationLock = () => Promise<void>;
+
+async function acquireVerificationLock(
+  projectPath: string,
+): Promise<ReleaseVerificationLock> {
+  const lockPath = resolve(projectPath, ".ohno", "verify.lock");
+  let handle: FileHandle;
+  try {
+    handle = await open(lockPath, "wx", 0o600);
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException).code;
+    if (code === "EEXIST") {
+      throw new Error(
+        "verification already in progress; wait for it to finish before retrying",
+      );
+    }
+    if (code === "ENOENT") {
+      throw new Error("project is not initialized; run ohno init --goal <goal>");
+    }
+    throw error;
+  }
+
+  try {
+    await handle.writeFile(`${process.pid}\n`, "utf8");
+    await handle.sync();
+  } catch (error) {
+    await handle.close().catch(() => undefined);
+    await rm(lockPath, { force: true }).catch(() => undefined);
+    throw error;
+  }
+
+  return async () => {
+    try {
+      await handle.close();
+    } finally {
+      await rm(lockPath, { force: true });
+    }
+  };
+}
 
 function receipt(
   task: TaskContract,
@@ -52,6 +100,41 @@ async function recordActiveResult(
     active_task: state.active_task,
     last_verification: verification,
   });
+}
+
+async function readUnchangedState(
+  projectPath: string,
+  expectedState: ProjectState,
+): Promise<ProjectState | null> {
+  let currentState: ProjectState;
+  try {
+    currentState = await readState(projectPath);
+  } catch {
+    return null;
+  }
+  return isDeepStrictEqual(currentState, expectedState)
+    ? currentState
+    : null;
+}
+
+async function recordActiveResultIfStateUnchanged(
+  projectPath: string,
+  expectedState: ProjectState,
+  verification: VerificationReceipt,
+): Promise<boolean> {
+  const currentState = await readUnchangedState(projectPath, expectedState);
+  if (currentState === null) {
+    return false;
+  }
+  await recordActiveResult(projectPath, currentState, verification);
+  return true;
+}
+
+function stateChangedOutcome(): VerificationOutcome {
+  return {
+    result: "UNKNOWN",
+    message: "UNKNOWN: current state became unreadable or changed",
+  };
 }
 
 async function assertLastPassFresh(
@@ -85,7 +168,7 @@ async function assertLastPassFresh(
   throw new Error("no active task; the last PASS remains fresh");
 }
 
-export async function verifyTask(
+async function verifyTaskWithLock(
   projectPath: string,
 ): Promise<VerificationOutcome> {
   const state = await readState(projectPath);
@@ -103,11 +186,14 @@ export async function verifyTask(
       task.allowed_files,
     );
   } catch {
-    await recordActiveResult(
+    const recorded = await recordActiveResultIfStateUnchanged(
       projectPath,
       state,
       receipt(task, "UNKNOWN", head, null, null),
     );
+    if (!recorded) {
+      return stateChangedOutcome();
+    }
     return {
       result: "UNKNOWN",
       message: "UNKNOWN: matched verification subject is unreadable",
@@ -119,6 +205,10 @@ export async function verifyTask(
     task.test_command,
     task.time_budget_minutes,
   );
+  if (await readUnchangedState(projectPath, state) === null) {
+    return stateChangedOutcome();
+  }
+
   if (
     processResult.timedOut
     || processResult.interrupted
@@ -126,11 +216,14 @@ export async function verifyTask(
     || processResult.launchError
     || processResult.exitCode === null
   ) {
-    await recordActiveResult(
+    const recorded = await recordActiveResultIfStateUnchanged(
       projectPath,
       state,
       receipt(task, "UNKNOWN", head, subjectDigest, null),
     );
+    if (!recorded) {
+      return stateChangedOutcome();
+    }
     return {
       result: "UNKNOWN",
       message: "UNKNOWN: exact command timed out, was signaled, or could not run",
@@ -138,24 +231,17 @@ export async function verifyTask(
   }
 
   if (processResult.exitCode !== 0) {
-    await recordActiveResult(
+    const recorded = await recordActiveResultIfStateUnchanged(
       projectPath,
       state,
       receipt(task, "FAIL", head, subjectDigest, processResult.exitCode),
     );
+    if (!recorded) {
+      return stateChangedOutcome();
+    }
     return {
       result: "FAIL",
       message: `FAIL: exact command exited ${processResult.exitCode}`,
-    };
-  }
-
-  let postState: ProjectState;
-  try {
-    postState = await readState(projectPath);
-  } catch {
-    return {
-      result: "UNKNOWN",
-      message: "UNKNOWN: current state became unreadable",
     };
   }
 
@@ -168,11 +254,14 @@ export async function verifyTask(
       task.allowed_files,
     );
   } catch {
-    await recordActiveResult(
+    const recorded = await recordActiveResultIfStateUnchanged(
       projectPath,
       state,
       receipt(task, "UNKNOWN", head, subjectDigest, null),
     );
+    if (!recorded) {
+      return stateChangedOutcome();
+    }
     return {
       result: "UNKNOWN",
       message: "UNKNOWN: verification subject became unreadable",
@@ -180,16 +269,17 @@ export async function verifyTask(
   }
 
   if (
-    postState.status !== "ACTIVE"
-    || postState.active_task?.contract_digest !== task.contract_digest
-    || postHead !== head
+    postHead !== head
     || postSubjectDigest !== subjectDigest
   ) {
-    await recordActiveResult(
+    const recorded = await recordActiveResultIfStateUnchanged(
       projectPath,
       state,
       receipt(task, "UNKNOWN", head, subjectDigest, null),
     );
+    if (!recorded) {
+      return stateChangedOutcome();
+    }
     return {
       result: "UNKNOWN",
       message: "UNKNOWN: verification subject changed during the exact command",
@@ -203,15 +293,30 @@ export async function verifyTask(
     subjectDigest,
     0,
   );
+  const finalState = await readUnchangedState(projectPath, state);
+  if (finalState === null) {
+    return stateChangedOutcome();
+  }
   await writeStateAtomic(projectPath, {
-    ...state,
+    ...finalState,
     status: "IDLE",
     active_task: null,
     last_verification: passReceipt,
-    completed: [...state.completed, task],
+    completed: [...finalState.completed, task],
   });
   return {
     result: "PASS",
     nextAction: task.next_action,
   };
+}
+
+export async function verifyTask(
+  projectPath: string,
+): Promise<VerificationOutcome> {
+  const releaseLock = await acquireVerificationLock(projectPath);
+  try {
+    return await verifyTaskWithLock(projectPath);
+  } finally {
+    await releaseLock();
+  }
 }

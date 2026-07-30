@@ -11,6 +11,8 @@ export interface ExactCommandResult {
   launchError: boolean;
 }
 
+const terminationGraceMilliseconds = 250;
+
 function testOnlyMilliseconds(name: string): number | undefined {
   if (process.env.NODE_ENV !== "test") {
     return undefined;
@@ -25,29 +27,38 @@ function testOnlyMilliseconds(name: string): number | undefined {
   return Number.isSafeInteger(value) && value > 0 ? value : undefined;
 }
 
-function terminateProcessTree(
+function terminateWindowsProcessTree(
   child: ReturnType<typeof spawn>,
 ): void {
   if (child.pid === undefined) {
     return;
   }
 
-  if (process.platform === "win32") {
-    spawnSync(
-      "taskkill",
-      ["/pid", String(child.pid), "/T", "/F"],
-      {
-        stdio: "ignore",
-        windowsHide: true,
-      },
-    );
+  const result = spawnSync(
+    "taskkill",
+    ["/pid", String(child.pid), "/T", "/F"],
+    {
+      stdio: "ignore",
+      timeout: 1_000,
+      windowsHide: true,
+    },
+  );
+  if (result.error !== undefined || result.status !== 0) {
+    child.kill("SIGKILL");
+  }
+}
+
+function signalPosixProcessGroup(
+  child: ReturnType<typeof spawn>,
+  signal: "SIGTERM" | "SIGKILL",
+): void {
+  if (child.pid === undefined) {
     return;
   }
-
   try {
-    process.kill(-child.pid, "SIGTERM");
+    process.kill(-child.pid, signal);
   } catch {
-    child.kill("SIGTERM");
+    child.kill(signal);
   }
 }
 
@@ -74,20 +85,15 @@ export function runExactCommand(
     let interrupted = false;
     let launchError = false;
     let settled = false;
-
-    const timeout = setTimeout(() => {
-      timedOut = true;
-      terminateProcessTree(child);
-    }, timeoutMilliseconds);
-    timeout.unref();
-
-    const interrupt = interruptMilliseconds === undefined
-      ? undefined
-      : setTimeout(() => {
-        interrupted = true;
-        terminateProcessTree(child);
-      }, interruptMilliseconds);
-    interrupt?.unref();
+    let terminationStarted = false;
+    let escalationRequired = false;
+    let observedExit:
+      | {
+        exitCode: number | null;
+        signal: NodeJS.Signals | null;
+      }
+      | undefined;
+    let terminationWatchdog: ReturnType<typeof setTimeout> | undefined;
 
     const finish = (
       exitCode: number | null,
@@ -101,6 +107,9 @@ export function runExactCommand(
       if (interrupt !== undefined) {
         clearTimeout(interrupt);
       }
+      if (terminationWatchdog !== undefined) {
+        clearTimeout(terminationWatchdog);
+      }
       resolve({
         exitCode,
         signal,
@@ -110,10 +119,62 @@ export function runExactCommand(
       });
     };
 
+    const terminate = (): void => {
+      if (terminationStarted) {
+        return;
+      }
+      terminationStarted = true;
+
+      if (process.platform === "win32") {
+        terminateWindowsProcessTree(child);
+        terminationWatchdog = setTimeout(() => {
+          child.kill("SIGKILL");
+          finish(
+            observedExit?.exitCode ?? null,
+            observedExit?.signal ?? "SIGKILL",
+          );
+        }, terminationGraceMilliseconds);
+        return;
+      }
+
+      escalationRequired = true;
+      signalPosixProcessGroup(child, "SIGTERM");
+      terminationWatchdog = setTimeout(() => {
+        signalPosixProcessGroup(child, "SIGKILL");
+        escalationRequired = false;
+        finish(
+          observedExit?.exitCode ?? null,
+          observedExit?.signal ?? "SIGKILL",
+        );
+      }, terminationGraceMilliseconds);
+    };
+
+    const timeout = setTimeout(() => {
+      timedOut = true;
+      terminate();
+    }, timeoutMilliseconds);
+    timeout.unref();
+
+    const interrupt = interruptMilliseconds === undefined
+      ? undefined
+      : setTimeout(() => {
+        interrupted = true;
+        terminate();
+      }, interruptMilliseconds);
+    interrupt?.unref();
+
     child.once("error", () => {
       launchError = true;
       finish(null, null);
     });
-    child.once("exit", finish);
+    child.once("exit", (exitCode, signal) => {
+      observedExit = {
+        exitCode,
+        signal,
+      };
+      if (!escalationRequired) {
+        finish(exitCode, signal);
+      }
+    });
   });
 }

@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import { once } from "node:events";
 import {
+  access,
   mkdir,
   rm,
   writeFile,
@@ -8,12 +10,14 @@ import {
 import { resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
+import { setTimeout as delay } from "node:timers/promises";
 
 import {
   createProject,
   readState,
   readStateBytes,
   runCli,
+  spawnCli,
 } from "../helpers/blackbox.mjs";
 
 const nextAction = "Start the next frozen task";
@@ -48,6 +52,52 @@ function runGit(cwd, args) {
   });
   assert.equal(result.status, 0, result.stderr);
   return result;
+}
+
+function runGitWithInput(cwd, args, input) {
+  const result = spawnSync("git", args, {
+    cwd,
+    encoding: "utf8",
+    input,
+  });
+  assert.equal(result.status, 0, result.stderr);
+  return result;
+}
+
+async function waitForPath(path, timeoutMilliseconds = 5_000) {
+  const deadline = Date.now() + timeoutMilliseconds;
+  while (Date.now() < deadline) {
+    try {
+      await access(path);
+      return;
+    } catch (error) {
+      if (error.code !== "ENOENT") {
+        throw error;
+      }
+    }
+    await delay(20);
+  }
+  assert.fail(`timed out waiting for ${path}`);
+}
+
+async function collectCliResult(child) {
+  let stdout = "";
+  let stderr = "";
+  child.stdout.setEncoding("utf8");
+  child.stderr.setEncoding("utf8");
+  child.stdout.on("data", (chunk) => {
+    stdout += chunk;
+  });
+  child.stderr.on("data", (chunk) => {
+    stderr += chunk;
+  });
+  const [status, signal] = await once(child, "exit");
+  return {
+    status,
+    signal,
+    stdout,
+    stderr,
+  };
 }
 
 async function writeCommandScript(projectPath, name, source) {
@@ -135,13 +185,41 @@ test("a non-zero exact command records FAIL and leaves the task active", async (
   assert.equal(state.last_verification.exit_code, 7);
 });
 
+test("a non-zero command that corrupts state is UNKNOWN without overwrite", async (t) => {
+  const projectPath = await createProject(t);
+  await writeFile(resolve(projectPath, "subject.txt"), "before\n", "utf8");
+  const corruptStateBytes = Buffer.from('{"corrupt_after_failure":\n');
+  const script = await writeCommandScript(
+    projectPath,
+    "fail-and-corrupt-state",
+    [
+      'import { writeFileSync } from "node:fs";',
+      `writeFileSync(".ohno/state.json", Buffer.from("${corruptStateBytes.toString("base64")}", "base64"));`,
+      "process.exit(7);",
+      "",
+    ].join("\n"),
+  );
+  await initializeTask(t, { command: nodeCommand(script), projectPath });
+
+  const result = runCli(projectPath, ["verify"]);
+  assert.notEqual(result.status, 0);
+  assert.match(`${result.stdout}\n${result.stderr}`, /\bUNKNOWN\b/);
+  assert.deepEqual(await readStateBytes(projectPath), corruptStateBytes);
+});
+
 test("a bounded timeout records UNKNOWN and leaves the task active", async (t) => {
   const projectPath = await createProject(t);
   await writeFile(resolve(projectPath, "subject.txt"), "before\n", "utf8");
   const script = await writeCommandScript(
     projectPath,
     "hang",
-    "setInterval(() => undefined, 1_000);\n",
+    [
+      'import { writeFileSync } from "node:fs";',
+      'process.on("SIGTERM", () => undefined);',
+      'setTimeout(() => writeFileSync("commands/timeout-survivor.txt", "alive\\n"), 900);',
+      "setInterval(() => undefined, 1_000);",
+      "",
+    ].join("\n"),
   );
   await initializeTask(t, { command: nodeCommand(script), projectPath });
 
@@ -157,6 +235,13 @@ test("a bounded timeout records UNKNOWN and leaves the task active", async (t) =
   const state = await readState(projectPath);
   assertActiveWithResult(state, "UNKNOWN");
   assert.equal(state.last_verification.exit_code, null);
+
+  await delay(1_000);
+  await assert.rejects(
+    access(resolve(projectPath, "commands", "timeout-survivor.txt")),
+    (error) => error.code === "ENOENT",
+    "timeout must terminate a command that ignores SIGTERM",
+  );
 });
 
 test("a signaled exact command records UNKNOWN and leaves the task active", async (t) => {
@@ -202,6 +287,56 @@ test("an unreadable matched subject records UNKNOWN and leaves the task active",
   assert.equal(state.last_verification.exit_code, null);
 });
 
+test("a corrupt Git HEAD is UNKNOWN and never treated as UNBORN", async (t) => {
+  const projectPath = await createProject(t);
+  await writeFile(resolve(projectPath, "subject.txt"), "before\n", "utf8");
+  const script = await writeCommandScript(projectPath, "pass", "process.exit(0);\n");
+  await initializeTask(t, { command: nodeCommand(script), projectPath });
+  await writeFile(
+    resolve(projectPath, ".git", "HEAD"),
+    `${"0".repeat(40)}\n`,
+    "utf8",
+  );
+
+  const result = runCli(projectPath, ["verify"]);
+  assert.notEqual(result.status, 0);
+  assert.match(`${result.stdout}\n${result.stderr}`, /\bUNKNOWN\b/);
+
+  const state = await readState(projectPath);
+  assertActiveWithResult(state, "UNKNOWN");
+  assert.equal(state.last_verification.head, null);
+});
+
+test("an exact allowed path is digested without enumerating a huge unrelated index", async (t) => {
+  const projectPath = await createProject(t);
+  await writeFile(resolve(projectPath, "subject.txt"), "allowed\n", "utf8");
+  const blob = runGitWithInput(
+    projectPath,
+    ["hash-object", "-w", "--stdin"],
+    "cached-only\n",
+  ).stdout.trim();
+  const indexLines = [];
+  let listedPathBytes = 0;
+  for (let index = 0; listedPathBytes <= 1_300_000; index += 1) {
+    const relativePath = `unrelated/cache-${String(index).padStart(6, "0")}-${"x".repeat(48)}.txt`;
+    indexLines.push(`100644 ${blob}\t${relativePath}\n`);
+    listedPathBytes += Buffer.byteLength(`${relativePath}\0`);
+  }
+  assert.ok(listedPathBytes > 1_048_576);
+  runGitWithInput(
+    projectPath,
+    ["update-index", "--add", "--index-info"],
+    indexLines.join(""),
+  );
+
+  const script = await writeCommandScript(projectPath, "pass", "process.exit(0);\n");
+  await initializeTask(t, { command: nodeCommand(script), projectPath });
+  const result = runCli(projectPath, ["verify"]);
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stdout, `${nextAction}\n`);
+  assert.equal((await readState(projectPath)).status, "IDLE");
+});
+
 test("unchanged zero exit binds a fresh PASS receipt and returns exactly one next action", async (t) => {
   const projectPath = await createProject(t);
   await writeFile(resolve(projectPath, "subject.txt"), "unchanged\n", "utf8");
@@ -235,6 +370,59 @@ test("unchanged zero exit binds a fresh PASS receipt and returns exactly one nex
     Number.isNaN(Date.parse(state.last_verification.finished_at)),
     false,
     "finished_at must be an RFC3339-compatible timestamp",
+  );
+});
+
+test("concurrent verification cannot let a slower process reopen a closed task", async (t) => {
+  const projectPath = await createProject(t);
+  await writeFile(resolve(projectPath, "subject.txt"), "unchanged\n", "utf8");
+  const markerPath = resolve(projectPath, "commands", "slow-first.marker");
+  const script = await writeCommandScript(
+    projectPath,
+    "slow-first-fast-second",
+    [
+      'import { closeSync, openSync } from "node:fs";',
+      "let isFirst = false;",
+      "try {",
+      '  const descriptor = openSync("commands/slow-first.marker", "wx");',
+      "  closeSync(descriptor);",
+      "  isFirst = true;",
+      "} catch (error) {",
+      '  if (error?.code !== "EEXIST") throw error;',
+      "}",
+      "if (isFirst) {",
+      "  await new Promise((resolve) => setTimeout(resolve, 1_500));",
+      "}",
+      "",
+    ].join("\n"),
+  );
+  await initializeTask(t, { command: nodeCommand(script), projectPath });
+
+  const first = spawnCli(projectPath, ["verify"]);
+  const firstResultPromise = collectCliResult(first);
+  await waitForPath(markerPath);
+  const second = spawnCli(projectPath, ["verify"]);
+  const secondResultPromise = collectCliResult(second);
+  const [firstResult, secondResult] = await Promise.all([
+    firstResultPromise,
+    secondResultPromise,
+  ]);
+
+  assert.equal(firstResult.status, 0, firstResult.stderr);
+  assert.equal(firstResult.signal, null);
+  assert.equal(firstResult.stdout, `${nextAction}\n`);
+  assert.notEqual(secondResult.status, 0);
+  assert.match(secondResult.stderr, /verification.*(?:progress|lock)|lock/i);
+
+  const state = await readState(projectPath);
+  assert.equal(state.status, "IDLE");
+  assert.equal(state.active_task, null);
+  assert.equal(state.completed.length, 1);
+  assert.equal(state.completed[0].id, "verify-001");
+  await assert.rejects(
+    access(resolve(projectPath, ".ohno", "verify.lock")),
+    (error) => error.code === "ENOENT",
+    "verification lock must be released",
   );
 });
 
@@ -346,6 +534,27 @@ test("task contract changed after PASS makes the receipt visibly STALE", async (
   const stale = runCli(projectPath, ["verify"]);
   assert.notEqual(stale.status, 0);
   assert.match(`${stale.stdout}\n${stale.stderr}`, /\bSTALE\b/);
+});
+
+test("a non-RFC3339 receipt timestamp is rejected without overwrite", async (t) => {
+  const projectPath = await createProject(t);
+  await writeFile(resolve(projectPath, "subject.txt"), "verified\n", "utf8");
+  const script = await writeCommandScript(projectPath, "pass", "process.exit(0);\n");
+  await initializeTask(t, { command: nodeCommand(script), projectPath });
+  assert.equal(runCli(projectPath, ["verify"]).status, 0);
+
+  const state = await readState(projectPath);
+  state.last_verification.finished_at = "2026-07-30";
+  const malformedStateBytes = Buffer.from(`${JSON.stringify(state, null, 2)}\n`);
+  await writeFile(
+    resolve(projectPath, ".ohno", "state.json"),
+    malformedStateBytes,
+  );
+
+  const result = runCli(projectPath, ["verify"]);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /invalid state/i);
+  assert.deepEqual(await readStateBytes(projectPath), malformedStateBytes);
 });
 
 test("task finish is not a manual completion bypass", async (t) => {

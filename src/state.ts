@@ -133,6 +133,12 @@ function isSha256(value: unknown): value is string {
   return typeof value === "string" && /^[a-f0-9]{64}$/.test(value);
 }
 
+function isRfc3339Timestamp(value: unknown): value is string {
+  return typeof value === "string"
+    && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(value)
+    && !Number.isNaN(Date.parse(value));
+}
+
 function isVerificationReceipt(
   value: unknown,
 ): value is VerificationReceipt {
@@ -156,8 +162,7 @@ function isVerificationReceipt(
       || (typeof value.head === "string" && /^[a-f0-9]{40,64}$/.test(value.head))
     )
     || !(value.subject_digest === null || isSha256(value.subject_digest))
-    || !isNonBlankString(value.finished_at)
-    || Number.isNaN(Date.parse(value.finished_at))
+    || !isRfc3339Timestamp(value.finished_at)
   ) {
     return false;
   }
