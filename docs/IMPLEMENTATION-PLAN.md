@@ -1,6 +1,6 @@
 # Codex-only V1 implementation plan
 
-Status: **IMPLEMENTATION_IN_PROGRESS — TASK_2_LOCAL_PASS**
+Status: **IMPLEMENTATION_IN_PROGRESS — TASK_3_LOCAL_PASS**
 
 Owner authorization: Tasks 1–7 below, including 6A–6C, were authorized as the
 complete V1 implementation scope on 2026-07-30. Execute them sequentially.
@@ -12,7 +12,7 @@ Do not add another task or publish a package without new authorization.
 | --- | --- | --- |
 | Task 1 — task-start contract and atomic state | LOCAL_PASS | A01, A02, part of A12 |
 | Task 2 — exact verification, finish, and one next action | LOCAL_PASS | A03, A04, A05 |
-| Task 3 — status, resume, next, and bounded capsule | NOT_STARTED | A06, A07, part of A15 |
+| Task 3 — status, resume, next, and bounded capsule | LOCAL_PASS | A06, A07, part of A15 |
 | Task 4 — Truth-driven requirement-change sync | NOT_STARTED | A10, A11 |
 | Task 5 — Codex hooks and Git pre-commit | NOT_STARTED | A08, A09, A16 |
 | Task 6A — locked Cockpit design contract | NOT_STARTED | design prerequisite for A13, A14 |
@@ -79,13 +79,38 @@ Recorded on 2026-07-30 with Node.js v24.11.1:
 This earns local evidence for A03, A04, and A05 only. It does not earn read
 surfaces, hooks, Cockpit, performance, trial, or production claims.
 
+## Task 3 local evidence
+
+Recorded on 2026-07-30 with Node.js v24.11.1:
+
+- RED: `node --test test/blackbox/resume-status-next.test.mjs` exited 1 with
+  0 passing and 8 failing tests because the public `ohno status`,
+  `ohno resume`, and `ohno next` interfaces were absent.
+- GREEN: `node --test test/blackbox/resume-status-next.test.mjs` exited 0 with
+  all 8 tests passing across idle, active, failed, fresh-PASS, stale-PASS,
+  blocked-document-sync, bounded-history, missing-state, and corrupt-state
+  fixtures.
+- The largest accepted fixture kept the UTF-8 resume capsule below 4 KiB while
+  retaining the current task contract and blocker ahead of bounded completed
+  summaries.
+- `npm.cmd run typecheck` exited 0.
+- `npm.cmd run build` exited 0.
+- `git diff --check` exited 0 with no output.
+- One warmed diagnostic sample in a disposable idle repository measured
+  `status --json` at 69.69 ms, `resume` at 61.50 ms, and `next` at 97.07 ms.
+  These are diagnostic single samples, not p95, trial, or performance claims.
+
+This earns local evidence for A06, A07, and the Task 3 read-path portion of
+A15 only. It does not earn hooks, requirement-change commands, Cockpit,
+performance, trial, or production claims.
+
 ## Exact current action
 
 There is exactly one:
 
-> **Task 3:** create `test/blackbox/resume-status-next.test.mjs` with the frozen
-> RED cases below, then implement only the agreeing status, resume, next, and
-> bounded capsule read surfaces required to make it pass.
+> **Task 4:** create `test/blackbox/requirement-change.test.mjs` with the frozen
+> RED cases below, then implement only the Truth-driven requirement-change
+> synchronization required to make it pass.
 
 ## Shared implementation rules
 

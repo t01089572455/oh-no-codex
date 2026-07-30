@@ -34,16 +34,23 @@ export interface VerificationReceipt {
 export interface ProjectState {
   schema_version: 1;
   goal: string;
-  status: "IDLE" | "ACTIVE";
+  status: "IDLE" | "ACTIVE" | "BLOCKED_DOC_SYNC";
   active_task: TaskContract | null;
   last_verification: VerificationReceipt | null;
   completed: TaskContract[];
-  document_sync: {
-    status: "CLEAN";
-    change_id: null;
-    required_paths: [];
-    reviewed_diff_digest: null;
-  };
+  document_sync:
+    | {
+      status: "CLEAN";
+      change_id: null;
+      required_paths: [];
+      reviewed_diff_digest: null;
+    }
+    | {
+      status: "PENDING_REVIEW";
+      change_id: string;
+      required_paths: string[];
+      reviewed_diff_digest: string | null;
+    };
 }
 
 function stateDirectory(projectPath: string): string {
@@ -184,18 +191,33 @@ function isVerificationReceipt(
 function isDocumentSync(
   value: unknown,
 ): value is ProjectState["document_sync"] {
-  return isRecord(value)
-    && hasExactKeys(value, [
+  if (
+    !isRecord(value)
+    || !hasExactKeys(value, [
       "status",
       "change_id",
       "required_paths",
       "reviewed_diff_digest",
     ])
-    && value.status === "CLEAN"
-    && value.change_id === null
-    && Array.isArray(value.required_paths)
-    && value.required_paths.length === 0
-    && value.reviewed_diff_digest === null;
+    || !Array.isArray(value.required_paths)
+  ) {
+    return false;
+  }
+
+  if (value.status === "CLEAN") {
+    return value.change_id === null
+      && value.required_paths.length === 0
+      && value.reviewed_diff_digest === null;
+  }
+
+  return value.status === "PENDING_REVIEW"
+    && isNonBlankString(value.change_id)
+    && value.required_paths.length > 0
+    && value.required_paths.every(isNonBlankString)
+    && (
+      value.reviewed_diff_digest === null
+      || isSha256(value.reviewed_diff_digest)
+    );
 }
 
 function isProjectState(value: unknown): value is ProjectState {
@@ -224,9 +246,18 @@ function isProjectState(value: unknown): value is ProjectState {
   }
 
   if (value.status === "ACTIVE") {
-    return isTaskContract(value.active_task);
+    return isTaskContract(value.active_task)
+      && value.document_sync.status === "CLEAN";
   }
-  if (value.status !== "IDLE" || value.active_task !== null) {
+  if (value.status === "BLOCKED_DOC_SYNC") {
+    return value.active_task === null
+      && value.document_sync.status === "PENDING_REVIEW";
+  }
+  if (
+    value.status !== "IDLE"
+    || value.active_task !== null
+    || value.document_sync.status !== "CLEAN"
+  ) {
     return false;
   }
   if (value.completed.length === 0) {

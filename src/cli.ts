@@ -5,6 +5,10 @@ import {
   stateExists,
   writeStateAtomic,
 } from "./state.js";
+import { serializeNext } from "./next.js";
+import { readModel } from "./read-model.js";
+import { serializeResume } from "./resume.js";
+import { serializeStatus } from "./status.js";
 import { startTask } from "./task-start.js";
 import { verifyTask } from "./verify.js";
 
@@ -27,6 +31,28 @@ async function initialize(projectPath: string, args: string[]): Promise<void> {
 
   await writeStateAtomic(projectPath, initialState(goal));
   process.stdout.write(`Initialized goal: ${goal}\n`);
+}
+
+async function writeReadSurface(
+  projectPath: string,
+  surface: "status" | "resume" | "next",
+  json = false,
+): Promise<void> {
+  const model = await readModel(projectPath);
+  if (surface === "status") {
+    process.stdout.write(serializeStatus(model, json));
+  } else if (surface === "resume") {
+    process.stdout.write(serializeResume(model));
+  } else {
+    process.stdout.write(serializeNext(model));
+  }
+
+  if (model.availability === "UNAVAILABLE") {
+    process.stderr.write(
+      "UNAVAILABLE: project state is missing, corrupt, or unsupported\n",
+    );
+    process.exitCode = 1;
+  }
 }
 
 async function main(): Promise<void> {
@@ -55,8 +81,27 @@ async function main(): Promise<void> {
     throw new Error(outcome.message);
   }
 
+  if (
+    command === "status"
+    && (subcommand === undefined || subcommand === "--json")
+    && args.length === 0
+  ) {
+    await writeReadSurface(projectPath, "status", subcommand === "--json");
+    return;
+  }
+
+  if (command === "resume" && subcommand === undefined) {
+    await writeReadSurface(projectPath, "resume");
+    return;
+  }
+
+  if (command === "next" && subcommand === undefined) {
+    await writeReadSurface(projectPath, "next");
+    return;
+  }
+
   throw new Error(
-    "usage: ohno init --goal <goal> | ohno task start --id <id> --expect <behavior> --test <command> --stop <condition> --files <globs> --minutes <integer> --next <action> | ohno verify",
+    "usage: ohno init --goal <goal> | ohno task start --id <id> --expect <behavior> --test <command> --stop <condition> --files <globs> --minutes <integer> --next <action> | ohno verify | ohno status [--json] | ohno resume | ohno next",
   );
 }
 
