@@ -1,262 +1,254 @@
+<a id="readme-top"></a>
+
 <p align="center">
   <strong>English</strong>
   ·
   <a href="./README.zh-CN.md">简体中文</a>
 </p>
 
+<p align="center">
+  <img
+    src="./assets/brand/oh-no-codex-plush-hero.png"
+    width="900"
+    alt="A mischievous blue coding plush reaches toward a laptop while a coral-red plush cross stops its paw"
+  >
+</p>
+
 <h1 align="center">Oh No, Codex!</h1>
 
 <p align="center">
-  <strong>A fast anti-drift harness for Codex vibe coding.</strong>
+  <strong>A fast, local anti-drift harness for Codex vibe coding.</strong>
 </p>
 
 <p align="center">
-  Born from Codex's sins. Built to stop the next one.
+  One goal. One bounded task. One black-box test. Then stop.
 </p>
 
 <p align="center">
-  <a href="./docs/PRODUCT-CONTRACT.md">
-    <img alt="Status: building v1" src="https://img.shields.io/badge/status-building_v1-F2A93B?style=for-the-badge">
+  <a href="./docs/IMPLEMENTATION-PLAN.md">
+    <img alt="Status: building V1" src="https://img.shields.io/badge/status-building_V1-F4AA2A?style=for-the-badge&labelColor=202624">
   </a>
-  <img alt="Codex only" src="https://img.shields.io/badge/Codex-only-171717?style=for-the-badge">
-  <img alt="Node.js 22.20 or newer" src="https://img.shields.io/badge/Node.js-%E2%89%A522.20-339933?style=for-the-badge&logo=node.js&logoColor=white">
+  <img alt="Codex only" src="https://img.shields.io/badge/harness-Codex_only-FF4B35?style=for-the-badge&labelColor=202624">
+  <img alt="Node.js 22.20 or newer" src="https://img.shields.io/badge/Node.js-%E2%89%A522.20-74D6B1?style=for-the-badge&labelColor=202624">
   <a href="./LICENSE">
-    <img alt="MIT License" src="https://img.shields.io/badge/license-MIT-DCE7E1?style=for-the-badge">
+    <img alt="MIT License" src="https://img.shields.io/badge/license-MIT-FFF1CE?style=for-the-badge&labelColor=202624">
   </a>
 </p>
 
 <p align="center">
-  <a href="#why-oh-no-codex">Why</a>
+  <a href="#why">Why</a>
   ·
   <a href="#the-four-loops">Four loops</a>
   ·
-  <a href="#caliper-cockpit">Cockpit</a>
+  <a href="#oh-no-cockpit">Cockpit</a>
   ·
-  <a href="#the-codex-sins">Codex sins</a>
+  <a href="#the-eighteen-sins">18 sins</a>
   ·
   <a href="#project-contracts">Docs</a>
 </p>
 
 > [!IMPORTANT]
-> **V1 is under active implementation.** The product contract is frozen, but
-> the package is not released. Commands and screenshots in this README are
-> contract previews until their linked acceptance rows are earned.
+> **V1 is under construction.** No package has been released. The commands,
+> hooks, performance targets, and Cockpit below describe the accepted product
+> contract; they are not availability claims.
 
-## Why Oh No, Codex?
+## Why
 
 Codex can write good code and still let a project drift:
 
 - a small request quietly becomes a new architecture;
-- an internal green test misses the user-visible behavior;
-- “what comes next” is mistaken for permission to continue;
+- coding starts before the expected user behavior is clear;
+- internal tests pass while the user-visible behavior remains broken;
 - a requirement changes, but the governing documents do not;
-- the next session spends its first hour reconstructing the truth.
+- “next” is mistaken for permission to keep working;
+- the next session spends an hour reconstructing the truth from chat.
 
-Oh No, Codex! puts a lightweight caliper around each task boundary. Before
-mutation, it asks for one bounded task and one minimal black-box test. At the
-finish line, fresh evidence—not agent prose—decides whether the task stops.
+Oh No, Codex! puts a lightweight harness around each task boundary. Before a
+supported write, it asks for one bounded task and one minimal, user-visible
+black-box test. At the finish line, fresh evidence—not agent prose—decides
+whether the task stops.
 
-It is a **cooperative project harness**, not an AI security sandbox or an
-enterprise governance platform.
+It is a **cooperative project harness** for local Codex work. It is not an AI
+security sandbox, an enterprise governance platform, or a promise that a
+hostile process cannot bypass its owner.
 
-## The tiny contract
+## The four loops
 
 ```mermaid
 flowchart LR
     A["Owner goal"] --> B["One bounded task"]
-    B --> C["One user-visible black-box test"]
+    B --> C["One user-visible black box"]
     C --> D{"Fresh PASS?"}
-    D -- "No / Unknown" --> B
+    D -- "FAIL / UNKNOWN" --> B
     D -- "Yes" --> E["Stop"]
-    E --> F["Exactly one next action"]
+    E --> F["One proposed next action"]
 ```
 
-Every active task freezes:
+The next action is a locator, not fresh authorization.
 
-- the expected user-visible behavior;
-- one exact minimal black-box command;
-- allowed file globs and a time budget;
-- an explicit stop condition;
-- exactly one proposed next action.
-
-A failed or unknown test keeps the task active. A fresh PASS closes it. A
-relevant change makes that proof stale.
-
-## The four loops
-
-| Loop | What it prevents | What the harness does |
+| Loop | Drift it prevents | Smallest useful behavior |
 | --- | --- | --- |
-| **Start** | Coding before the task is understood | Freezes behavior, test, files, budget, stop condition, and one next action. |
-| **Finish** | “Looks done” completion claims | Runs the exact black box and binds PASS to the task, HEAD, and allowed-file digest. |
-| **Change** | Requirements and governing docs drifting apart | Selects required documents from Owner-maintained Truth, shows the exact diff, and blocks coding until review. |
-| **Resume** | New sessions rebuilding state from chat history | Returns the goal, current task, proof freshness, blocker, and one next action from one atomic state file. |
+| **Start** | Coding before the task is understood | Freeze expected behavior, one test, allowed files, time budget, stop condition, and one next action. |
+| **Finish** | “Looks done” completion claims | Run the exact black box and bind PASS to the current task and Git subject. |
+| **Change** | Requirements and governing documents diverging | Select required documents from Owner-maintained Truth, show the exact diff, and block coding until review. |
+| **Resume** | New sessions rebuilding state from prose | Return the goal, current task, proof, blocker, and one next action from one atomic state file. |
 
-## A thirty-second workflow
+## Thirty-second contract preview
 
-> The interface below is the frozen V1 contract. It is not an installation
-> claim while the package remains unreleased.
+> The interface is designed, but it is not released yet.
 
 ```bash
-# 1. Anchor the project goal
+# Anchor one project goal
 ohno init --goal "Ship reliable draft persistence"
 
-# 2. Start one bounded task
+# Start one bounded task
 ohno task start \
   --id "draft-persistence" \
   --expect "A saved draft survives page reload" \
   --test "npm test -- draft-persistence" \
-  --stop "Stop when that black-box test passes" \
   --files "src/drafts/**,test/draft-persistence.test.*" \
   --minutes 60 \
+  --stop "Stop when the black-box test passes" \
   --next "Add draft deletion"
 
-# 3. Let evidence decide
+# Let evidence decide, then recover state in any new session
 ohno verify
-
-# 4. Recover the exact operational state in a new session
 ohno resume
 ohno next
 ```
 
-## One authority, several useful views
+## CLI core, thin hooks
+
+The CLI owns the state and decisions. Hooks only bring those decisions to the
+moment Codex is about to act:
+
+| Surface | V1 job |
+| --- | --- |
+| `SessionStart` / `PostCompact` | Inject the goal, current task, proof, blocker, and one next action. |
+| `PreToolUse` | Block supported writes when the task contract is missing or the path is outside the declared scope. |
+| `Stop` | Keep the task open when fresh PASS evidence or required document synchronization is missing. |
+| Git `pre-commit` | Reject an out-of-scope or unverified commit. |
+
+Hooks are guardrails around cooperative Codex use—not an unbreakable security
+boundary.
+
+## One authority, several views
 
 ```text
-Codex
-  │
-  ▼
-ohno CLI ───── atomic replace ─────▶ .ohno/state.json
-  │                                      │
-  │                                      ├── status / resume / next
-  │                                      ├── Codex lifecycle hooks
-  │                                      ├── Git pre-commit
-  │                                      └── read-only Cockpit
-  │
-  └──── governing documents ◀──── .ohno/truth.json
+ohno CLI -- atomic replace --> .ohno/state.json
+                                  |-- status / resume / next
+                                  |-- thin Codex hooks
+                                  |-- Git pre-commit guard
+                                  `-- read-only Cockpit
+
+.ohno/truth.json -------------> named governing documents
 ```
 
 - `.ohno/state.json` is the sole current runtime authority.
 - `.ohno/truth.json` is the Owner-maintained document applicability list.
-- Hooks, terminal output, receipts, and Cockpit are projections—not competing
+- Hooks, receipts, terminal output, and Cockpit are projections—not competing
   sources of truth.
-- Normal status paths read bounded state; they do not scan the repository or
-  run the full test suite.
+- Normal read paths stay bounded: no whole-repository document scan and no
+  full test suite.
 
-## Caliper Cockpit
+## Small by design
 
-The Cockpit is designed as a **precision caliper crossed with a warning
-beacon**, not a generic SaaS dashboard. The dominant instrument answers:
-**What is happening now, and what is the one next action?** Smaller instruments
-show proof freshness and document drift.
+V1 has one Node.js package, one `ohno` executable, one atomic state file, one
+Truth list, thin project hooks, one Git hook, and one local read-only Cockpit.
+
+It deliberately has no database, daemon, hosted service, policy language,
+plugin platform, provider framework, or multi-agent scheduler. A new
+abstraction earns its place only when a failing public black-box test needs it.
+
+## Oh No Cockpit
+
+The planned Cockpit is a read-only recovery surface, not a generic SaaS
+dashboard. Its largest area answers two questions:
+
+1. **What is happening now?**
+2. **What is the one next action?**
 
 > [!NOTE]
-> **Concept preview—UI not yet implemented.** This reserved panel will be
-> replaced by real desktop and narrow-viewport screenshots only after the
-> running Cockpit passes browser-based visual, responsive, accessibility, and
-> functional acceptance.
+> **Preview slot only. The Cockpit is not implemented.** A real desktop and
+> narrow-viewport screenshot will replace this panel only after the running UI
+> passes visual, responsive, accessibility, and functional acceptance.
 
 ```text
-┌─ OH NO / CALIPER COCKPIT ───────────────────── LOCAL · READ ONLY ─┐
-│                                                                  │
-│  NOW                                                             │
-│  DRAFT-PERSISTENCE                               ACTIVE · 42 min  │
-│  A saved draft survives page reload                              │
-│  ──────────────────────────────────────────────────────────────  │
-│                                                                  │
-│  PROOF                         DRIFT                              │
-│  ○ UNKNOWN                     ● CLEAN                            │
-│  npm test -- draft-persistence  governing documents aligned      │
-│                                                                  │
-│  NEXT                                                            │
-│  Run the exact black-box test                                    │
-│                                                                  │
-└──────────────────────────────────────────────────────────────────┘
++-- OH NO COCKPIT -------------------------- LOCAL / READ ONLY --+
+| NOW                                                             |
+| draft-persistence                                  ACTIVE  42m   |
+| A saved draft survives page reload                              |
+|                                                                  |
+| PROOF                         | DRIFT                             |
+| UNKNOWN                       | CLEAN                             |
+| npm test -- draft-persistence | governing documents aligned      |
+|                                                                  |
+| NEXT                                                             |
+| Run the exact black-box test                                     |
++------------------------------------------------------------------+
 ```
 
-The visual contract calls for warm instrument-paper surfaces, near-black
-typography, signal red for blocked or stale states, calibrated amber for
-active work, and restrained mint only for fresh PASS. It remains read-only and
-never creates a second state store.
+The planned palette follows product meaning:
 
-## Thin Codex and Git guardrails
-
-Project-local Codex hooks are designed to stay fast and honest:
-
-| Hook | Behavior |
+| Color | Role |
 | --- | --- |
-| `SessionStart` | Inject the bounded resume capsule. |
-| `PostCompact` | Re-inject canonical state after context compaction. |
-| `PreToolUse` | Deny supported mutation paths when no task is active, document sync is pending, or a known target is out of scope. |
-| `Stop` | Continue when the explicit completion marker lacks fresh exact proof. |
-| Git `pre-commit` | Reject stale proof or staged paths outside the active task. |
+| Warm cream `#FFF1CE` | instrument surface |
+| Charcoal `#202624` | structure and type |
+| Coral red `#FF4B35` | blocked or stale |
+| Amber `#F4AA2A` | active work |
+| Mint `#74D6B1` | fresh PASS only |
 
-These are cooperative guardrails. Unsupported or bypassable paths are reported
-as limitations, never mislabeled as hostile-agent containment.
+## The eighteen sins
 
-## The Codex sins
-
-The product turns recurring failure patterns into executable constraints,
-acceptance checks, or explicit non-goals.
+The original shorthand was “Codex’s ten sins.” The audited patterns separated
+cleanly into eighteen. Oh No, Codex! turns them into constraints, tests, or
+explicit non-goals—not eighteen new subsystems.
 
 <details>
-<summary><strong>Open the full list of 18 sins</strong></summary>
+<summary><strong>Open all 18</strong></summary>
 
-| # | Failure pattern | Product countermeasure |
+| # | Sin | Product correction |
 | ---: | --- | --- |
-| 1 | **Semantic usurpation**—the agent decides what the Owner meant. | Preserve the Owner's words; ambiguity cannot silently broaden scope. |
-| 2 | **Maximum interpretation**—a small harness becomes a governance OS. | Choose the smallest behavior that satisfies frozen acceptance. |
-| 3 | **Never stopping**—a next action becomes fresh authorization. | Acceptance ends the task; next is information, not permission. |
-| 4 | **Review becomes edit authority.** | Review stays read-only unless fixes are explicitly authorized. |
-| 5 | **Zombie authority**—an old plan overrides the current decision. | Canonical current state outranks summaries and historical plans. |
-| 6 | **Summary replaces truth.** | Resume is a projection of atomic state, never a new authority. |
-| 7 | **Local green equals complete.** | Every claim names its exact evidence scope. |
-| 8 | **Self-certified closure.** | Exact commands and subject-bound receipts outrank agent prose. |
-| 9 | **Test theatre**—internals pass while the product fails. | Every task owns a public user-visible black box. |
-| 10 | **Proxy goals take over.** | Keep one Owner goal and one bounded active task. |
-| 11 | **Reviewer denominator inflation.** | Review against frozen acceptance; extra ideas remain proposals. |
-| 12 | **Control-tax blindness.** | Latency and capsule-size budgets are acceptance criteria. |
-| 13 | **Rebuilding the world.** | Add no abstraction without a current reproduced need. |
-| 14 | **Workspace identity confusion.** | Handoffs name real path, branch, commit, tree, and dirty state. |
-| 15 | **Handoff tax on the user.** | `resume` returns one compact operational capsule. |
-| 16 | **UX debt last.** | Freeze Cockpit design before code and accept it in the browser. |
-| 17 | **Agreement plus overconfidence.** | Use honest capability labels and measured evidence. |
-| 18 | **Apology without constraint.** | Convert confirmed failures into executable rules or regressions. |
+| 1 | **Semantic usurpation** | Preserve the Owner’s words; ambiguity selects the smallest satisfying behavior. |
+| 2 | **Maximum interpretation** | No subsystem or abstraction without a current public RED. |
+| 3 | **Never stopping** | Acceptance ends the task; `next` is not permission. |
+| 4 | **Review becomes edit authority** | Review is read-only unless fixes are explicitly authorized. |
+| 5 | **Zombie authority** | Current canonical state outranks old plans and summaries. |
+| 6 | **Summary replaces truth** | Resume is a bounded projection, never a new authority. |
+| 7 | **Local green equals complete** | Every claim names its exact evidence scope. |
+| 8 | **Self-certified closure** | Exact commands and subject-bound receipts outrank agent prose. |
+| 9 | **Test theatre** | Every task owns one minimal user-visible black box. |
+| 10 | **Proxy goals take over** | Keep one Owner goal and one active bounded task visible. |
+| 11 | **Reviewer denominator inflation** | Review against frozen acceptance; extra ideas remain proposals. |
+| 12 | **Control-tax blindness** | Latency, capsule size, and no-full-scan paths are acceptance rows. |
+| 13 | **Rebuilding the world** | Prefer Git, files, and ordinary tests before new machinery. |
+| 14 | **Workspace identity confusion** | Handoffs name path, branch, commit, tree, and dirty state. |
+| 15 | **Handoff tax on the user** | One `resume` command returns the operational capsule. |
+| 16 | **UX debt last** | Freeze the Cockpit design before code; accept it in the browser. |
+| 17 | **Agreement plus overconfidence** | Use honest capability labels and measured evidence. |
+| 18 | **Apology without constraint** | Every confirmed incident becomes a rule, regression, or non-goal. |
 
-Read the expanded bilingual record in
+Read the privacy-scrubbed audit and evidence boundary in
 [`docs/CODEX-SINS.md`](./docs/CODEX-SINS.md).
 
 </details>
 
-## Deliberately small
-
-V1 has a hard complexity budget:
-
-- one Node.js package and one `ohno` executable;
-- one atomic current-state file and one Truth applicability file;
-- one project Codex hook configuration and one Git hook;
-- one local read-only Cockpit;
-- no database, daemon, hosted service, policy language, plugin platform,
-  provider framework, or multi-agent scheduler.
-
-No new abstraction earns a place unless a failing public acceptance test
-requires it.
-
 ## Evidence, not promises
 
-The target budgets must be measured on three disposable real-project copies:
+These are V1 acceptance targets. They are **not earned performance claims**
+until measured on three disposable real-project copies.
 
-| Surface | V1 target |
+| Surface | Target |
 | --- | ---: |
-| `ohno status` / `ohno next` | local p95 below 250 ms |
-| `ohno resume` | local p95 below 500 ms |
-| Resume capsule | below 4 KiB |
-| Task-start harness overhead | below 2 s, excluding the user's test |
-| State-to-Cockpit reflection | local p95 below 250 ms |
-
-Until those trials pass, they are targets—not universal speed claims.
+| `ohno status` / `ohno next` | local p95 `<250 ms` |
+| `ohno resume` | local p95 `<500 ms` |
+| Resume capsule | `<4 KiB` |
+| Task-start overhead | `<2 s`, excluding the user’s test |
+| State-to-Cockpit reflection | local p95 `<250 ms` |
 
 ## Project contracts
 
-Public truth lives in these documents:
+Public product truth lives in a small set of documents:
 
 1. [Product contract](./docs/PRODUCT-CONTRACT.md)
 2. [V1 design](./docs/DESIGN.md)
@@ -268,6 +260,11 @@ Public truth lives in these documents:
 
 [MIT](./LICENSE)
 
+Oh No, Codex! is an independent community project and is not affiliated with
+or endorsed by OpenAI.
+
 <p align="center">
-  <strong>One goal. One task. One black box. Then stop.</strong>
+  <strong>Measure the task. Prove the behavior. Stop the agent.</strong>
 </p>
+
+<p align="center"><a href="#readme-top">Back to top ↑</a></p>
