@@ -1,0 +1,21 @@
+{
+  "name": "oh-no-codex",
+  "version": "0.0.0",
+  "private": true,
+  "description": "A cooperative anti-drift harness for Codex projects",
+  "type": "module",
+  "bin": {
+    "ohno": "./dist/cli.js"
+  },
+  "engines": {
+    "node": ">=22.20.0"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.9.0"
+  }
+}

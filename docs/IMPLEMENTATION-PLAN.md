@@ -1,6 +1,6 @@
 # Codex-only V1 implementation plan
 
-Status: **DESIGN_FROZEN_IMPLEMENTATION_NOT_STARTED**
+Status: **IMPLEMENTATION_IN_PROGRESS — TASK_1_LOCAL_PASS**
 
 Owner authorization: Tasks 1–7 below, including 6A–6C, were authorized as the
 complete V1 implementation scope on 2026-07-30. Execute them sequentially.
@@ -10,7 +10,7 @@ Do not add another task or publish a package without new authorization.
 
 | Slice | Status | Owning public acceptance |
 | --- | --- | --- |
-| Task 1 — task-start contract and atomic state | NOT_STARTED | A01, A02, part of A12 |
+| Task 1 — task-start contract and atomic state | LOCAL_PASS | A01, A02, part of A12 |
 | Task 2 — exact verification, finish, and one next action | NOT_STARTED | A03, A04, A05 |
 | Task 3 — status, resume, next, and bounded capsule | NOT_STARTED | A06, A07, part of A15 |
 | Task 4 — Truth-driven requirement-change sync | NOT_STARTED | A10, A11 |
@@ -20,14 +20,30 @@ Do not add another task or publish a package without new authorization.
 | Task 6C — browser visual and functional acceptance | NOT_STARTED | A14 |
 | Task 7 — cross-project trials and final gate | NOT_STARTED | A12, A15, A16, P01–P06 |
 
+## Task 1 local evidence
+
+Recorded on 2026-07-30 with Node.js v24.11.1:
+
+- RED: `node --test test/blackbox/task-start.test.mjs` exited 1 with 0 passing
+  and 18 failing tests because the packaged `dist/cli.js` interface was absent.
+- GREEN: `node --test test/blackbox/task-start.test.mjs` exited 0 with all 18
+  tests passing.
+- `D:\Program Files\nodejs\npm.cmd run typecheck` exited 0.
+- `D:\Program Files\nodejs\npm.cmd run build` exited 0.
+- `git diff --check` exited 0 with no output.
+
+This earns local evidence for A01, A02, and the interrupted-write portion of
+A12 only. It does not earn verification, hooks, read surfaces, Cockpit,
+performance, trial, or production claims.
+
 ## Exact current action
 
 There is exactly one:
 
-> **Task 1:** create `test/blackbox/task-start.test.mjs` with the frozen RED
-> cases below, run it and record the expected failure, then implement only the
-> package shell, task-start validation, and atomic current-state write required
-> to make it pass.
+> **Task 2:** create `test/blackbox/verify-finish.test.mjs` with the frozen RED
+> cases below, then implement only exact verification, evidence-bound finish,
+> stale-proof detection, and the frozen one next action required to make it
+> pass.
 
 ## Shared implementation rules
 
