@@ -15,6 +15,8 @@ export function serializeResume(model: ReadModel): string {
     `AVAILABILITY: ${model.availability}`,
     `GOAL: ${model.goal ?? "NONE"}`,
     `STATUS: ${model.status}`,
+    `PLAN: ${model.plan_revision ?? "NONE"}`,
+    `CURSOR: ${model.cursor}/${model.task_count}`,
     `COMPLETED: ${model.completed_count}`,
     `COMPLETED_RECENT: ${completedLine(model)}`,
     `TASK: ${task?.id ?? "NONE"}`,

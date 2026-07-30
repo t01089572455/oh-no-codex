@@ -1,19 +1,23 @@
 import {
+  access,
   open,
   rm,
+  writeFile,
 } from "node:fs/promises";
 import type { FileHandle } from "node:fs/promises";
 import { resolve } from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
 import { isDeepStrictEqual } from "node:util";
 
 import { runExactCommand } from "./process.js";
+import { nextActionFromPlan } from "./plan-next.js";
 import {
   digestAllowedFiles,
   readGitHead,
 } from "./subject-digest.js";
 import {
+  compareAndSwapStateAtomic,
   readState,
-  writeStateAtomic,
 } from "./state.js";
 import type {
   ProjectState,
@@ -82,24 +86,12 @@ function receipt(
     result,
     command: task.test_command,
     contract_digest: task.contract_digest,
+    plan_revision: task.plan_revision,
     head,
     subject_digest: subjectDigest,
     exit_code: exitCode,
     finished_at: new Date().toISOString(),
   };
-}
-
-async function recordActiveResult(
-  projectPath: string,
-  state: ProjectState,
-  verification: VerificationReceipt,
-): Promise<void> {
-  await writeStateAtomic(projectPath, {
-    ...state,
-    status: "ACTIVE",
-    active_task: state.active_task,
-    last_verification: verification,
-  });
 }
 
 async function readUnchangedState(
@@ -122,12 +114,12 @@ async function recordActiveResultIfStateUnchanged(
   expectedState: ProjectState,
   verification: VerificationReceipt,
 ): Promise<boolean> {
-  const currentState = await readUnchangedState(projectPath, expectedState);
-  if (currentState === null) {
-    return false;
-  }
-  await recordActiveResult(projectPath, currentState, verification);
-  return true;
+  return compareAndSwapStateAtomic(projectPath, expectedState, {
+    ...expectedState,
+    status: "ACTIVE",
+    active_task: expectedState.active_task,
+    last_verification: verification,
+  });
 }
 
 function stateChangedOutcome(): VerificationOutcome {
@@ -135,6 +127,32 @@ function stateChangedOutcome(): VerificationOutcome {
     result: "UNKNOWN",
     message: "UNKNOWN: current state became unreadable or changed",
   };
+}
+
+async function pauseBeforePassCasForTest(): Promise<void> {
+  if (process.env.NODE_ENV !== "test") {
+    return;
+  }
+  const readyPath = process.env.OHNO_TEST_PASS_CAS_READY;
+  const releasePath = process.env.OHNO_TEST_PASS_CAS_RELEASE;
+  if (readyPath === undefined || releasePath === undefined) {
+    return;
+  }
+
+  await writeFile(readyPath, "ready\n", "utf8");
+  const deadline = Date.now() + 5_000;
+  while (Date.now() < deadline) {
+    try {
+      await access(releasePath);
+      return;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+        throw error;
+      }
+    }
+    await delay(10);
+  }
+  throw new Error("test PASS CAS release timed out");
 }
 
 async function assertLastPassFresh(
@@ -147,10 +165,8 @@ async function assertLastPassFresh(
     throw new Error("no active task to verify");
   }
 
-  let head: string;
   let subjectDigest: string;
   try {
-    head = readGitHead(projectPath);
     subjectDigest = await digestAllowedFiles(projectPath, task.allowed_files);
   } catch {
     throw new Error("STALE: prior PASS subject can no longer be read");
@@ -159,7 +175,8 @@ async function assertLastPassFresh(
   if (
     verification.command !== task.test_command
     || verification.contract_digest !== task.contract_digest
-    || verification.head !== head
+    || verification.plan_revision !== task.plan_revision
+    || verification.plan_revision !== state.plan_revision
     || verification.subject_digest !== subjectDigest
   ) {
     throw new Error("STALE: prior PASS no longer matches the current subject");
@@ -230,21 +247,6 @@ async function verifyTaskWithLock(
     };
   }
 
-  if (processResult.exitCode !== 0) {
-    const recorded = await recordActiveResultIfStateUnchanged(
-      projectPath,
-      state,
-      receipt(task, "FAIL", head, subjectDigest, processResult.exitCode),
-    );
-    if (!recorded) {
-      return stateChangedOutcome();
-    }
-    return {
-      result: "FAIL",
-      message: `FAIL: exact command exited ${processResult.exitCode}`,
-    };
-  }
-
   let postHead: string;
   let postSubjectDigest: string;
   try {
@@ -286,6 +288,21 @@ async function verifyTaskWithLock(
     };
   }
 
+  if (processResult.exitCode !== 0) {
+    const recorded = await recordActiveResultIfStateUnchanged(
+      projectPath,
+      state,
+      receipt(task, "FAIL", head, subjectDigest, processResult.exitCode),
+    );
+    if (!recorded) {
+      return stateChangedOutcome();
+    }
+    return {
+      result: "FAIL",
+      message: `FAIL: exact command exited ${processResult.exitCode}`,
+    };
+  }
+
   const passReceipt = receipt(
     task,
     "PASS",
@@ -297,16 +314,27 @@ async function verifyTaskWithLock(
   if (finalState === null) {
     return stateChangedOutcome();
   }
-  await writeStateAtomic(projectPath, {
+  const completedState: ProjectState = {
     ...finalState,
     status: "IDLE",
     active_task: null,
     last_verification: passReceipt,
     completed: [...finalState.completed, task],
-  });
+    cursor: finalState.cursor + 1,
+  };
+  await pauseBeforePassCasForTest();
+  if (
+    !await compareAndSwapStateAtomic(
+      projectPath,
+      finalState,
+      completedState,
+    )
+  ) {
+    return stateChangedOutcome();
+  }
   return {
     result: "PASS",
-    nextAction: task.next_action,
+    nextAction: nextActionFromPlan(completedState),
   };
 }
 

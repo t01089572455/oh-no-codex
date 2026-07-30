@@ -1,7 +1,5 @@
 # Product contract
 
-Status: **DESIGN_FROZEN_IMPLEMENTATION_NOT_STARTED**
-
 Frozen by the Owner on 2026-07-30.
 
 ## One-sentence product
@@ -38,8 +36,9 @@ adversarial security boundary.
 
 ### O1 — Bounded start
 
-Implementation cannot begin through supported Codex mutation paths unless the
-current state and active task collectively contain:
+Implementation cannot begin through supported Codex mutation paths unless a
+locally reviewed linear plan contains `plan_revision`, `ordered_tasks`, a
+single `cursor`, and stable task identifiers. The cursor task must freeze:
 
 - the Owner's goal;
 - a stable task identifier;
@@ -47,25 +46,38 @@ current state and active task collectively contain:
 - one exact minimal black-box command;
 - a stop condition;
 - allowed file globs;
-- a time budget;
-- exactly one proposed next action.
+- a time budget.
+
+Future tasks may remain `OUTLINE` with only id, title, and goal. An outline at
+the cursor cannot start; its only next action is `FREEZE_TASK:<id>`. `task
+start` takes no caller-supplied contract fields and activates only the frozen
+cursor contract.
 
 ### O2 — Evidence-bound finish
 
 The exact black-box command decides the task:
 
 - non-zero or unknown result keeps it active;
-- zero creates a PASS receipt bound to the exact task contract, command, HEAD,
-  and digest of allowed files;
-- later relevant mutation makes that receipt stale;
-- a fresh PASS closes the task and exposes exactly one next action.
+- zero creates a PASS receipt bound to the exact task contract, plan revision,
+  command, HEAD provenance, and digest of allowed files;
+- a HEAD change during verification makes the result `UNKNOWN`;
+- after verification, a later ordinary commit alone preserves freshness while
+  a changed contract, plan revision, or scoped subject makes it stale;
+- a fresh PASS closes the task, advances the cursor once, and derives the next
+  action from `ordered_tasks` or returns `PROJECT_COMPLETE`.
 
 ### O3 — Honest requirement change
 
-An Owner-confirmed change selects concerns from `.ohno/truth.json`. Matching
+An Owner-authored change selects concerns from `.ohno/truth.json`. Matching
 governing documents—and all documents when no concern is safely selected—form
 the required sync set. The harness shows their exact Git diff before
 acceptance. Coding stays blocked until review and plan replacement finish.
+
+Plan proposal and acceptance record only `LOCAL_REVIEW_RECORDED`, bound to the
+exact revision, diff digest, HEAD, and time. They never claim independent
+Owner identity, authorization, or confirmation. A malicious same-user Agent
+can bypass these cooperative files and hooks; that remains an explicit
+non-goal.
 
 The harness coordinates and verifies coverage; Codex still performs semantic
 writing. V1 does not claim that an LLM can autonomously prove document meaning.

@@ -17,9 +17,7 @@ Before planning, implementing, reviewing, resuming, or accepting work, read:
 Do not infer current status from a chat summary, branch name, issue title,
 historical report, or agent message.
 
-## Current status and authorization
-
-Status is `DESIGN_FROZEN_IMPLEMENTATION_NOT_STARTED`.
+## Authorization and dynamic progress
 
 The Owner authorized Tasks 1 through 7 in
 `docs/IMPLEMENTATION-PLAN.md` on 2026-07-30. A clean implementation task may
@@ -28,11 +26,10 @@ green test. That authorization does not include an eighth task, a design
 rewrite, Claude support, publication, package release, or changes to another
 repository.
 
-The exact first action is:
-
-> Task 1 — write the failing public black-box test for the task-start contract,
-> then implement only enough Node.js/TypeScript CLI and atomic state support to
-> make that test pass.
+Do not copy a current task or implementation status into this stable contract.
+For a product repository, run `ohno resume`. During this repository's own
+bootstrap, if that CLI is unavailable, use only the ledger and exact current
+action in `docs/IMPLEMENTATION-PLAN.md` as the fallback.
 
 ## Working rules
 
@@ -73,13 +70,14 @@ The exact first action is:
 
 ## Truth and completion
 
-- `.ohno/state.json` will be the sole current runtime authority.
-- `.ohno/truth.json` will be the Owner-maintained governing-document
+- `.ohno/state.json` is the sole current runtime authority.
+- `.ohno/truth.json` is the Owner-maintained governing-document
   applicability list.
 - Resume text, progress output, hooks, receipts, and Cockpit are projections or
   evidence. They cannot become a second source of current truth.
-- A PASS receipt is fresh only for its exact task contract, command, HEAD, and
-  digest of allowed files. A later relevant mutation invalidates it.
+- A PASS receipt records HEAD as provenance and uses pre/post HEAD as a verify
+  CAS. After verify, an ordinary commit alone does not make it stale; a changed
+  task contract, plan revision, or scoped subject digest does.
 - Use `OHNO_COMPLETE:<active-task-id>` only after the exact `ohno verify`
   command succeeds. It is a cooperative Stop-hook marker, not proof by itself.
 - Requirement changes block implementation until the exact applicable

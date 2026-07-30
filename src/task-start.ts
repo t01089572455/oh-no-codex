@@ -1,119 +1,23 @@
-import { createHash } from "node:crypto";
-
 import {
-  displayFieldByteLimits,
-  displayTextIssue,
+  compareAndSwapStateAtomic,
+  contractDigestFor,
   readState,
-  writeStateAtomic,
 } from "./state.js";
 import type {
   ProjectState,
   TaskContract,
 } from "./state.js";
 
-const taskFields = [
-  ["--id", "id"],
-  ["--expect", "expected_behavior"],
-  ["--test", "test_command"],
-  ["--stop", "stop_condition"],
-  ["--files", "allowed_files"],
-  ["--minutes", "time_budget_minutes"],
-  ["--next", "next_action"],
-] as const;
-
-type TaskField = (typeof taskFields)[number][1];
-type ParsedTaskFields = Record<TaskField, string>;
-
-function requiredValue(args: string[], flag: string): string {
-  const index = args.indexOf(flag);
-  const value = index === -1 ? undefined : args[index + 1];
-
-  if (value === undefined || value.startsWith("--") || value.trim() === "") {
-    throw new Error(`${flag} is required and cannot be blank`);
-  }
-
-  return flag === "--test" ? value : value.trim();
-}
-
-function validateDisplayField(
-  value: string,
-  flag: string,
-  byteLimit: number,
-): void {
-  const issue = displayTextIssue(value, byteLimit);
-  if (issue === "LINE_BREAK") {
-    throw new Error(`${flag} must be a single line without CR or LF`);
-  }
-  if (issue === "TOO_LARGE") {
-    throw new Error(`${flag} must be at most ${byteLimit} UTF-8 bytes`);
-  }
-}
-
-function parseTaskFields(args: string[]): ParsedTaskFields {
-  return Object.fromEntries(
-    taskFields.map(([flag, field]) => [field, requiredValue(args, flag)]),
-  ) as ParsedTaskFields;
-}
-
-function createContract(args: string[]): TaskContract {
-  const fields = parseTaskFields(args);
-  validateDisplayField(
-    fields.id,
-    "--id",
-    displayFieldByteLimits.taskId,
-  );
-  validateDisplayField(
-    fields.expected_behavior,
-    "--expect",
-    displayFieldByteLimits.expectedBehavior,
-  );
-  validateDisplayField(
-    fields.test_command,
-    "--test",
-    displayFieldByteLimits.testCommand,
-  );
-  validateDisplayField(
-    fields.next_action,
-    "--next",
-    displayFieldByteLimits.nextAction,
-  );
-  const minutes = Number(fields.time_budget_minutes);
-  if (!Number.isSafeInteger(minutes) || minutes <= 0) {
-    throw new Error("--minutes must be a positive integer");
-  }
-
-  const allowedFiles = fields.allowed_files
-    .split(",")
-    .map((entry) => entry.trim())
-    .filter(Boolean);
-  if (allowedFiles.length === 0) {
-    throw new Error("--files is required and cannot be blank");
-  }
-
-  const unsignedContract = {
-    id: fields.id,
-    expected_behavior: fields.expected_behavior,
-    test_command: fields.test_command,
-    stop_condition: fields.stop_condition,
-    allowed_files: allowedFiles,
-    time_budget_minutes: minutes,
-    next_action: fields.next_action,
-  };
-  const contractDigest = createHash("sha256")
-    .update(JSON.stringify(unsignedContract))
-    .digest("hex");
-
-  return {
-    ...unsignedContract,
-    contract_digest: contractDigest,
-  };
-}
-
 export async function startTask(
   projectPath: string,
   args: string[],
 ): Promise<TaskContract> {
-  const contract = createContract(args);
+  if (args.length !== 0) {
+    throw new Error(
+      "ohno task start takes no arguments; caller overrides cannot replace "
+      + "the frozen plan contract",
+    );
+  }
   const state = await readState(projectPath);
   if (state.active_task !== null) {
     throw new Error(`active task ${state.active_task.id} already exists`);
@@ -123,12 +27,39 @@ export async function startTask(
       "document sync is pending; next action is SYNC_GOVERNING_DOCUMENTS",
     );
   }
+  if (state.plan_revision === null || state.plan_review === null) {
+    throw new Error("no locally reviewed plan; next action is PROPOSE_PLAN");
+  }
+  const task = state.ordered_tasks[state.cursor];
+  if (task === undefined) {
+    throw new Error("linear plan is complete; next action is PROJECT_COMPLETE");
+  }
+  if (task.status === "OUTLINE") {
+    throw new Error(
+      `current task is OUTLINE; next action is FREEZE_TASK:${task.id}`,
+    );
+  }
 
+  const unsigned = {
+    id: task.id,
+    expected_behavior: task.expected_behavior,
+    test_command: task.test_command,
+    stop_condition: task.stop_condition,
+    allowed_files: task.allowed_files,
+    time_budget_minutes: task.time_budget_minutes,
+    plan_revision: state.plan_revision,
+  };
+  const contract: TaskContract = {
+    ...unsigned,
+    contract_digest: contractDigestFor(unsigned),
+  };
   const nextState: ProjectState = {
     ...state,
     status: "ACTIVE",
     active_task: contract,
   };
-  await writeStateAtomic(projectPath, nextState);
+  if (!await compareAndSwapStateAtomic(projectPath, state, nextState)) {
+    throw new Error("current state changed while starting the frozen task");
+  }
   return contract;
 }

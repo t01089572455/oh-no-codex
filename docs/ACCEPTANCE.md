@@ -1,7 +1,5 @@
 # V1 acceptance contract
 
-Status: **FROZEN — NO ROWS EARNED**
-
 Every row is black-box unless explicitly marked structural. A mock, internal
 unit test, agent report, or count of passing tests cannot substitute for the
 named user-visible behavior.
@@ -10,21 +8,21 @@ named user-visible behavior.
 
 | ID | Required user-visible evidence |
 | --- | --- |
-| A01 | In a disposable Git repository, `ohno init` requires and preserves one Owner goal. `ohno task start` with any missing required field exits non-zero, explains the missing field, and creates no active task. A complete bounded contract creates exactly one active task. |
+| A01 | In a disposable Git repository, `ohno init` requires and preserves one Owner goal. Plan proposal/acceptance records only `LOCAL_REVIEW_RECORDED` bound to exact revision/diff/HEAD/time. The accepted state contains one `plan_revision`, `ordered_tasks`, cursor, and unique stable ids; only the cursor's frozen behavior/test/files/stop/budget can be activated by argument-free `ohno task start`. An `OUTLINE` cursor cannot start and reports only `FREEZE_TASK:<id>`. |
 | A02 | Starting a second task while one is active exits non-zero and preserves the original task byte-for-byte. |
 | A03 | A failing exact black-box command leaves the current task active, records FAIL for that command, and returns non-zero. |
-| A04 | A passing exact command with unchanged subject creates a fresh receipt, closes that task, and returns exactly one next action. |
-| A05 | Changing HEAD, the task contract, or any matched allowed-file content after PASS makes the receipt visibly STALE. It cannot close or commit the changed subject without re-verification. |
-| A06 | `status`, `resume`, and `next` agree on goal, active/completed state, proof freshness, blocker, and the same one next action. With no next action they all report `NONE`, not an invented step. |
+| A04 | A passing exact command with unchanged subject creates a fresh receipt, closes that task, advances the plan cursor exactly once, and derives the next action from `ordered_tasks`; the end is `PROJECT_COMPLETE`. |
+| A05 | A HEAD change during verify is `UNKNOWN`. After PASS, an ordinary commit alone leaves proof `FRESH`; changing the task contract, plan revision, or matched allowed-file subject makes it `STALE` and prevents changed-subject completion without re-verification. |
+| A06 | `status`, `resume`, and `next` agree on goal, plan revision/cursor, active/completed state, proof freshness, blocker, and the same derived next action. They never accept or invent free-text next authority. |
 | A07 | A new session and a post-compaction hook receive a capsule below 4 KiB that agrees with direct `resume` output on all canonical fields. |
 | A08 | With no active task, pending document sync, or a clearly out-of-scope file target, supported `PreToolUse` mutation calls are denied with an actionable reason. In-scope calls are allowed. `Stop` recognizes only the explicit `OHNO_COMPLETE:<task-id>` marker and fresh proof. Hook status honestly exposes untrusted or unavailable integration. |
-| A09 | The Git `pre-commit` integration rejects pending doc sync, out-of-scope staged paths, and stale completion proof; it accepts a fresh in-scope subject. Existing hooks are preserved or installation refuses safely. |
-| A10 | A requirement change derives its required paths from Owner-maintained Truth concerns. Unknown/empty concerns include all targets. `change diff` shows exact complete coverage, and acceptance fails for an undisplayed digest or missing replacement plan. |
-| A11 | While change sync is pending, the only reported next action is `SYNC_GOVERNING_DOCUMENTS`; unrelated implementation mutation is blocked on supported paths. After exact acceptance, the new plan replaces the stale plan and normal task start resumes. |
+| A09 | The Git `pre-commit` integration rejects pending doc sync, out-of-scope staged paths, stale completion proof, and a staged-subject digest different from the verified worktree-subject digest; it accepts an exact fresh in-scope subject. Existing hooks are preserved or installation refuses safely. |
+| A10 | Init persists a classified high-risk Truth inventory and digest. Only `change begin` rescans: an unchanged digest reuses classification, while a new unclassified high-risk entry or deleted/renamed governing target fails closed. Requirement paths still derive from Owner-maintained Truth concerns; unknown/empty concerns include all targets, exact diff coverage is displayed, and acceptance rejects an undisplayed digest or missing replacement plan. |
+| A11 | While change sync is pending, the only reported next action is `SYNC_GOVERNING_DOCUMENTS`; unrelated implementation mutation is blocked on supported paths. Reorder/delete/edit/freeze creates a new plan revision, and active work or receipts from an old revision cannot complete it. After exact local review, the replacement plan resumes normal task start without an Owner-identity claim. |
 | A12 | Killing a state write between temporary-file creation and rename leaves either the old valid state or the new valid state—never truncated current authority. Corrupt input fails closed without overwrite. |
 | A13 | The running Cockpit shows the same current task, proof freshness, doc-sync blocker, and next action as `status --json`; it creates no independent current-state store. |
 | A14 | Cockpit browser acceptance passes at desktop and narrow viewports for distinctive locked design fidelity, keyboard navigation, visible focus, contrast, reduced motion, and blocked/active/fresh-PASS states. |
-| A15 | No normal `status`, `next`, `resume`, hook, or Cockpit refresh scans every governing document or runs a project test suite. |
+| A15 | No normal `status`, `next`, `resume`, hook, or Cockpit refresh scans the Truth inventory, every governing document, or a project test suite; inventory scanning is limited to init and `change begin`. |
 | A16 | README and CLI help label unimplemented or unavailable capabilities honestly and never call cooperative hooks hostile-agent containment, production authority, or full enforcement. |
 
 ## Performance matrix

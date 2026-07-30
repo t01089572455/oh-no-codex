@@ -1,7 +1,5 @@
-import {
-  digestAllowedFiles,
-  readGitHead,
-} from "./subject-digest.js";
+import { nextActionFromPlan } from "./plan-next.js";
+import { digestAllowedFiles } from "./subject-digest.js";
 import { readState } from "./state.js";
 import type {
   ProjectState,
@@ -29,10 +27,13 @@ export interface CurrentTaskSummary {
 }
 
 export interface ReadModel {
-  schema_version: 1;
+  schema_version: 2;
   availability: "AVAILABLE" | "UNAVAILABLE";
   goal: string | null;
   status: ProjectState["status"] | "UNAVAILABLE";
+  plan_revision: string | null;
+  cursor: number;
+  task_count: number;
   completed_count: number;
   completed: CompletedSummary[];
   current_task: CurrentTaskSummary | null;
@@ -54,7 +55,6 @@ function truncateUtf8(value: string, byteLimit: number): string {
   if (Buffer.byteLength(value, "utf8") <= byteLimit) {
     return value;
   }
-
   const suffix = "…";
   const contentLimit = byteLimit - Buffer.byteLength(suffix, "utf8");
   let result = "";
@@ -98,7 +98,8 @@ function receiptMatchesTask(
   task: TaskContract,
 ): boolean {
   return receipt.command === task.test_command
-    && receipt.contract_digest === task.contract_digest;
+    && receipt.contract_digest === task.contract_digest
+    && receipt.plan_revision === task.plan_revision;
 }
 
 async function completedProofFreshness(
@@ -113,20 +114,17 @@ async function completedProofFreshness(
   if (
     receipt.result !== "PASS"
     || !receiptMatchesTask(receipt, task)
-    || receipt.head === null
+    || receipt.plan_revision !== state.plan_revision
     || receipt.subject_digest === null
   ) {
     return "STALE";
   }
-
   try {
-    const [head, subjectDigest] = await Promise.all([
-      Promise.resolve(readGitHead(projectPath)),
-      digestAllowedFiles(projectPath, task.allowed_files),
-    ]);
-    return head === receipt.head && subjectDigest === receipt.subject_digest
-      ? "FRESH"
-      : "STALE";
+    const subjectDigest = await digestAllowedFiles(
+      projectPath,
+      task.allowed_files,
+    );
+    return subjectDigest === receipt.subject_digest ? "FRESH" : "STALE";
   } catch {
     return "STALE";
   }
@@ -139,10 +137,7 @@ async function proofFreshness(
   const task = state.active_task;
   if (task !== null) {
     const receipt = state.last_verification;
-    if (receipt === null) {
-      return "NONE";
-    }
-    if (!receiptMatchesTask(receipt, task)) {
+    if (receipt === null || !receiptMatchesTask(receipt, task)) {
       return "NONE";
     }
     return receipt.result === "PASS" ? "STALE" : receipt.result;
@@ -173,21 +168,25 @@ function nextActionFor(
   state: ProjectState,
   freshness: ProofFreshness,
 ): string {
-  if (state.document_sync.status === "PENDING_REVIEW") {
-    return "SYNC_GOVERNING_DOCUMENTS";
-  }
-  if (state.active_task !== null || freshness !== "FRESH") {
+  if (
+    freshness === "FAIL"
+    || freshness === "UNKNOWN"
+    || freshness === "STALE"
+  ) {
     return "NONE";
   }
-  return state.completed.at(-1)?.next_action ?? "NONE";
+  return nextActionFromPlan(state);
 }
 
 function unavailableReadModel(): ReadModel {
   return {
-    schema_version: 1,
+    schema_version: 2,
     availability: "UNAVAILABLE",
     goal: null,
     status: "UNAVAILABLE",
+    plan_revision: null,
+    cursor: 0,
+    task_count: 0,
     completed_count: 0,
     completed: [],
     current_task: null,
@@ -204,13 +203,15 @@ export async function readModel(projectPath: string): Promise<ReadModel> {
   } catch {
     return unavailableReadModel();
   }
-
   const freshness = await proofFreshness(projectPath, state);
   return {
-    schema_version: 1,
+    schema_version: 2,
     availability: "AVAILABLE",
     goal: state.goal,
     status: state.status,
+    plan_revision: state.plan_revision,
+    cursor: state.cursor,
+    task_count: state.ordered_tasks.length,
     completed_count: state.completed.length,
     completed: completedSummaries(state.completed),
     current_task: currentTaskSummary(state.active_task),

@@ -4,10 +4,11 @@ import { stat } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import {
+  compareAndSwapStateAtomic,
   readState,
-  writeStateAtomic,
 } from "./state.js";
 import type { ProjectState } from "./state.js";
+import { refreshTruthAtChangeBegin } from "./truth-inventory.js";
 import {
   readTruth,
   selectRequiredPaths,
@@ -95,13 +96,21 @@ function pendingAuthorityDigest(
       schema_version: state.schema_version,
       goal: state.goal,
       status: state.status,
+      truth_inventory: state.truth_inventory,
       active_task: state.active_task,
       last_verification: state.last_verification,
       completed: state.completed,
-      document_sync: {
-        status: state.document_sync.status,
-        required_paths: state.document_sync.required_paths,
-      },
+      document_sync: state.document_sync.status === "PENDING_REVIEW"
+        ? {
+          status: state.document_sync.status,
+          required_paths: state.document_sync.required_paths,
+          base_plan_revision: state.document_sync.base_plan_revision,
+          started_at: state.document_sync.started_at,
+        }
+        : {
+          status: state.document_sync.status,
+          required_paths: state.document_sync.required_paths,
+        },
       nonce,
     }))
     .digest("hex");
@@ -197,6 +206,14 @@ export async function beginChange(
     );
   }
 
+  const truthInventory = await refreshTruthAtChangeBegin(
+    projectPath,
+    state.truth_inventory,
+  );
+  const stateWithInventory: ProjectState = {
+    ...state,
+    truth_inventory: truthInventory,
+  };
   const truth = await readTruth(projectPath);
   const requiredPaths = selectRequiredPaths(
     truth,
@@ -219,8 +236,9 @@ export async function beginChange(
     );
   }
 
+  const startedAt = new Date().toISOString();
   const pendingStateWithoutIdentity: ProjectState = {
-    ...state,
+    ...stateWithInventory,
     status: "BLOCKED_DOC_SYNC",
     active_task: null,
     last_verification: null,
@@ -229,6 +247,8 @@ export async function beginChange(
       change_id: "pending-identity",
       required_paths: requiredPaths,
       reviewed_diff_digest: null,
+      base_plan_revision: state.plan_revision,
+      started_at: startedAt,
     },
   };
   const changeId = changeIdFor(pendingStateWithoutIdentity);
@@ -239,10 +259,14 @@ export async function beginChange(
       change_id: changeId,
       required_paths: requiredPaths,
       reviewed_diff_digest: null,
+      base_plan_revision: state.plan_revision,
+      started_at: startedAt,
     },
   };
   assertPendingIdentity(changeId, nextState);
-  await writeStateAtomic(projectPath, nextState);
+  if (!await compareAndSwapStateAtomic(projectPath, state, nextState)) {
+    throw new Error("current state changed while beginning document sync");
+  }
   return [
     `Started ${changeId}`,
     `Required paths: ${requiredPaths.join(", ")}`,
@@ -267,7 +291,15 @@ export async function displayChangeDiff(
       reviewed_diff_digest: snapshot.digest,
     },
   };
-  await writeStateAtomic(projectPath, nextState);
+  if (
+    !await compareAndSwapStateAtomic(
+      projectPath,
+      pending.state,
+      nextState,
+    )
+  ) {
+    throw new Error("pending state drifted while recording the exact diff");
+  }
 
   const header = [
     `CHANGE_ID: ${pending.sync.change_id}`,
@@ -311,6 +343,20 @@ export async function acceptChange(
     pending.sync.required_paths.some((path) => !truthTargets.has(path))
   ) {
     throw new Error("pending state drift: required path is no longer in Truth");
+  }
+  if (
+    pending.state.pending_plan !== null
+    || pending.state.plan_revision === null
+    || pending.state.plan_review === null
+    || pending.state.plan_review.plan_revision
+      !== pending.state.plan_revision
+    || pending.state.plan_revision === pending.sync.base_plan_revision
+    || Date.parse(pending.state.plan_review.recorded_at)
+      < Date.parse(pending.sync.started_at)
+  ) {
+    throw new Error(
+      "replacement locally reviewed plan revision is required before acceptance",
+    );
   }
 
   const snapshot = diffSnapshot(projectPath, pending.sync.required_paths);
@@ -380,6 +426,14 @@ export async function acceptChange(
       reviewed_diff_digest: null,
     },
   };
-  await writeStateAtomic(projectPath, cleanState);
-  return `Accepted ${pending.sync.change_id}: LOCAL_OWNER_CONFIRMATION_ONLY\n`;
+  if (
+    !await compareAndSwapStateAtomic(
+      projectPath,
+      pending.state,
+      cleanState,
+    )
+  ) {
+    throw new Error("pending state drifted during acceptance");
+  }
+  return `Accepted ${pending.sync.change_id}: LOCAL_REVIEW_RECORDED\n`;
 }

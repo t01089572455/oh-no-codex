@@ -8,6 +8,11 @@ import {
   writeStateAtomic,
 } from "./state.js";
 import {
+  acceptPlan,
+  proposePlan,
+} from "./plan.js";
+import { classifyTruthAtInit } from "./truth-inventory.js";
+import {
   acceptChange,
   beginChange,
   displayChangeDiff,
@@ -31,7 +36,9 @@ import { verifyTask } from "./verify.js";
 const usageText = [
   "usage:",
   "  ohno init --goal <goal>",
-  "  ohno task start --id <id> --expect <behavior> --test <command> --stop <condition> --files <globs> --minutes <integer> --next <action>",
+  "  ohno plan propose --file <review.json>",
+  "  ohno plan accept --revision <sha256> --diff <sha256>",
+  "  ohno task start",
   "  ohno verify | ohno status [--json] | ohno resume | ohno next",
   "  ohno change begin --summary <owner words> [--concerns <labels>] [--candidates <Truth paths>]",
   "  ohno change diff | ohno change accept --change <id> --diff <displayed digest>",
@@ -80,7 +87,8 @@ async function initialize(projectPath: string, args: string[]): Promise<void> {
     throw new Error("project is already initialized");
   }
 
-  await writeStateAtomic(projectPath, initialState(goal));
+  const truthInventory = await classifyTruthAtInit(projectPath);
+  await writeStateAtomic(projectPath, initialState(goal, truthInventory));
   process.stdout.write(`Initialized goal: ${goal}\n`);
 }
 
@@ -168,6 +176,43 @@ async function main(): Promise<void> {
   if (command === "task" && subcommand === "start") {
     const contract = await startTask(projectPath, args);
     process.stdout.write(`Started task ${contract.id}\n`);
+    return;
+  }
+
+  if (
+    command === "plan"
+    && subcommand === "propose"
+    && args.length === 2
+    && args[0] === "--file"
+  ) {
+    const source = requiredValue(args, "--file");
+    const proposal = await proposePlan(projectPath, source);
+    process.stdout.write([
+      `PLAN_REVISION: ${proposal.planRevision}`,
+      `DIFF_DIGEST: ${proposal.diffDigest}`,
+      `HEAD: ${proposal.head}`,
+      `PROPOSED_AT: ${proposal.proposedAt}`,
+      `EXACT_PLAN_DIFF_BYTES: ${
+        Buffer.byteLength(proposal.exactDiff, "utf8")
+      }`,
+      "",
+      proposal.exactDiff,
+    ].join("\n"));
+    return;
+  }
+
+  if (
+    command === "plan"
+    && subcommand === "accept"
+    && args.length === 4
+    && args[0] === "--revision"
+    && args[2] === "--diff"
+  ) {
+    process.stdout.write(await acceptPlan(
+      projectPath,
+      requiredValue(args, "--revision"),
+      requiredValue(args, "--diff"),
+    ));
     return;
   }
 

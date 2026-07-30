@@ -1,6 +1,6 @@
 # Codex-only V1 implementation plan
 
-Status: **IMPLEMENTATION_IN_PROGRESS — TASK_5_LOCAL_PASS**
+Status: **IMPLEMENTATION_IN_PROGRESS — CORRECTION_1_LOCAL_PASS**
 
 Owner authorization: Tasks 1–7 below, including 6A–6C, were authorized as the
 complete V1 implementation scope on 2026-07-30. Execute them sequentially.
@@ -14,7 +14,8 @@ Do not add another task or publish a package without new authorization.
 | Task 2 — exact verification, finish, and one next action | LOCAL_PASS | A03, A04, A05 |
 | Task 3 — status, resume, next, and bounded capsule | LOCAL_PASS | A06, A07, part of A15 |
 | Task 4 — Truth-driven requirement-change sync | LOCAL_PASS | A10, A11 |
-| Task 5 — Codex hooks and Git pre-commit | LOCAL_PASS | A08, A09, A16 |
+| Correction 1 — linear plan and freshness repair | LOCAL_PASS | corrected A01, A04–A06, A09–A11, A15 |
+| Task 5 — Codex hooks and Git pre-commit | PROVISIONAL_CHECKPOINT_NOT_ACCEPTED | A08, A09, A16 |
 | Task 6A — locked Cockpit design contract | NOT_STARTED | design prerequisite for A13, A14 |
 | Task 6B — read-only Cockpit implementation | NOT_STARTED | A13, part of P06 |
 | Task 6C — browser visual and functional acceptance | NOT_STARTED | A14 |
@@ -109,8 +110,9 @@ Recorded on 2026-07-30 with Node.js v24.11.1:
   `init`/`task start` and runtime state parsing, with byte-preserving rejection.
 - The largest accepted fixture kept the UTF-8 resume capsule below 4 KiB while
   retaining maximum accepted goal, task identifier, expected behavior, exact
-  test, and blocker ahead of 120 bounded completed summaries. A separate
-  maximum accepted next action remained exact after fresh PASS.
+  test, and blocker ahead of 120 bounded completed summaries. Correction 1
+  replaces the old free-text next fixture with a maximum stable next-task id
+  and its derived action.
 - `npm.cmd run typecheck` exited 0.
 - `npm.cmd run build` exited 0.
 - `git diff --check` exited 0 with no output.
@@ -165,10 +167,62 @@ Recorded on 2026-07-30 with Node.js v24.11.1:
 - `git diff --check` exited 0 with no output.
 
 This earns local evidence for A10 and A11 only. It records cooperative local
-Owner confirmation, not independent identity, semantic prose proof,
+review, not independent identity, semantic prose proof,
 production authority, or hook enforcement.
 
-## Task 5 local evidence
+## Correction 1 — linear plan and freshness repair
+
+This one corrective slice supersedes only the conflicting free-form plan,
+next-action, HEAD-freshness, and Truth-inventory semantics in Tasks 1–4 plus
+the provisional Task 5 pre-commit subject comparison. It does not accept or
+otherwise finalize Task 5, reopen the earlier acceptance denominator, or add a
+DAG, authentication, gateway, database, daemon, migration framework, Claude
+support, or release system.
+
+Its single public black box is
+`test/blackbox/linear-plan-freshness.test.mjs`, with exactly eight behavior
+classes:
+
+1. exact local plan-review evidence without Owner identity claims;
+2. `plan_revision`, `ordered_tasks`, cursor, stable ids, and frozen/outline
+   shapes;
+3. argument-free start of only the frozen cursor contract;
+4. one cursor advance with list-derived next and `PROJECT_COMPLETE`;
+5. new revisions for reorder/delete/edit/freeze and old-revision invalidation;
+6. verify-time HEAD CAS with post-verify subject/contract freshness;
+7. separate staged-subject comparison in pre-commit;
+8. init-time Truth classification/inventory with change-begin-only rescan and
+   fail-closed high-risk drift.
+
+Evidence recorded on 2026-07-30 with Node.js v24.11.1:
+
+- RED: `node --test test/blackbox/linear-plan-freshness.test.mjs` exited 1
+  with 0 passing and 8 failing tests. Seven failures reached the absent public
+  `ohno plan propose` interface; the Truth case found no persisted inventory.
+- Initial GREEN: the same owning command exited 0 with all 8 tests passing.
+- Bounded-audit RED: the same owning command exited 1 with 5 passing and 3
+  failing classes. It reproduced a non-zero command changing HEAD being
+  recorded as FAIL instead of UNKNOWN, a plan-accept race able to overwrite a
+  newer revision with an old PASS, and deletion of a tracked built-in
+  governing file being hidden by an unchanged path inventory digest.
+- Review-fix GREEN: the same owning command exited 0 with all 8 tests passing.
+  The final run covered the exact eight frozen classes and no ninth acceptance
+  class; state comparison and replacement are now one atomic CAS, verify
+  checks post-command HEAD and subject before classifying a non-zero exit, and
+  unchanged inventories still prove every previously classified governing
+  path exists.
+- `npm.cmd run typecheck` and `npm.cmd run build` exited 0.
+- `node --check` exited 0 for the mechanically adapted Task 1–4 fixtures and
+  shared black-box helper; their old acceptance denominator was not expanded
+  or rerun as a review suite.
+- `git diff --check` exited 0 with no output.
+
+The Task 5 commit below predates this corrective decision. Its commit and
+preservation evidence remain intact, but it is not accepted until a separate
+post-Correction adaptation/finalization slice passes its original owning
+black boxes against the corrected semantics.
+
+## Task 5 provisional checkpoint evidence (not accepted)
 
 Recorded on 2026-07-30 with Node.js v24.11.1:
 
@@ -210,20 +264,22 @@ Recorded on 2026-07-30 with Node.js v24.11.1:
 - `npm.cmd run build` exited 0.
 - `git diff --check` exited 0 with no output.
 
-This earns local evidence for A08, A09, and the Task 5 CLI-help portion of A16
-only. Hooks still require project trust, changed definitions invalidate that
-trust, hosted or specialized mutation paths may bypass the supported surface,
-and ordinary Git can bypass a cooperative hook with `--no-verify`. No hostile
-same-user containment, Cockpit, final performance, or production claim is
-made.
+Commit `2e45850b5eef1a0ec5d221f07169f4b2540d367d` is preserved as
+`TASK5_PROVISIONAL_CHECKPOINT_NOT_ACCEPTED`. These results are historical
+checkpoint evidence only until the corrected plan/read-model/freshness
+semantics are adapted and reverified. Hooks still require project trust,
+changed definitions invalidate that trust, hosted or specialized mutation
+paths may bypass the supported surface, and ordinary Git can bypass a
+cooperative hook with `--no-verify`. No hostile same-user containment,
+Cockpit, final performance, or production claim is made.
 
 ## Exact current action
 
-There is exactly one:
+There is exactly one. **Unique next:**
 
-> **Task 6A:** use `frontend-design-ui-ux` to create and internally review
-> `docs/COCKPIT-DESIGN-CONTRACT.md`, then commit that locked design contract
-> alone. Do not write Cockpit implementation code.
+> **Task 5 adaptation:** adapt and finalize the preserved `2e45850`
+> checkpoint against the corrected plan/read-model/freshness semantics, then
+> rerun only its original Codex-hook and Git pre-commit black boxes.
 
 ## Shared implementation rules
 
@@ -246,8 +302,9 @@ There is exactly one:
 
 **Expected user behavior**
 
-An incomplete or competing task is rejected without state damage. One complete
-bounded contract becomes the sole active task through an atomic write.
+An incomplete frozen cursor contract or competing start is rejected without
+state damage. One locally reviewed frozen cursor contract becomes the sole
+active task through an atomic write.
 
 **Write first**
 
@@ -256,13 +313,16 @@ bounded contract becomes the sole active task through an atomic write.
 The test creates disposable Git repositories and proves:
 
 1. `init` requires one Owner goal and refuses silent re-initialization;
-2. each missing/blank task field exits non-zero with its field name;
+2. each missing/blank frozen plan field exits non-zero;
 3. rejection creates no active task;
-4. a complete contract exits zero and serializes exactly one active task;
+4. a reviewed complete cursor contract starts without caller overrides and
+   serializes exactly one active task;
 5. a second start fails and preserves the state bytes;
 6. an interrupted replacement leaves valid old or valid new JSON.
 
-Initial RED must be caused by the absent `ohno task start` interface.
+The historical initial RED was caused by the absent `ohno task start`
+interface. Correction 1 mechanically adapts this regression fixture to the
+reviewed linear plan without expanding its atomic-state denominator.
 
 **Allowed implementation files**
 
@@ -297,10 +357,13 @@ Prove:
 
 - non-zero, timeout, signal, unreadable subject, or test-time mutation yields
   FAIL/UNKNOWN and leaves the task active;
-- zero with identical pre/post subject creates a receipt bound to exact
-  command, contract digest, HEAD/UNBORN, and allowed-file digest;
-- a later relevant change makes PASS visibly stale;
-- fresh PASS closes the task and prints the one frozen next action;
+- zero with identical pre/post HEAD and subject creates a receipt bound to
+  exact command, plan/contract digest, HEAD provenance, and allowed-file
+  digest;
+- a later ordinary commit alone preserves freshness while a plan, contract, or
+  scoped-subject change makes PASS visibly stale;
+- fresh PASS closes the task, advances the cursor once, and prints the
+  plan-derived next action;
 - no manual finish bypass exists.
 
 **Allowed additions**
@@ -329,8 +392,9 @@ read surfaces agree and never invent a next action.
 
 `test/blackbox/resume-status-next.test.mjs`
 
-Prove idle, active, failed, stale-PASS, blocked-doc-sync, and completed states;
-machine JSON stability; a capsule under 4 KiB; and exactly one next or `NONE`.
+Prove no-plan, active, failed, stale-PASS, blocked-doc-sync, and completed
+states; machine JSON stability; a capsule under 4 KiB; and exactly one
+plan-derived next action, `PROJECT_COMPLETE`, or blocking `NONE`.
 
 **Allowed additions**
 

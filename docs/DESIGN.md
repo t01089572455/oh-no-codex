@@ -1,7 +1,5 @@
 # V1 design
 
-Status: **FROZEN — NOT IMPLEMENTED**
-
 This document defines the smallest architecture that can satisfy
 `PRODUCT-CONTRACT.md`. It is not permission to add adjacent governance
 features.
@@ -49,22 +47,56 @@ The sole current runtime authority. Conceptual fields:
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "goal": "Owner-authored project goal",
   "status": "IDLE | ACTIVE | BLOCKED_DOC_SYNC",
+  "plan_revision": "sha256 or null",
+  "ordered_tasks": [
+    {
+      "id": "stable-token-id",
+      "title": "owner-readable title",
+      "goal": "task goal",
+      "status": "FROZEN",
+      "expected_behavior": "user-visible outcome",
+      "test_command": "one exact command",
+      "stop_condition": "explicit boundary",
+      "allowed_files": ["bounded/glob/**"],
+      "time_budget_minutes": 60
+    },
+    {
+      "id": "future-id",
+      "title": "future title",
+      "goal": "future goal",
+      "status": "OUTLINE"
+    }
+  ],
+  "cursor": 0,
+  "plan_review": {
+    "status": "LOCAL_REVIEW_RECORDED",
+    "plan_revision": "sha256",
+    "diff_digest": "sha256",
+    "head": "git commit or UNBORN",
+    "proposed_at": "RFC3339",
+    "recorded_at": "RFC3339"
+  },
+  "truth_inventory": {
+    "inventory_digest": "sha256",
+    "classification": []
+  },
   "active_task": {
-    "id": "stable-owner-readable-id",
+    "id": "stable-token-id",
     "expected_behavior": "user-visible outcome",
     "test_command": "one exact command",
     "stop_condition": "explicit boundary",
     "allowed_files": ["bounded/glob/**"],
     "time_budget_minutes": 60,
-    "next_action": "one action",
+    "plan_revision": "sha256",
     "contract_digest": "sha256"
   },
   "last_verification": {
     "result": "PASS | FAIL | UNKNOWN",
     "command": "exact command",
+    "plan_revision": "sha256",
     "head": "git commit or UNBORN",
     "subject_digest": "sha256",
     "exit_code": 0,
@@ -108,6 +140,15 @@ calculates matching paths. If labels are absent, unknown, or inconsistent, all
 targets are included. An Agent-supplied list can add candidates but cannot
 remove the Owner-maintained required set.
 
+At `init`, the state persists a classified high-risk inventory and its path
+digest. High risk includes nested `AGENTS`/`AGENTS.override` entries, root
+README language entries, configured Agent/hook files, canonical
+plan/Truth/contract/acceptance assets, and existing Truth targets. Only
+`change begin` rescans it. An unchanged digest reuses the persisted
+classification; a new unclassified high-risk entry or a missing/renamed
+governing target fails closed. Normal status/resume/next, hooks, and Cockpit
+reads do not perform this scan.
+
 ## Loop 1 — Start
 
 Initialization is explicit:
@@ -119,23 +160,32 @@ ohno init --goal <owner-authored project goal>
 It refuses to replace an existing project state. Changing the goal later uses
 the requirement-change loop rather than a silent re-init.
 
-Planned command:
+The plan is reviewed before a task can start:
 
 ```text
+ohno plan propose --file <review.json>
+ohno plan accept --revision <sha256> --diff <sha256>
 ohno task start
-  --id <stable-id>
-  --expect <user-visible behavior>
-  --test <one exact command>
-  --stop <boundary>
-  --files <comma-separated globs>
-  --minutes <positive integer>
-  --next <one action>
 ```
 
-The command rejects missing or blank fields, multiple next actions, an active
-task, pending document sync, invalid globs, or an unsafe time budget. It does
-not edit product files. On success it atomically records one active contract
-and prints a compact summary.
+The proposal is a minimal linear plan: a revision over `ordered_tasks`, a
+runtime cursor, and unique stable ids. The cursor task must be `FROZEN` with
+behavior, exact test, file scope, stop condition, and budget. Later tasks may
+be `OUTLINE` with only id, title, and goal. Reordering, deletion, editing, or
+freezing changes the revision.
+
+Proposal output frames the exact plan diff and binds its digest, revision, Git
+HEAD, and time. Acceptance records only `LOCAL_REVIEW_RECORDED`; it is local
+evidence, not `OWNER_AUTHORIZED`, `OWNER_CONFIRMED`, cryptographic identity, or
+hostile same-user containment.
+
+Accepting a new revision invalidates active work and receipts from the old
+revision; neither can advance the replacement plan.
+
+`task start` takes no contract arguments. It rejects an active task, pending
+document sync, an unreviewed plan, or an `OUTLINE` cursor. For an outline its
+only next action is `FREEZE_TASK:<id>`. Otherwise it atomically activates the
+exact frozen cursor contract.
 
 The implementation does not attempt to decide whether prose is philosophically
 "good." It enforces presence, bounds, stable identity, and explicitness.
@@ -152,15 +202,19 @@ The implementation does not attempt to decide whether prose is philosophically
 6. on failure, leaves the task active and returns non-zero;
 7. on success, rechecks the digest to detect test-time mutation;
 8. closes the task only when the pre/post subject is identical;
-9. exposes the contract's one next action and stops.
+9. advances the cursor exactly once and derives the next action from the
+   ordered plan, ending with `PROJECT_COMPLETE`.
 
 The digest is intentionally limited to the declared file scope so normal use
 does not scan the entire repository. If Git or a matched file cannot be read,
 verification is `UNKNOWN`, never PASS.
 
-Any later change to the contract, HEAD, or matched file content makes the
-receipt stale. `ohno task finish` is not a second bypass; V1 has only the
-verification-driven close path.
+HEAD is receipt provenance and a pre/post compare-and-swap guard. A HEAD
+change during the exact command yields `UNKNOWN`. After a successful verify,
+an ordinary commit that leaves the frozen contract and scoped subject
+unchanged preserves `FRESH`; a contract, plan-revision, or scoped-subject
+change makes it `STALE`. `ohno task finish` is not a second bypass; V1 has only
+the verification-driven close path.
 
 ## Loop 3 — Requirement change
 
@@ -180,16 +234,18 @@ ohno change accept --change <id> --diff <displayed digest>
 coverage. It does not silently edit user-authored prose.
 
 `accept` succeeds only for the displayed digest, complete path coverage, and a
-replacement current plan. Because V1 is cooperative, this records local Owner
-confirmation; it does not claim cryptographic human identity or production
-review separation.
+replacement current plan. Because V1 is cooperative, it records
+`LOCAL_REVIEW_RECORDED`; it does not claim Owner authorization/confirmation,
+cryptographic human identity, or production review separation.
 
 ## Loop 4 — Resume and display
 
 - `ohno status`: concise machine-stable current state and proof freshness.
 - `ohno resume`: a human capsule with goal, completed summaries, current task,
   expected behavior, exact test, blocker, and next action.
-- `ohno next`: exactly one action or an explicit `NONE`.
+- `ohno next`: exactly one action derived from the current ordered plan;
+  terminal state is `PROJECT_COMPLETE`, while blocked or active states may
+  report `NONE`.
 - `ohno cockpit`: serves a local read-only web view of the same state.
 
 The resume capsule is bounded to 4 KiB. Completed history is summarized and
@@ -240,8 +296,8 @@ The check rejects a commit when:
 - there is neither an active task nor a just-verified completed subject;
 - document sync is pending;
 - staged paths exceed the active task's file boundary;
-- the task is being marked complete without a fresh receipt for the staged
-  subject.
+- the task is being marked complete without a fresh receipt whose separately
+  calculated staged-subject digest matches the verified subject digest.
 
 It does not claim to control direct filesystem writes, `--no-verify`, another
 Git client, or a hostile same-user process.
@@ -276,7 +332,8 @@ implementation, then browser acceptance. `ui-ux-pro-max` is catalog-only.
 - Test timeout or signal: `UNKNOWN`, task remains active.
 - Stale receipt: visible `STALE`, not PASS.
 - Dirty required docs during change: pending until exact diff acceptance.
-- No next action: display `NONE`; never invent one.
+- Completed linear plan: display `PROJECT_COMPLETE`; blocked or active states
+  may display `NONE`; never accept caller-supplied free-text next authority.
 - Hook unavailable: display the limitation and keep CLI/Git controls usable.
 
 ## Security and privacy

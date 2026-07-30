@@ -114,8 +114,8 @@ export async function checkPreCommit(startPath: string): Promise<string> {
   }
   if (indexDigest !== state.last_verification?.subject_digest) {
     throw new Error(
-      "COOPERATIVE_GUARDRAIL: staged index does not match the fresh PASS "
-      + "subject; re-verify the staged subject",
+      "COOPERATIVE_GUARDRAIL: staged subject digest does not match the "
+      + "verified subject digest; re-verify the staged subject",
     );
   }
 

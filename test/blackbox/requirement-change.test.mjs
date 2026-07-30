@@ -14,8 +14,10 @@ import test from "node:test";
 import {
   cliPath,
   createProject,
+  frozenPlanTask,
   readState,
   readStateBytes,
+  reviewPlan,
   runCli,
 } from "../helpers/blackbox.mjs";
 
@@ -149,7 +151,7 @@ async function initialize(projectPath) {
 
 async function createGovernedProject(t) {
   const projectPath = await createProject(t);
-  await initialize(projectPath);
+  await mkdir(resolve(projectPath, ".ohno"), { recursive: true });
   await mkdir(resolve(projectPath, "docs"), { recursive: true });
   for (const target of truthTargets) {
     await writeFile(
@@ -175,7 +177,28 @@ async function createGovernedProject(t) {
     "-m",
     "governing baseline",
   ]);
+  await initialize(projectPath);
   return projectPath;
+}
+
+function reviewReplacementPlan(
+  projectPath,
+  id = "replacement-after-change",
+) {
+  return reviewPlan(projectPath, {
+    tasks: [
+      frozenPlanTask({
+        id,
+        title: "Replacement reviewed task",
+        goal: "Resume only from the replacement plan",
+        expected_behavior: "The replacement plan becomes current",
+        test_command: "node --test replacement.test.mjs",
+        stop_condition: "Stop at the replacement plan boundary",
+        allowed_files: ["src/**"],
+        time_budget_minutes: 30,
+      }),
+    ],
+  });
 }
 
 function beginArguments({
@@ -211,6 +234,7 @@ async function appendRequiredChanges(projectPath) {
     "Replacement current implementation plan\n",
     "utf8",
   );
+  reviewReplacementPlan(projectPath);
 }
 
 function expectedExactDiff(projectPath, paths) {
@@ -472,24 +496,23 @@ test("Agent candidates are additive Truth targets and cannot shrink the Owner se
 
 test("Owner change supersedes ACTIVE work and pending sync blocks task start", async (t) => {
   const projectPath = await createGovernedProject(t);
-  const active = runCli(projectPath, [
-    "task",
-    "start",
-    "--id",
-    "superseded-active-task",
-    "--expect",
-    "This task becomes stale when the Owner changes requirements",
-    "--test",
-    "node --test superseded.test.mjs",
-    "--stop",
-    "Stop when the Owner changes the governing requirements",
-    "--files",
-    "src/**",
-    "--minutes",
-    "30",
-    "--next",
-    "This stale action must not survive document sync",
-  ]);
+  reviewPlan(projectPath, {
+    tasks: [
+      frozenPlanTask({
+        id: "superseded-active-task",
+        title: "Superseded active task",
+        goal: "Stop when requirements change",
+        expected_behavior:
+          "This task becomes stale when the Owner changes requirements",
+        test_command: "node --test superseded.test.mjs",
+        stop_condition:
+          "Stop when the Owner changes the governing requirements",
+        allowed_files: ["src/**"],
+        time_budget_minutes: 30,
+      }),
+    ],
+  });
+  const active = runCli(projectPath, ["task", "start"]);
   assert.equal(active.status, 0, active.stderr);
 
   beginChange(projectPath, { concerns: "requirements" });
@@ -507,24 +530,7 @@ test("Owner change supersedes ACTIVE work and pending sync blocks task start", a
     "SYNC_GOVERNING_DOCUMENTS\n",
   );
 
-  const started = runCli(projectPath, [
-    "task",
-    "start",
-    "--id",
-    "must-not-start",
-    "--expect",
-    "Implementation must stay blocked",
-    "--test",
-    "node --test forbidden.test.mjs",
-    "--stop",
-    "Stop while governing documents are pending",
-    "--files",
-    "src/**",
-    "--minutes",
-    "30",
-    "--next",
-    "This action must not replace document sync",
-  ]);
+  const started = runCli(projectPath, ["task", "start"]);
   assert.notEqual(started.status, 0);
   assert.match(started.stderr, /document sync|SYNC_GOVERNING_DOCUMENTS/i);
   assert.deepEqual(await readStateBytes(projectPath), before);
@@ -577,6 +583,7 @@ test("accept rejects incomplete non-plan coverage and preserves pending state", 
     "replacement plan exists\n",
     "utf8",
   );
+  reviewReplacementPlan(projectPath);
   const displayed = displayDiff(projectPath);
   assert.deepEqual(displayed.missingPaths, ["docs/PRODUCT.md"]);
   const state = await readState(projectPath);
@@ -599,6 +606,7 @@ test("accept rejects a missing replacement plan even when other required coverag
     "requirements changed without a replacement plan\n",
     "utf8",
   );
+  reviewReplacementPlan(projectPath);
   const displayed = displayDiff(projectPath);
   assert.deepEqual(displayed.missingPaths, ["docs/PLAN.md"]);
   const state = await readState(projectPath);
@@ -622,6 +630,7 @@ test("a deleted plan diff is coverage but not a replacement current plan", async
     "utf8",
   );
   await rm(resolve(projectPath, "docs/PLAN.md"));
+  reviewReplacementPlan(projectPath);
   const displayed = displayDiff(projectPath);
   assert.deepEqual(
     displayed.missingPaths,
@@ -807,24 +816,22 @@ test("exact local acceptance restores CLEAN IDLE, clears old proof, and resumes 
     "process.exit(0);\n",
     "utf8",
   );
-  const started = runCli(projectPath, [
-    "task",
-    "start",
-    "--id",
-    "before-change",
-    "--expect",
-    "A prior task has a next action that must not survive requirement change",
-    "--test",
-    `"${process.execPath}" "pass.mjs"`,
-    "--stop",
-    "Stop after the prior exact test passes",
-    "--files",
-    "subject.txt",
-    "--minutes",
-    "30",
-    "--next",
-    "STALE_PLAN_ACTION",
-  ]);
+  reviewPlan(projectPath, {
+    tasks: [
+      frozenPlanTask({
+        id: "before-change",
+        title: "Plan before requirement change",
+        goal: "Prove old plan evidence cannot survive replacement",
+        expected_behavior:
+          "A prior task must not authorize work after requirement change",
+        test_command: `"${process.execPath}" "pass.mjs"`,
+        stop_condition: "Stop after the prior exact test passes",
+        allowed_files: ["subject.txt"],
+        time_budget_minutes: 30,
+      }),
+    ],
+  });
+  const started = runCli(projectPath, ["task", "start"]);
   assert.equal(started.status, 0, started.stderr);
   assert.equal(runCli(projectPath, ["verify"]).status, 0);
 
@@ -839,7 +846,7 @@ test("exact local acceptance restores CLEAN IDLE, clears old proof, and resumes 
   assert.equal(accepted.status, 0, accepted.stderr);
   assert.equal(
     accepted.stdout,
-    `Accepted ${pending.document_sync.change_id}: LOCAL_OWNER_CONFIRMATION_ONLY\n`,
+    `Accepted ${pending.document_sync.change_id}: LOCAL_REVIEW_RECORDED\n`,
   );
 
   const clean = await readState(projectPath);
@@ -862,29 +869,15 @@ test("exact local acceptance restores CLEAN IDLE, clears old proof, and resumes 
     },
     {
       blocker: "NONE",
-      next_action: "NONE",
+      next_action: "START_TASK:replacement-after-change",
       proof_freshness: "NONE",
     },
   );
 
-  const resumed = runCli(projectPath, [
-    "task",
-    "start",
-    "--id",
-    "after-change",
-    "--expect",
-    "Normal bounded implementation can resume",
-    "--test",
-    "node --test next.test.mjs",
-    "--stop",
-    "Stop at the next frozen boundary",
-    "--files",
-    "src/**",
-    "--minutes",
-    "30",
-    "--next",
-    "Review the completed bounded task",
-  ]);
+  const resumed = runCli(projectPath, ["task", "start"]);
   assert.equal(resumed.status, 0, resumed.stderr);
-  assert.equal((await readState(projectPath)).active_task.id, "after-change");
+  assert.equal(
+    (await readState(projectPath)).active_task.id,
+    "replacement-after-change",
+  );
 });

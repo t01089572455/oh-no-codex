@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { once } from "node:events";
 import { watch } from "node:fs";
 import { writeFile } from "node:fs/promises";
@@ -6,54 +7,102 @@ import { resolve } from "node:path";
 import test from "node:test";
 
 import {
-  completeTaskArguments,
   createProject,
+  frozenPlanTask,
   readState,
   readStateBytes,
+  reviewPlan,
   runCli,
   spawnCli,
-  withBlankFlag,
-  withoutFlag,
 } from "../helpers/blackbox.mjs";
 
-const requiredTaskFlags = [
-  "--id",
-  "--expect",
-  "--test",
-  "--stop",
-  "--files",
-  "--minutes",
-  "--next",
+const requiredFrozenFields = [
+  "id",
+  "goal",
+  "expected_behavior",
+  "test_command",
+  "stop_condition",
+  "allowed_files",
+  "time_budget_minutes",
 ];
 
-function assertFieldError(result, flag) {
-  assert.notEqual(result.status, 0, `${flag} rejection must exit non-zero`);
+async function initialize(projectPath, projectGoal = "Ship one bounded change") {
+  const initialized = runCli(projectPath, [
+    "init",
+    "--goal",
+    projectGoal,
+  ]);
+  assert.equal(initialized.status, 0, initialized.stderr);
+}
+
+async function writeProposal(projectPath, task) {
+  await writeFile(
+    resolve(projectPath, ".ohno", "test-plan.json"),
+    `${JSON.stringify({
+      cursor: 0,
+      ordered_tasks: [task],
+    }, null, 2)}\n`,
+    "utf8",
+  );
+}
+
+function blankValue(field) {
+  if (field === "allowed_files") {
+    return [];
+  }
+  if (field === "time_budget_minutes") {
+    return 0;
+  }
+  return "   ";
+}
+
+function assertInvalidFrozenField(result, field) {
+  assert.notEqual(result.status, 0, `${field} rejection must exit non-zero`);
   assert.match(
     result.stderr,
-    new RegExp(`${flag.replace("-", "\\-")}\\b`),
-    `stderr must identify ${flag}; received:\n${result.stderr}`,
+    new RegExp(`${field}|FROZEN|stable task id|bounded contract`, "i"),
+    `stderr must identify the invalid frozen contract; received:\n${result.stderr}`,
   );
+}
+
+function activeStateBytes(state, task) {
+  const unsigned = {
+    id: task.id,
+    expected_behavior: task.expected_behavior,
+    test_command: task.test_command,
+    stop_condition: task.stop_condition,
+    allowed_files: task.allowed_files,
+    time_budget_minutes: task.time_budget_minutes,
+    plan_revision: state.plan_revision,
+  };
+  const active = {
+    ...unsigned,
+    contract_digest: createHash("sha256")
+      .update(JSON.stringify(unsigned))
+      .digest("hex"),
+  };
+  return Buffer.from(`${JSON.stringify({
+    ...state,
+    status: "ACTIVE",
+    active_task: active,
+  }, null, 2)}\n`);
 }
 
 test("init requires one Owner goal and refuses silent re-initialization", async (t) => {
   const projectPath = await createProject(t);
-
   const missing = runCli(projectPath, ["init"]);
-  assertFieldError(missing, "--goal");
-
+  assert.notEqual(missing.status, 0);
+  assert.match(missing.stderr, /--goal\b/);
   const blank = runCli(projectPath, ["init", "--goal", "   "]);
-  assertFieldError(blank, "--goal");
+  assert.notEqual(blank.status, 0);
+  assert.match(blank.stderr, /--goal\b/);
 
-  const initialized = runCli(projectPath, [
-    "init",
-    "--goal",
-    "Keep the current coding task aligned",
-  ]);
-  assert.equal(initialized.status, 0, initialized.stderr);
-
+  await initialize(projectPath, "Keep the current coding task aligned");
   const before = await readStateBytes(projectPath);
-  assert.equal((await readState(projectPath)).goal, "Keep the current coding task aligned");
-
+  assert.equal(
+    (await readState(projectPath)).goal,
+    "Keep the current coding task aligned",
+  );
   const repeated = runCli(projectPath, [
     "init",
     "--goal",
@@ -64,47 +113,56 @@ test("init requires one Owner goal and refuses silent re-initialization", async 
   assert.deepEqual(await readStateBytes(projectPath), before);
 });
 
-for (const flag of requiredTaskFlags) {
-  test(`task start rejects missing ${flag} without creating an active task`, async (t) => {
+for (const field of requiredFrozenFields) {
+  test(`plan review rejects missing ${field} without creating an active task`, async (t) => {
     const projectPath = await createProject(t);
-    const initialized = runCli(projectPath, ["init", "--goal", "Ship one bounded change"]);
-    assert.equal(initialized.status, 0, initialized.stderr);
-
-    const result = runCli(
-      projectPath,
-      withoutFlag([...completeTaskArguments], flag),
-    );
-    assertFieldError(result, flag);
+    await initialize(projectPath);
+    const task = { ...frozenPlanTask() };
+    delete task[field];
+    await writeProposal(projectPath, task);
+    const result = runCli(projectPath, [
+      "plan",
+      "propose",
+      "--file",
+      ".ohno/test-plan.json",
+    ]);
+    assertInvalidFrozenField(result, field);
     assert.equal((await readState(projectPath)).active_task, null);
   });
 
-  test(`task start rejects blank ${flag} without creating an active task`, async (t) => {
+  test(`plan review rejects blank ${field} without creating an active task`, async (t) => {
     const projectPath = await createProject(t);
-    const initialized = runCli(projectPath, ["init", "--goal", "Ship one bounded change"]);
-    assert.equal(initialized.status, 0, initialized.stderr);
-
-    const result = runCli(
-      projectPath,
-      withBlankFlag([...completeTaskArguments], flag),
-    );
-    assertFieldError(result, flag);
+    await initialize(projectPath);
+    const task = {
+      ...frozenPlanTask(),
+      [field]: blankValue(field),
+    };
+    await writeProposal(projectPath, task);
+    const result = runCli(projectPath, [
+      "plan",
+      "propose",
+      "--file",
+      ".ohno/test-plan.json",
+    ]);
+    assertInvalidFrozenField(result, field);
     assert.equal((await readState(projectPath)).active_task, null);
   });
 }
 
-test("a complete bounded contract creates exactly one active task", async (t) => {
+test("a complete reviewed bounded contract creates exactly one active task", async (t) => {
   const projectPath = await createProject(t);
-  const initialized = runCli(projectPath, ["init", "--goal", "Ship one bounded change"]);
-  assert.equal(initialized.status, 0, initialized.stderr);
-
-  const result = runCli(projectPath, [...completeTaskArguments]);
+  await initialize(projectPath);
+  const task = frozenPlanTask();
+  const review = reviewPlan(projectPath, { tasks: [task] });
+  const result = runCli(projectPath, ["task", "start"]);
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /task-001/);
 
   const state = await readState(projectPath);
-  assert.equal(state.schema_version, 1);
+  assert.equal(state.schema_version, 2);
   assert.equal(state.status, "ACTIVE");
   assert.equal(state.goal, "Ship one bounded change");
+  assert.equal(state.plan_revision, review.revision);
   assert.deepEqual(state.active_task, {
     id: "task-001",
     expected_behavior: "A user can start one bounded task",
@@ -112,7 +170,7 @@ test("a complete bounded contract creates exactly one active task", async (t) =>
     stop_condition: "Stop after the task-start black box passes",
     allowed_files: ["src/**", "test/blackbox/task-start.test.mjs"],
     time_budget_minutes: 60,
-    next_action: "Write the verify-finish black box",
+    plan_revision: review.revision,
     contract_digest: state.active_task.contract_digest,
   });
   assert.match(state.active_task.contract_digest, /^[a-f0-9]{64}$/);
@@ -120,16 +178,11 @@ test("a complete bounded contract creates exactly one active task", async (t) =>
 
 test("a second task is rejected and preserves the state byte-for-byte", async (t) => {
   const projectPath = await createProject(t);
-  assert.equal(
-    runCli(projectPath, ["init", "--goal", "Ship one bounded change"]).status,
-    0,
-  );
-  assert.equal(runCli(projectPath, [...completeTaskArguments]).status, 0);
+  await initialize(projectPath);
+  reviewPlan(projectPath);
+  assert.equal(runCli(projectPath, ["task", "start"]).status, 0);
   const before = await readStateBytes(projectPath);
-
-  const second = runCli(projectPath, [
-    ...completeTaskArguments.with(3, "task-002"),
-  ]);
+  const second = runCli(projectPath, ["task", "start"]);
   assert.notEqual(second.status, 0);
   assert.match(second.stderr, /active task/i);
   assert.deepEqual(await readStateBytes(projectPath), before);
@@ -137,53 +190,33 @@ test("a second task is rejected and preserves the state byte-for-byte", async (t
 
 test("parseable but structurally corrupt state fails closed without overwrite", async (t) => {
   const projectPath = await createProject(t);
-  assert.equal(
-    runCli(projectPath, ["init", "--goal", "Preserve corrupt state evidence"]).status,
-    0,
-  );
+  await initialize(projectPath, "Preserve corrupt state evidence");
   const corruptStateBytes = Buffer.from(
-    '{\n  "schema_version": 1,\n  "goal": "Preserve corrupt state evidence",\n  "active_task": null\n}\n',
+    '{\n  "schema_version": 2,\n  "goal": "Preserve corrupt state evidence",\n  "active_task": null\n}\n',
   );
   await writeFile(
     resolve(projectPath, ".ohno", "state.json"),
     corruptStateBytes,
   );
-
-  const result = runCli(projectPath, [...completeTaskArguments]);
+  const result = runCli(projectPath, ["task", "start"]);
   assert.notEqual(result.status, 0, "corrupt state must reject task start");
   assert.match(result.stderr, /invalid state/i);
   assert.deepEqual(await readStateBytes(projectPath), corruptStateBytes);
 });
 
 test("an interrupted atomic replacement leaves old or new valid current JSON", async (t) => {
-  const interruptedTaskArguments = [
-    ...completeTaskArguments.with(
-      9,
-      `Stop after the atomic replacement ${"x".repeat(20_000)}`,
-    ),
-  ];
-  const knownGoodProject = await createProject(t);
-  assert.equal(
-    runCli(
-      knownGoodProject,
-      ["init", "--goal", "Keep state valid during interruption"],
-    ).status,
-    0,
-  );
-  assert.equal(
-    runCli(knownGoodProject, interruptedTaskArguments).status,
-    0,
-  );
-  const expectedNewStateBytes = await readStateBytes(knownGoodProject);
+  const task = frozenPlanTask({
+    stop_condition: `Stop after the atomic replacement ${"x".repeat(20_000)}`,
+  });
   let observedInterruptedWrite = false;
 
   for (let attempt = 0; attempt < 12 && !observedInterruptedWrite; attempt += 1) {
     const projectPath = await createProject(t);
-    assert.equal(
-      runCli(projectPath, ["init", "--goal", "Keep state valid during interruption"]).status,
-      0,
-    );
+    await initialize(projectPath, "Keep state valid during interruption");
+    reviewPlan(projectPath, { tasks: [task] });
+    const oldState = await readState(projectPath);
     const oldStateBytes = await readStateBytes(projectPath);
+    const expectedNewStateBytes = activeStateBytes(oldState, task);
     const directory = resolve(projectPath, ".ohno");
     let child;
     let sawTemporaryFile = false;
@@ -195,8 +228,7 @@ test("an interrupted atomic replacement leaves old or new valid current JSON", a
         killAccepted ||= child.kill();
       }
     });
-
-    child = spawnCli(projectPath, interruptedTaskArguments);
+    child = spawnCli(projectPath, ["task", "start"]);
     child.stdout.resume();
     child.stderr.resume();
     const [exitCode, signal] = await once(child, "exit");
@@ -204,17 +236,15 @@ test("an interrupted atomic replacement leaves old or new valid current JSON", a
 
     if (sawTemporaryFile && killAccepted && signal !== null) {
       observedInterruptedWrite = true;
-      assert.equal(exitCode, null, "signal termination must not report an exit code");
+      assert.equal(exitCode, null);
       const currentStateBytes = await readStateBytes(projectPath);
-      const isOld = currentStateBytes.equals(oldStateBytes);
-      const isNew = currentStateBytes.equals(expectedNewStateBytes);
       assert.ok(
-        isOld || isNew,
+        currentStateBytes.equals(oldStateBytes)
+          || currentStateBytes.equals(expectedNewStateBytes),
         "current state bytes must exactly match the known-good old or new state",
       );
     }
   }
-
   assert.equal(
     observedInterruptedWrite,
     true,

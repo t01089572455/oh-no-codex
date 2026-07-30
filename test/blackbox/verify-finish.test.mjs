@@ -14,13 +14,15 @@ import { setTimeout as delay } from "node:timers/promises";
 
 import {
   createProject,
+  frozenPlanTask,
   readState,
   readStateBytes,
+  reviewPlan,
   runCli,
   spawnCli,
 } from "../helpers/blackbox.mjs";
 
-const nextAction = "Start the next frozen task";
+const nextAction = "START_TASK:verify-next";
 
 function quoteForShell(value) {
   return `"${value.replaceAll("\"", "\\\"")}"`;
@@ -123,24 +125,29 @@ async function initializeTask(
   ]);
   assert.equal(initialized.status, 0, initialized.stderr);
 
-  const started = runCli(projectPath, [
-    "task",
-    "start",
-    "--id",
-    "verify-001",
-    "--expect",
-    "The exact command decides whether the task closes",
-    "--test",
-    command,
-    "--stop",
-    "Stop after fresh verification",
-    "--files",
-    allowedFiles,
-    "--minutes",
-    "1",
-    "--next",
-    nextAction,
-  ]);
+  reviewPlan(projectPath, {
+    tasks: [
+      frozenPlanTask({
+        id: "verify-001",
+        title: "Verify exact evidence",
+        goal: "Close only from the exact command",
+        expected_behavior: "The exact command decides whether the task closes",
+        test_command: command,
+        stop_condition: "Stop after fresh verification",
+        allowed_files: allowedFiles.split(",").map((entry) => entry.trim()),
+        time_budget_minutes: 1,
+      }),
+      frozenPlanTask({
+        id: "verify-next",
+        title: "Next verified task",
+        goal: "Preserve one derived next action",
+        test_command: command,
+        allowed_files: allowedFiles.split(",").map((entry) => entry.trim()),
+        time_budget_minutes: 1,
+      }),
+    ],
+  });
+  const started = runCli(projectPath, ["task", "start"]);
   assert.equal(started.status, 0, started.stderr);
   return projectPath;
 }
@@ -160,7 +167,7 @@ function contractDigest(contract) {
       stop_condition: contract.stop_condition,
       allowed_files: contract.allowed_files,
       time_budget_minutes: contract.time_budget_minutes,
-      next_action: contract.next_action,
+      plan_revision: contract.plan_revision,
     }))
     .digest("hex");
 }
@@ -480,7 +487,7 @@ test("allowed-file content changed after PASS makes the receipt visibly STALE", 
   assert.match(`${stale.stdout}\n${stale.stderr}`, /\bSTALE\b/);
 });
 
-test("HEAD changed after PASS makes the receipt visibly STALE", async (t) => {
+test("an ordinary HEAD change after PASS preserves receipt freshness", async (t) => {
   const projectPath = await createProject(t);
   await writeFile(resolve(projectPath, "subject.txt"), "verified\n", "utf8");
   runGit(projectPath, ["add", "--", "subject.txt"]);
@@ -510,9 +517,9 @@ test("HEAD changed after PASS makes the receipt visibly STALE", async (t) => {
     "-m",
     "advance HEAD",
   ]);
-  const stale = runCli(projectPath, ["verify"]);
-  assert.notEqual(stale.status, 0);
-  assert.match(`${stale.stdout}\n${stale.stderr}`, /\bSTALE\b/);
+  const status = runCli(projectPath, ["status", "--json"]);
+  assert.equal(status.status, 0, status.stderr);
+  assert.equal(JSON.parse(status.stdout).proof_freshness, "FRESH");
 });
 
 test("task contract changed after PASS makes the receipt visibly STALE", async (t) => {
