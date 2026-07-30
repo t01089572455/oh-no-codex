@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
 import {
+  displayFieldByteLimits,
+  displayTextIssue,
   initialState,
   stateExists,
   writeStateAtomic,
@@ -23,8 +25,27 @@ function requiredValue(args: string[], flag: string): string {
   return value.trim();
 }
 
+function boundedDisplayValue(
+  value: string,
+  flag: string,
+  byteLimit: number,
+): string {
+  const issue = displayTextIssue(value, byteLimit);
+  if (issue === "LINE_BREAK") {
+    throw new Error(`${flag} must be a single line without CR or LF`);
+  }
+  if (issue === "TOO_LARGE") {
+    throw new Error(`${flag} must be at most ${byteLimit} UTF-8 bytes`);
+  }
+  return value;
+}
+
 async function initialize(projectPath: string, args: string[]): Promise<void> {
-  const goal = requiredValue(args, "--goal");
+  const goal = boundedDisplayValue(
+    requiredValue(args, "--goal"),
+    "--goal",
+    displayFieldByteLimits.goal,
+  );
   if (await stateExists(projectPath)) {
     throw new Error("project is already initialized");
   }

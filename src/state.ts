@@ -10,6 +10,32 @@ import {
 import type { FileHandle } from "node:fs/promises";
 import { resolve } from "node:path";
 
+// Worst active projection: 256 goal + 96 id + 512 expectation + 1,024 test
+// + three (96 id + 256 expectation) summaries = 2,944 UTF-8 bytes. This leaves
+// 1,152 bytes for labels, separators, counts, and fixed values below 4 KiB.
+// A completed projection substitutes a <=256-byte next action for no task.
+export const displayFieldByteLimits = Object.freeze({
+  goal: 256,
+  taskId: 96,
+  expectedBehavior: 512,
+  testCommand: 1_024,
+  nextAction: 256,
+});
+
+export type DisplayTextIssue = "LINE_BREAK" | "TOO_LARGE";
+
+export function displayTextIssue(
+  value: string,
+  byteLimit: number,
+): DisplayTextIssue | null {
+  if (/[\r\n]/u.test(value)) {
+    return "LINE_BREAK";
+  }
+  return Buffer.byteLength(value, "utf8") > byteLimit
+    ? "TOO_LARGE"
+    : null;
+}
+
 export interface TaskContract {
   id: string;
   expected_behavior: string;
@@ -78,6 +104,14 @@ function isNonBlankString(value: unknown): value is string {
   return typeof value === "string" && value.trim() !== "";
 }
 
+function isBoundedDisplayString(
+  value: unknown,
+  byteLimit: number,
+): value is string {
+  return isNonBlankString(value)
+    && displayTextIssue(value, byteLimit) === null;
+}
+
 function isTaskContract(value: unknown): value is TaskContract {
   if (
     !isRecord(value)
@@ -106,16 +140,25 @@ function isTaskContract(value: unknown): value is TaskContract {
     contract_digest: contractDigest,
   } = value;
   if (
-    !isNonBlankString(id)
-    || !isNonBlankString(expectedBehavior)
-    || !isNonBlankString(testCommand)
+    !isBoundedDisplayString(id, displayFieldByteLimits.taskId)
+    || !isBoundedDisplayString(
+      expectedBehavior,
+      displayFieldByteLimits.expectedBehavior,
+    )
+    || !isBoundedDisplayString(
+      testCommand,
+      displayFieldByteLimits.testCommand,
+    )
     || !isNonBlankString(stopCondition)
     || !Array.isArray(allowedFiles)
     || allowedFiles.length === 0
     || !allowedFiles.every(isNonBlankString)
     || !Number.isSafeInteger(timeBudgetMinutes)
     || (timeBudgetMinutes as number) <= 0
-    || !isNonBlankString(nextAction)
+    || !isBoundedDisplayString(
+      nextAction,
+      displayFieldByteLimits.nextAction,
+    )
     || typeof contractDigest !== "string"
     || !/^[a-f0-9]{64}$/.test(contractDigest)
   ) {
@@ -233,7 +276,7 @@ function isProjectState(value: unknown): value is ProjectState {
       "document_sync",
     ])
     || value.schema_version !== 1
-    || !isNonBlankString(value.goal)
+    || !isBoundedDisplayString(value.goal, displayFieldByteLimits.goal)
     || !(
       value.last_verification === null
       || isVerificationReceipt(value.last_verification)

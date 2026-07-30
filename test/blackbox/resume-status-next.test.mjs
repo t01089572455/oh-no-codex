@@ -33,6 +33,13 @@ const goal = "Keep every resumed session aligned";
 const taskId = "read-surfaces-001";
 const expectedBehavior = "Every read surface shows the same current truth";
 const nextAction = "Begin the requirement-change slice";
+const displayByteLimits = Object.freeze({
+  goal: 256,
+  id: 96,
+  expected: 512,
+  test: 1_024,
+  next: 256,
+});
 
 function quoteForShell(value) {
   return `"${value.replaceAll("\"", "\\\"")}"`;
@@ -170,6 +177,24 @@ function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function utf8ValueAtLimit(byteLimit, prefix = "") {
+  assert.ok(Buffer.byteLength(prefix, "utf8") <= byteLimit);
+  let value = prefix;
+  while (Buffer.byteLength(`${value}界`, "utf8") <= byteLimit) {
+    value += "界";
+  }
+  return value.padEnd(
+    value.length + byteLimit - Buffer.byteLength(value, "utf8"),
+    "x",
+  );
+}
+
+function paddedCommand(command, byteLimit = displayByteLimits.test) {
+  const currentBytes = Buffer.byteLength(command, "utf8");
+  assert.ok(currentBytes <= byteLimit);
+  return `${command}${" ".repeat(byteLimit - currentBytes)}`;
+}
+
 function unsignedContract({
   expected = expectedBehavior,
   id = taskId,
@@ -187,13 +212,21 @@ function unsignedContract({
   };
 }
 
+function contractDigest(contract) {
+  const {
+    contract_digest: _contractDigest,
+    ...unsigned
+  } = contract;
+  return createHash("sha256")
+    .update(JSON.stringify(unsigned))
+    .digest("hex");
+}
+
 function completedContract(options) {
   const contract = unsignedContract(options);
   return {
     ...contract,
-    contract_digest: createHash("sha256")
-      .update(JSON.stringify(contract))
-      .digest("hex"),
+    contract_digest: contractDigest(contract),
   };
 }
 
@@ -254,6 +287,223 @@ test("active read surfaces expose the exact contract without running its test", 
   );
 });
 
+test("a prior PASS is historical when a different task becomes active", async (t) => {
+  const projectPath = await createProject(t);
+  await initialize(projectPath);
+  await writeFile(resolve(projectPath, "subject.txt"), "task A subject\n", "utf8");
+  const passScript = await writeCommandScript(
+    projectPath,
+    "task-a-pass",
+    "process.exit(0);\n",
+  );
+  const taskACommand = nodeCommand(passScript);
+  await startTask(projectPath, {
+    command: taskACommand,
+    expected: "Task A passes with fresh evidence",
+    id: "task-a",
+    next: "Start task B",
+  });
+  assert.equal(runCli(projectPath, ["verify"]).status, 0);
+
+  const taskBScript = await writeCommandScript(
+    projectPath,
+    "task-b-must-not-run",
+    "process.exit(0);\n",
+  );
+  const taskBCommand = nodeCommand(taskBScript);
+  await startTask(projectPath, {
+    command: taskBCommand,
+    expected: "Task B is the only current contract",
+    id: "task-b",
+    next: "Start task C",
+  });
+
+  const model = statusJson(projectPath);
+  assert.equal(model.status, "ACTIVE");
+  assert.equal(model.completed_count, 1);
+  assert.deepEqual(model.current_task, expectedCurrentTask({
+    command: taskBCommand,
+    expected: "Task B is the only current contract",
+    id: "task-b",
+  }));
+  assert.equal(model.proof_freshness, "NONE");
+  assert.equal(model.blocker, "NONE");
+  assert.equal(model.next_action, "NONE");
+  assertAllSurfacesAgree(projectPath, model);
+});
+
+test("init rejects a goal above its UTF-8 byte limit without creating state", async (t) => {
+  const projectPath = await createProject(t);
+  const oversizedGoal = `${utf8ValueAtLimit(displayByteLimits.goal)}x`;
+
+  const result = runCli(projectPath, ["init", "--goal", oversizedGoal]);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /--goal\b/);
+  await assert.rejects(
+    access(resolve(projectPath, ".ohno", "state.json")),
+    (error) => error.code === "ENOENT",
+  );
+});
+
+test("init rejects line breaks in the goal without creating state", async (t) => {
+  const projectPath = await createProject(t);
+
+  const result = runCli(projectPath, [
+    "init",
+    "--goal",
+    "First goal line\r\nSecond goal line",
+  ]);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /--goal\b/);
+  await assert.rejects(
+    access(resolve(projectPath, ".ohno", "state.json")),
+    (error) => error.code === "ENOENT",
+  );
+});
+
+const oversizedTaskFields = [
+  {
+    flag: "--id",
+    options: {
+      id: `${utf8ValueAtLimit(displayByteLimits.id)}x`,
+    },
+  },
+  {
+    flag: "--expect",
+    options: {
+      expected: `${utf8ValueAtLimit(displayByteLimits.expected)}x`,
+    },
+  },
+  {
+    flag: "--test",
+    options: {
+      command: `${utf8ValueAtLimit(displayByteLimits.test)}x`,
+    },
+  },
+  {
+    flag: "--next",
+    options: {
+      next: `${utf8ValueAtLimit(displayByteLimits.next)}x`,
+    },
+  },
+];
+
+for (const { flag, options } of oversizedTaskFields) {
+  test(`task start rejects ${flag} above its UTF-8 byte limit without state damage`, async (t) => {
+    const projectPath = await createProject(t);
+    await initialize(projectPath);
+    const before = await readStateBytes(projectPath);
+
+    const result = runCli(projectPath, taskArguments({
+      command: "node placeholder.mjs",
+      ...options,
+    }));
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, new RegExp(`${escapeRegExp(flag)}\\b`));
+    assert.deepEqual(await readStateBytes(projectPath), before);
+  });
+}
+
+for (const { flag, options } of [
+  {
+    flag: "--id",
+    options: {
+      id: "task-first\r\ntask-second",
+    },
+  },
+  {
+    flag: "--expect",
+    options: {
+      expected: "First expected line\r\nSecond expected line",
+    },
+  },
+  {
+    flag: "--test",
+    options: {
+      command: "node first.mjs\r\nnode second.mjs",
+    },
+  },
+  {
+    flag: "--next",
+    options: {
+      next: "First action\r\nSecond action",
+    },
+  },
+]) {
+  test(`task start rejects line breaks in ${flag} without state damage`, async (t) => {
+    const projectPath = await createProject(t);
+    await initialize(projectPath);
+    const before = await readStateBytes(projectPath);
+
+    const result = runCli(projectPath, taskArguments({
+      command: "node placeholder.mjs",
+      ...options,
+    }));
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, new RegExp(`${escapeRegExp(flag)}\\b`));
+    assert.deepEqual(await readStateBytes(projectPath), before);
+  });
+}
+
+test("manually oversized display fields make state UNAVAILABLE without overwrite", async (t) => {
+  const mutations = [
+    {
+      name: "goal",
+      mutate(state) {
+        state.goal = `${utf8ValueAtLimit(displayByteLimits.goal)}x`;
+      },
+    },
+    {
+      name: "task id",
+      mutate(state) {
+        state.active_task.id = `${utf8ValueAtLimit(displayByteLimits.id)}x`;
+      },
+    },
+    {
+      name: "expected behavior",
+      mutate(state) {
+        state.active_task.expected_behavior =
+          `${utf8ValueAtLimit(displayByteLimits.expected)}x`;
+      },
+    },
+    {
+      name: "exact test",
+      mutate(state) {
+        state.active_task.test_command =
+          `${utf8ValueAtLimit(displayByteLimits.test)}x`;
+      },
+    },
+    {
+      name: "next action",
+      mutate(state) {
+        state.active_task.next_action =
+          `${utf8ValueAtLimit(displayByteLimits.next)}x`;
+      },
+    },
+  ];
+
+  for (const { name, mutate } of mutations) {
+    const projectPath = await createProject(t);
+    await initialize(projectPath);
+    await startTask(projectPath, { command: "node placeholder.mjs" });
+    const state = await readState(projectPath);
+    mutate(state);
+    if (name !== "goal") {
+      state.active_task.contract_digest = contractDigest(state.active_task);
+    }
+    const oversizedBytes = Buffer.from(`${JSON.stringify(state, null, 2)}\n`);
+    await writeFile(
+      resolve(projectPath, ".ohno", "state.json"),
+      oversizedBytes,
+    );
+
+    const result = runCli(projectPath, ["status", "--json"]);
+    assert.notEqual(result.status, 0, `${name} must fail runtime validation`);
+    assert.equal(JSON.parse(result.stdout).availability, "UNAVAILABLE");
+    assert.deepEqual(await readStateBytes(projectPath), oversizedBytes);
+  }
+});
+
 test("a failed exact command is projected as the current blocker with no invented next", async (t) => {
   const projectPath = await createProject(t);
   await initialize(projectPath);
@@ -303,6 +553,41 @@ test("a completed fresh PASS exposes only its frozen next action", async (t) => 
     blocker: "NONE",
     next_action: nextAction,
   });
+  assertAllSurfacesAgree(projectPath, model);
+});
+
+test("accepted maximum UTF-8 next action remains exact in a bounded resume", async (t) => {
+  const projectPath = await createProject(t);
+  const maximumGoal = utf8ValueAtLimit(displayByteLimits.goal, "Goal ");
+  const maximumId = utf8ValueAtLimit(displayByteLimits.id, "task-max-");
+  const maximumExpected = utf8ValueAtLimit(
+    displayByteLimits.expected,
+    "Expected ",
+  );
+  const maximumNext = utf8ValueAtLimit(displayByteLimits.next, "Next ");
+  await initialize(projectPath, maximumGoal);
+  await writeFile(resolve(projectPath, "subject.txt"), "fresh subject\n", "utf8");
+  const script = await writeCommandScript(projectPath, "max-pass", "process.exit(0);\n");
+  const maximumTest = paddedCommand(nodeCommand(script));
+  await startTask(projectPath, {
+    command: maximumTest,
+    expected: maximumExpected,
+    id: maximumId,
+    next: maximumNext,
+  });
+  const verified = runCli(projectPath, ["verify"]);
+  assert.equal(verified.status, 0, verified.stderr);
+  assert.equal(verified.stdout, `${maximumNext}\n`);
+
+  const model = statusJson(projectPath);
+  assert.equal(model.goal, maximumGoal);
+  assert.equal(model.proof_freshness, "FRESH");
+  assert.equal(model.next_action, maximumNext);
+  const resumed = runCli(projectPath, ["resume"]);
+  assert.equal(resumed.status, 0, resumed.stderr);
+  assert.ok(Buffer.byteLength(resumed.stdout, "utf8") < 4_096);
+  assert.ok(resumed.stdout.includes(`GOAL: ${maximumGoal}\n`));
+  assert.ok(resumed.stdout.includes(`NEXT: ${maximumNext}\n`));
   assertAllSurfacesAgree(projectPath, model);
 });
 
@@ -364,20 +649,44 @@ test("pending document sync has one authoritative next action", async (t) => {
 
 test("resume stays below 4096 UTF-8 bytes and prioritizes the current contract and blocker", async (t) => {
   const projectPath = await createProject(t);
-  await initialize(projectPath);
+  const maximumGoal = utf8ValueAtLimit(displayByteLimits.goal, "Goal ");
+  const maximumId = utf8ValueAtLimit(displayByteLimits.id, "active-");
+  const maximumExpected = utf8ValueAtLimit(
+    displayByteLimits.expected,
+    "Expected ",
+  );
+  const maximumNext = utf8ValueAtLimit(displayByteLimits.next, "Next ");
+  await initialize(projectPath, maximumGoal);
   await writeFile(resolve(projectPath, "subject.txt"), "failing subject\n", "utf8");
   const script = await writeCommandScript(projectPath, "fail", "process.exit(9);\n");
-  const command = nodeCommand(script);
-  await startTask(projectPath, { command });
+  const command = paddedCommand(nodeCommand(script));
+  await startTask(projectPath, {
+    command,
+    expected: maximumExpected,
+    id: maximumId,
+    next: maximumNext,
+  });
   assert.notEqual(runCli(projectPath, ["verify"]).status, 0);
 
   const state = await readState(projectPath);
   state.completed = Array.from({ length: 120 }, (_, index) =>
     completedContract({
-      id: `completed-${String(index).padStart(3, "0")}`,
-      expected: `完成摘要 ${index} ${"很长的历史信息".repeat(30)}`,
-      next: `Historical action ${index}`,
-      testCommand: `node historical-${index}.mjs`,
+      id: utf8ValueAtLimit(
+        displayByteLimits.id,
+        `completed-${String(index).padStart(3, "0")}-`,
+      ),
+      expected: utf8ValueAtLimit(
+        displayByteLimits.expected,
+        `History ${index} `,
+      ),
+      next: utf8ValueAtLimit(
+        displayByteLimits.next,
+        `Historical action ${index} `,
+      ),
+      testCommand: utf8ValueAtLimit(
+        displayByteLimits.test,
+        `node historical-${index}.mjs `,
+      ),
     })
   );
   await writeFile(
@@ -389,7 +698,11 @@ test("resume stays below 4096 UTF-8 bytes and prioritizes the current contract a
   const model = statusJson(projectPath);
   assert.equal(model.completed_count, 120);
   assert.ok(model.completed.length <= 3, "completed summaries must be bounded");
-  assert.deepEqual(model.current_task, expectedCurrentTask({ command }));
+  assert.deepEqual(model.current_task, expectedCurrentTask({
+    command,
+    expected: maximumExpected,
+    id: maximumId,
+  }));
   assert.equal(model.blocker, "EXACT_TEST_FAILED");
   assert.equal(model.next_action, "NONE");
 
@@ -399,11 +712,10 @@ test("resume stays below 4096 UTF-8 bytes and prioritizes the current contract a
     Buffer.byteLength(resumed.stdout, "utf8") < 4_096,
     `resume capsule was ${Buffer.byteLength(resumed.stdout, "utf8")} bytes`,
   );
-  assert.match(resumed.stdout, new RegExp(`^TASK: ${taskId}$`, "m"));
-  assert.match(
-    resumed.stdout,
-    new RegExp(`^EXPECTED: ${escapeRegExp(expectedBehavior)}$`, "m"),
-  );
+  assert.ok(resumed.stdout.includes(`GOAL: ${maximumGoal}\n`));
+  assert.ok(resumed.stdout.includes(`TASK: ${maximumId}\n`));
+  assert.ok(resumed.stdout.includes(`EXPECTED: ${maximumExpected}\n`));
+  assert.ok(resumed.stdout.includes(`TEST: ${command}\n`));
   assert.match(resumed.stdout, /^BLOCKER: EXACT_TEST_FAILED$/m);
   assert.match(resumed.stdout, /^NEXT: NONE$/m);
   assert.doesNotMatch(resumed.stdout, /completed-000/);

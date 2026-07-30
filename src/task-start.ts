@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
 
 import {
+  displayFieldByteLimits,
+  displayTextIssue,
   readState,
   writeStateAtomic,
 } from "./state.js";
@@ -33,6 +35,20 @@ function requiredValue(args: string[], flag: string): string {
   return flag === "--test" ? value : value.trim();
 }
 
+function validateDisplayField(
+  value: string,
+  flag: string,
+  byteLimit: number,
+): void {
+  const issue = displayTextIssue(value, byteLimit);
+  if (issue === "LINE_BREAK") {
+    throw new Error(`${flag} must be a single line without CR or LF`);
+  }
+  if (issue === "TOO_LARGE") {
+    throw new Error(`${flag} must be at most ${byteLimit} UTF-8 bytes`);
+  }
+}
+
 function parseTaskFields(args: string[]): ParsedTaskFields {
   return Object.fromEntries(
     taskFields.map(([flag, field]) => [field, requiredValue(args, flag)]),
@@ -41,6 +57,26 @@ function parseTaskFields(args: string[]): ParsedTaskFields {
 
 function createContract(args: string[]): TaskContract {
   const fields = parseTaskFields(args);
+  validateDisplayField(
+    fields.id,
+    "--id",
+    displayFieldByteLimits.taskId,
+  );
+  validateDisplayField(
+    fields.expected_behavior,
+    "--expect",
+    displayFieldByteLimits.expectedBehavior,
+  );
+  validateDisplayField(
+    fields.test_command,
+    "--test",
+    displayFieldByteLimits.testCommand,
+  );
+  validateDisplayField(
+    fields.next_action,
+    "--next",
+    displayFieldByteLimits.nextAction,
+  );
   const minutes = Number(fields.time_budget_minutes);
   if (!Number.isSafeInteger(minutes) || minutes <= 0) {
     throw new Error("--minutes must be a positive integer");

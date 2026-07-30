@@ -90,9 +90,20 @@ Recorded on 2026-07-30 with Node.js v24.11.1:
   all 8 tests passing across idle, active, failed, fresh-PASS, stale-PASS,
   blocked-document-sync, bounded-history, missing-state, and corrupt-state
   fixtures.
+- Specification-review RED: the same owning command exited 1 with 9 passing
+  and 12 failing tests. A previous task's PASS was misreported as current
+  STALE proof after a new task started; CLI and runtime state accepted
+  oversized or multiline displayed fields, so the resume bound was not strict
+  for every accepted state and `next` could serialize multiple lines.
+- Specification-review GREEN: the same owning command exited 0 with all 21
+  tests passing. A mismatched historical receipt now projects `NONE` for a new
+  active task, while a matching anomalous active PASS remains visibly stale.
+  Shared UTF-8 byte limits and single-line validation now apply identically at
+  `init`/`task start` and runtime state parsing, with byte-preserving rejection.
 - The largest accepted fixture kept the UTF-8 resume capsule below 4 KiB while
-  retaining the current task contract and blocker ahead of bounded completed
-  summaries.
+  retaining maximum accepted goal, task identifier, expected behavior, exact
+  test, and blocker ahead of 120 bounded completed summaries. A separate
+  maximum accepted next action remained exact after fresh PASS.
 - `npm.cmd run typecheck` exited 0.
 - `npm.cmd run build` exited 0.
 - `git diff --check` exited 0 with no output.

@@ -143,7 +143,7 @@ async function proofFreshness(
       return "NONE";
     }
     if (!receiptMatchesTask(receipt, task)) {
-      return "STALE";
+      return "NONE";
     }
     return receipt.result === "PASS" ? "STALE" : receipt.result;
   }
