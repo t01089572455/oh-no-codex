@@ -2,6 +2,10 @@ import { access } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { hooksIntegrationStatus } from "./install.js";
+import {
+  enabledRules,
+  loadPreferences,
+} from "./preferences.js";
 import { readModel } from "./read-model.js";
 import { readState, stateExists } from "./state.js";
 
@@ -131,6 +135,31 @@ export async function runDoctor(projectPath: string): Promise<DoctorReport> {
       id: "requirements_log",
       status: "WARN",
       detail: "REQUIREMENTS.md missing — run ohno projectors refresh",
+    });
+  }
+
+  try {
+    const prefs = await loadPreferences(projectPath);
+    const on = enabledRules(prefs);
+    const researchOn = on.some((rule) =>
+      rule.id === "research_before_implement"
+    );
+    const frontendOn = on.some((rule) =>
+      rule.id === "frontend_adapt_not_invent"
+    );
+    checks.push({
+      id: "working_method",
+      status: "PASS",
+      detail:
+        `${on.length}/${prefs.rules.length} rules enabled; `
+        + `research=${researchOn ? "ON" : "OFF"} `
+        + `frontend_adapt=${frontendOn ? "ON" : "OFF"}`,
+    });
+  } catch (error) {
+    checks.push({
+      id: "working_method",
+      status: "WARN",
+      detail: error instanceof Error ? error.message : String(error),
     });
   }
 

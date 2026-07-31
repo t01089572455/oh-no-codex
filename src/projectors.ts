@@ -6,6 +6,11 @@ import {
 import { resolve } from "node:path";
 
 import {
+  ensurePreferences,
+  renderWorkingMethodMarkdown,
+  type PreferencesFile,
+} from "./preferences.js";
+import {
   type PlanBoardEntry,
   type ReadModel,
   readModel,
@@ -96,7 +101,10 @@ export function renderProgressMarkdown(model: ReadModel): string {
   ].join("\n");
 }
 
-export function renderAgentsManagedBlock(model: ReadModel): string {
+export function renderAgentsManagedBlock(
+  model: ReadModel,
+  prefs: PreferencesFile,
+): string {
   const board = model.plan_board.length === 0
     ? "- (no reviewed plan)"
     : model.plan_board
@@ -113,6 +121,7 @@ export function renderAgentsManagedBlock(model: ReadModel): string {
     "This block is a **projection** of `.ohno/state.json`.",
     "It is not authorization and not a second source of truth.",
     "Owner requirement history: `.ohno/REQUIREMENTS.md`.",
+    "Working method: `.ohno/preferences.json` (`ohno preferences show`).",
     "Refresh with `ohno projectors refresh`.",
     "",
     `- **Goal:** ${model.goal ?? "NONE"}`,
@@ -126,6 +135,8 @@ export function renderAgentsManagedBlock(model: ReadModel): string {
     "### Plan board (done / half / ready / outline)",
     "",
     board,
+    "",
+    renderWorkingMethodMarkdown(prefs).trimEnd(),
     "",
     agentsEndMarker,
   ].join("\n");
@@ -163,6 +174,7 @@ export async function refreshProjectors(
   options: { agents?: boolean } = {},
 ): Promise<ProjectorResult> {
   const model = await readModel(projectPath);
+  const prefs = await ensurePreferences(projectPath);
   const ohnoDir = resolve(projectPath, ".ohno");
   await mkdir(ohnoDir, { recursive: true });
   const progressPath = resolve(ohnoDir, "PROGRESS.md");
@@ -170,6 +182,7 @@ export async function refreshProjectors(
   const requirementsPath = await refreshRequirementsProjection(
     projectPath,
     model,
+    prefs,
   );
 
   let agentsPath: string | null = null;
@@ -189,7 +202,7 @@ export async function refreshProjectors(
     }
     const next = upsertAgentsManagedBlock(
       existing,
-      renderAgentsManagedBlock(model),
+      renderAgentsManagedBlock(model, prefs),
     );
     if (next !== existing) {
       await writeFile(agentsPath, next, "utf8");

@@ -40,6 +40,12 @@ import {
 } from "./projectors.js";
 import { readModel } from "./read-model.js";
 import {
+  ensurePreferences,
+  resetPreferences,
+  serializePreferences,
+  setPreferenceRule,
+} from "./preferences.js";
+import {
   appendRequirementsNote,
   showRequirements,
 } from "./requirements.js";
@@ -62,6 +68,9 @@ const usageText = [
   "  ohno projectors refresh [--no-agents]",
   "  ohno requirements note --text <owner words>",
   "  ohno requirements show",
+  "  ohno preferences show",
+  "  ohno preferences set --id <rule-id> [--enabled true|false] [--text <one line>]",
+  "  ohno preferences reset",
   "  ohno doctor [--json]",
   "  ohno change begin --summary <owner words> [--concerns <labels>] [--candidates <Truth paths>]",
   "  ohno change diff | ohno change accept --change <id> --diff <displayed digest>",
@@ -112,6 +121,7 @@ async function initialize(projectPath: string, args: string[]): Promise<void> {
 
   const truthInventory = await classifyTruthAtInit(projectPath);
   await writeStateAtomic(projectPath, initialState(goal, truthInventory));
+  const prefs = await ensurePreferences(projectPath);
   const model = await readModel(projectPath);
   await writeFile(
     resolve(projectPath, "AGENTS.md"),
@@ -120,7 +130,7 @@ async function initialize(projectPath: string, args: string[]): Promise<void> {
       "",
       "Owner rules live outside the Oh No managed block below.",
       "",
-      renderAgentsManagedBlock(model),
+      renderAgentsManagedBlock(model, prefs),
       "",
     ].join("\n"),
     "utf8",
@@ -130,11 +140,18 @@ async function initialize(projectPath: string, args: string[]): Promise<void> {
     `Project goal set: ${goal}`,
     "init",
   ).catch(() => undefined);
+  await appendRequirementsNote(
+    projectPath,
+    "Default working method ON: research before implement; prefer existing OSS; "
+    + "frontend adapt-not-invent. Configure: ohno preferences show|set|reset",
+    "init-preferences",
+  ).catch(() => undefined);
   await refreshProjectors(projectPath).catch(() => undefined);
   process.stdout.write(
     `Initialized goal: ${goal}\n`
     + `AGENTS: managed block ${agentsBeginMarker} … ${agentsEndMarker}\n`
-    + "REQUIREMENTS: .ohno/REQUIREMENTS.md\n",
+    + "REQUIREMENTS: .ohno/REQUIREMENTS.md\n"
+    + "PREFERENCES: .ohno/preferences.json\n",
   );
 }
 
@@ -327,6 +344,58 @@ async function main(): Promise<void> {
     && args.length === 0
   ) {
     process.stdout.write(await showRequirements(projectPath));
+    return;
+  }
+
+  if (
+    command === "preferences"
+    && subcommand === "show"
+    && args.length === 0
+  ) {
+    const prefs = await ensurePreferences(projectPath);
+    process.stdout.write(serializePreferences(prefs));
+    return;
+  }
+
+  if (command === "preferences" && subcommand === "reset" && args.length === 0) {
+    const prefs = await resetPreferences(projectPath);
+    await refreshProjectors(projectPath).catch(() => undefined);
+    process.stdout.write(serializePreferences(prefs));
+    return;
+  }
+
+  if (command === "preferences" && subcommand === "set") {
+    const id = requiredValue(args, "--id");
+    const enabledIndex = args.indexOf("--enabled");
+    const textIndex = args.indexOf("--text");
+    let enabled: boolean | undefined;
+    if (enabledIndex !== -1) {
+      const raw = args[enabledIndex + 1];
+      if (raw === undefined || raw.startsWith("--")) {
+        throw new Error("--enabled requires true or false");
+      }
+      if (raw === "true" || raw === "1" || raw === "on") {
+        enabled = true;
+      } else if (raw === "false" || raw === "0" || raw === "off") {
+        enabled = false;
+      } else {
+        throw new Error("--enabled must be true or false");
+      }
+    }
+    let text: string | undefined;
+    if (textIndex !== -1) {
+      text = requiredValue(args, "--text");
+    }
+    const patch: { enabled?: boolean; text?: string } = {};
+    if (enabled !== undefined) {
+      patch.enabled = enabled;
+    }
+    if (text !== undefined) {
+      patch.text = text;
+    }
+    const prefs = await setPreferenceRule(projectPath, id, patch);
+    await refreshProjectors(projectPath).catch(() => undefined);
+    process.stdout.write(serializePreferences(prefs));
     return;
   }
 

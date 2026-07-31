@@ -57,7 +57,7 @@
 > cooperative hooks + Git pre-commit, read-only glass Cockpit with plan board
 > (polls `/api/state`), projectors (`.ohno/PROGRESS.md` + AGENTS managed block),
 > `ohno doctor`, handoff identity, A14 browser matrix, and P01–P06 trial
-> receipts. Public ledger: Tasks 1–7, Corrections 1–2, essence ports E1–E10.
+> receipts. Public ledger: Tasks 1–7, Corrections 1–2, essence ports E1–E11.
 > This is **not** a hostile-agent, production-authority, or universal speed
 > claim. Install: `npm install -g oh-no-codex`.
 
@@ -123,6 +123,7 @@ hostile-agent security, or a universal speed guarantee.
 | Plan board projection | `status --json` field `plan_board` (DONE/HALF/READY/OUTLINE…) | Done |
 | Generated progress + AGENTS block | `ohno projectors refresh` → `.ohno/PROGRESS.md` + managed AGENTS section | Done |
 | Owner requirements log | `ohno requirements note/show` → `.ohno/REQUIREMENTS.md` | Done |
+| Working method preferences | `ohno preferences show/set/reset` → `.ohno/preferences.json` (defaults: research-first, reuse OSS, frontend adapt-not-invent) | Done |
 | Doctor health surface | `ohno doctor [--json]` | Done |
 | Handoff identity | resume `HANDOFF_*` path/branch/head/dirty | Done |
 | Atomic state authority | `.ohno/state.json` sole runtime authority | Done |
@@ -325,6 +326,7 @@ Writes:
 | --- | --- |
 | `.ohno/PROGRESS.md` | Generated board/progress table (**not** authority) |
 | `.ohno/REQUIREMENTS.md` | Owner notes + live projection of goal/board/truth |
+| `.ohno/preferences.json` | Owner working-method rules (default ON: research / reuse OSS / frontend adapt) |
 | `AGENTS.md` between `<!-- ohno:managed-begin/end -->` | Live capsule for agents; owner prose outside the block is preserved |
 
 `task start`, `verify`, `plan accept`, and `change accept` also refresh
@@ -355,6 +357,9 @@ ohno install                 # optional cooperative hooks
 ohno doctor                  # health surface
 ohno projectors refresh      # PROGRESS + REQUIREMENTS + AGENTS block
 ohno requirements note --text "Owner: ship user-visible save first"
+ohno preferences show
+ohno preferences set --id frontend_adapt_not_invent --enabled false
+ohno preferences reset
 ohno resume
 ohno next
 ohno cockpit                 # GET /api/state, ~2.5s poll
@@ -486,7 +491,7 @@ Capability labels name the evidence actually held by this repository:
 
 | Capability | Status | Evidence boundary |
 | --- | --- | --- |
-| Public product status | `V1_TRIAL_ACCEPTED` | Ledger Tasks 1–7 + Corrections 1–2 + essence ports E1–E10 |
+| Public product status | `V1_TRIAL_ACCEPTED` | Ledger Tasks 1–7 + Corrections 1–2 + essence ports E1–E11 |
 | CLI state, plan, verify, resume, change, hooks, and atomic-write behavior | `LOCAL_PASS` | Public Node black boxes A01–A12, A15, and A16 |
 | Plan board, projectors, doctor, handoff identity | `LOCAL_PASS` | `projectors` / resume-status-next / hooks black boxes |
 | Read-only Cockpit projection | `LOCAL_PASS` | A13 HTTP equality with `status --json` |
@@ -519,7 +524,7 @@ Public product truth lives in a small set of documents:
 3. [Acceptance contract](https://github.com/t01089572455/oh-no-codex/blob/main/docs/ACCEPTANCE.md)
 4. [Implementation ledger](https://github.com/t01089572455/oh-no-codex/blob/main/docs/IMPLEMENTATION-PLAN.md) (current status: `V1_TRIAL_ACCEPTED`)
 5. [Codex eighteen sins](https://github.com/t01089572455/oh-no-codex/blob/main/docs/CODEX-SINS.md)
-6. [Essence backlog](https://github.com/t01089572455/oh-no-codex/blob/main/docs/ESSENCE-BACKLOG.md) (E1–E10 complete)
+6. [Essence backlog](https://github.com/t01089572455/oh-no-codex/blob/main/docs/ESSENCE-BACKLOG.md) (E1–E11 complete)
 
 ## License
 

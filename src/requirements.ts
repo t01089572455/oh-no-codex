@@ -6,6 +6,11 @@ import {
 import { resolve } from "node:path";
 
 import {
+  ensurePreferences,
+  enabledRules,
+  type PreferencesFile,
+} from "./preferences.js";
+import {
   type ReadModel,
   readModel,
 } from "./read-model.js";
@@ -22,7 +27,10 @@ function requirementsPath(projectPath: string): string {
   return resolve(projectPath, ".ohno", "REQUIREMENTS.md");
 }
 
-function renderProjection(model: ReadModel): string {
+function renderProjection(
+  model: ReadModel,
+  prefs: PreferencesFile,
+): string {
   const board = model.plan_board.length === 0
     ? "- (no reviewed plan yet)"
     : model.plan_board
@@ -34,6 +42,11 @@ function renderProjection(model: ReadModel): string {
   const truth = model.truth_targets.length === 0
     ? "- (no truth targets classified)"
     : model.truth_targets.map((path) => `- \`${path}\``).join("\n");
+  const method = enabledRules(prefs).length === 0
+    ? "- (all working-method rules disabled — configure with `ohno preferences`)"
+    : enabledRules(prefs)
+      .map((rule) => `- \`${rule.id}\`: ${rule.text}`)
+      .join("\n");
   return [
     requirementsProjectionBegin,
     "",
@@ -55,6 +68,10 @@ function renderProjection(model: ReadModel): string {
     "### Truth targets",
     "",
     truth,
+    "",
+    "### Working method (enabled rules)",
+    "",
+    method,
     "",
     "### Discipline (eighteen sins pressure)",
     "",
@@ -105,8 +122,10 @@ function ensureScaffold(existing: string): string {
 export async function refreshRequirementsProjection(
   projectPath: string,
   model?: ReadModel,
+  prefs?: PreferencesFile,
 ): Promise<string> {
   const resolved = model ?? await readModel(projectPath);
+  const resolvedPrefs = prefs ?? await ensurePreferences(projectPath);
   await mkdir(resolve(projectPath, ".ohno"), { recursive: true });
   const path = requirementsPath(projectPath);
   let existing = "";
@@ -116,7 +135,10 @@ export async function refreshRequirementsProjection(
     existing = "";
   }
   const scaffolded = ensureScaffold(existing);
-  const next = upsertProjection(scaffolded, renderProjection(resolved));
+  const next = upsertProjection(
+    scaffolded,
+    renderProjection(resolved, resolvedPrefs),
+  );
   await writeFile(path, next, "utf8");
   return ".ohno/REQUIREMENTS.md";
 }

@@ -57,7 +57,7 @@
 > 合作式 Hooks + Git pre-commit、只读玻璃驾驶舱与计划看板（轮询 `/api/state`）、
 > 投影（`.ohno/PROGRESS.md` + AGENTS 托管块）、`ohno doctor`、handoff 身份、
 > A14 浏览器矩阵与 P01–P06 试验收据。公开账本：Tasks 1–7、Corrections 1–2、
-> 精华 E1–E10。这**不是**敌对 Agent 防护、生产权威或普适速度声明。
+> 精华 E1–E11。这**不是**敌对 Agent 防护、生产权威或普适速度声明。
 > 安装：`npm install -g oh-no-codex`。
 
 ## 为什么需要它
@@ -120,6 +120,7 @@ flowchart LR
 | 计划看板投影 | `status --json` 的 `plan_board`（DONE/HALF/READY/OUTLINE…） | 已完成 |
 | 生成式进度/AGENTS 托管块 | `ohno projectors refresh` → `.ohno/PROGRESS.md` + `AGENTS.md` 托管段 | 已完成 |
 | Owner 需求汇总日志 | `ohno requirements note/show` → `.ohno/REQUIREMENTS.md` | 已完成 |
+| 工作方法偏好 | `ohno preferences show/set/reset` → `.ohno/preferences.json`（默认：先调研、复用开源、前端先抄再改） | 已完成 |
 | 健康检查 | `ohno doctor [--json]` | 已完成 |
 | Handoff 身份 | resume 中的 path/branch/head/dirty | 已完成 |
 | 原子状态权威 | `.ohno/state.json` 唯一运行时权威 | 已完成 |
@@ -320,6 +321,7 @@ ohno projectors refresh --no-agents
 | --- | --- |
 | `.ohno/PROGRESS.md` | 从 state 生成的进度表（**不是**权威，勿手改当真相） |
 | `.ohno/REQUIREMENTS.md` | Owner 备注 + 目标/看板/Truth 投影 |
+| `.ohno/preferences.json` | Owner 工作方法（默认开启：先调研 / 复用开源 / 前端先抄再改） |
 | `AGENTS.md` 中 `<!-- ohno:managed-begin/end -->` 段 | 注入目标/看板/下一步；**块外**仍是你的规则 |
 
 `task start` / `verify` / `plan accept` / `change accept` 成功后也会尽量自动刷新投影。
@@ -349,6 +351,9 @@ ohno install                 # 可选：合作式 hooks
 ohno doctor                  # 健康检查
 ohno projectors refresh      # PROGRESS + REQUIREMENTS + AGENTS
 ohno requirements note --text "Owner: 先做用户可见保存，不要先造平台"
+ohno preferences show
+ohno preferences set --id frontend_adapt_not_invent --enabled false
+ohno preferences reset
 ohno resume
 ohno next
 ohno cockpit                 # GET /api/state，约 2.5s 轮询
@@ -476,7 +481,7 @@ Oh No, Codex! 把它们变成约束、测试或明确不做的事情，而不是
 
 | 能力 | 状态 | 证据边界 |
 | --- | --- | --- |
-| 公开产品状态 | `V1_TRIAL_ACCEPTED` | 账本 Tasks 1–7 + Corrections 1–2 + 精华 E1–E10 |
+| 公开产品状态 | `V1_TRIAL_ACCEPTED` | 账本 Tasks 1–7 + Corrections 1–2 + 精华 E1–E11 |
 | CLI 状态、计划、验证、恢复、变更、Hooks 与原子写行为 | `LOCAL_PASS` | 公共 Node 黑盒 A01–A12、A15、A16 |
 | 计划看板、投影、doctor、handoff 身份 | `LOCAL_PASS` | projectors / resume-status-next / hooks 黑盒 |
 | 只读驾驶舱投影 | `LOCAL_PASS` | A13 HTTP 输出与 `status --json` 相等 |
@@ -508,7 +513,7 @@ Oh No, Codex! 把它们变成约束、测试或明确不做的事情，而不是
 3. [验收合同](https://github.com/t01089572455/oh-no-codex/blob/main/docs/ACCEPTANCE.md)
 4. [实现账本](https://github.com/t01089572455/oh-no-codex/blob/main/docs/IMPLEMENTATION-PLAN.md)（当前状态：`V1_TRIAL_ACCEPTED`）
 5. [Codex 十八宗罪](https://github.com/t01089572455/oh-no-codex/blob/main/docs/CODEX-SINS.md)
-6. [精华迁移清单](https://github.com/t01089572455/oh-no-codex/blob/main/docs/ESSENCE-BACKLOG.md)（E1–E10 已完成）
+6. [精华迁移清单](https://github.com/t01089572455/oh-no-codex/blob/main/docs/ESSENCE-BACKLOG.md)（E1–E11 已完成）
 
 ## 开源许可
 

@@ -96,6 +96,30 @@ test("projectors write PROGRESS.md and AGENTS managed block from state", async (
   assert.match(agents, /\[ACTIVE\]/);
   assert.match(agents, /board-active/);
   assert.match(agents, /projection/);
+  assert.match(agents, /research_before_implement/);
+  assert.match(agents, /frontend_adapt_not_invent/);
+  assert.match(requirements, /research_before_implement/);
+
+  const prefsShow = runCli(projectPath, ["preferences", "show"]);
+  assert.equal(prefsShow.status, 0, prefsShow.stderr);
+  assert.match(prefsShow.stdout, /research_before_implement/);
+  assert.match(prefsShow.stdout, /frontend_adapt_not_invent/);
+
+  const prefsOff = runCli(projectPath, [
+    "preferences",
+    "set",
+    "--id",
+    "frontend_adapt_not_invent",
+    "--enabled",
+    "false",
+  ]);
+  assert.equal(prefsOff.status, 0, prefsOff.stderr);
+  assert.match(prefsOff.stdout, /OFF: frontend_adapt_not_invent/);
+  const agentsAfter = await readFile(
+    resolve(projectPath, "AGENTS.md"),
+    "utf8",
+  );
+  assert.match(agentsAfter, /\[OFF\].*frontend_adapt_not_invent/);
 
   // Second refresh replaces the managed block without duplicating it.
   const again = runCli(projectPath, ["projectors", "refresh"]);

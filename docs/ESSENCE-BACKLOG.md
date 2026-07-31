@@ -1,6 +1,6 @@
 # VibeTether → Oh No, Codex! essence backlog
 
-Status: **COMPLETE + REQUIREMENTS LOG** (Owner 2026-07-31)
+Status: **COMPLETE + REQUIREMENTS + PREFERENCES** (Owner 2026-07-31)
 
 ## Reading honesty (must read)
 
@@ -47,6 +47,7 @@ ideas live.
 | E8 | Init scaffolds AGENTS markers | bootstrap | `ohno init` writes managed block | **DONE** |
 | E9 | Owner requirements aggregation file | “all asks in one file” pattern + VT intent | `.ohno/REQUIREMENTS.md` + `ohno requirements note/show` | **DONE** |
 | E10 | Doctor pressure on sprawl / fake tests | sins #2/#9/#13 | `scope_discipline` + `blackbox_discipline` WARN | **DONE** |
+| E11 | Configurable working method defaults | Owner craft: research / reuse OSS / frontend adapt | `.ohno/preferences.json` + `ohno preferences` | **DONE** |
 
 ## Explicitly not scheduled (non-essences)
 
@@ -66,7 +67,7 @@ ideas live.
 
 ## Exact next
 
-> **Stop.** Scheduled essences E1–E10 are implemented as projections of
-> `.ohno/state.json` only (REQUIREMENTS log is Owner notes + live projection,
-> never a second authority). Do not reintroduce Gateway / multi-authority
-> design. Do not invent eighteen new subsystems to “cure” the sins.
+> **Stop.** Scheduled essences E1–E11 are implemented. Preferences and
+> REQUIREMENTS are Owner-configurable craft / notes projected into AGENTS —
+> never a second authority beside `.ohno/state.json`. Do not reintroduce
+> Gateway / skill-routing marketplaces.
