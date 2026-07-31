@@ -1,11 +1,12 @@
 {
   "schema_version": 1,
   "classification": "TRIAL_EVIDENCE",
-  "generated_at": "2026-07-31T02:59:13.467Z",
+  "generated_at": "2026-07-31T08:17:34.861Z",
   "implementation": {
     "dist_cli_sha256": "b41fc098e9098fc3f26be52c560deaf72cf7e075679dff5976c04329a9cd6bbc",
-    "head": "8655b03752329d808df58bde92cf353927864338",
-    "tree": "b3a658a0f861e75ee1f8abe221a298c84e8ee938"
+    "package_subject_sha256": "c862045943a6e9e6a50f579e7f174f2bfa3ecbc38cf70f3edcf8b0158ea34cfc",
+    "head": "9833bb7fcad6684dad9a64161fe758f120876c01",
+    "tree": "4154c4117ae553a2a38d78f77982e463bd22ee73"
   },
   "machine": {
     "arch": "x64",
@@ -547,14 +548,130 @@
     "serialized_resume_bytes": 3194
   },
   "p06": {
-    "browser": "Codex in-app Browser",
-    "reason": "IN_APP_BROWSER_NAVIGATION_REJECTED",
-    "result": "NOT_MEASURED",
-    "trials": []
+    "browser": "System Chrome/Edge via puppeteer-core",
+    "result": "TRIAL_PASS",
+    "trials": [
+      {
+        "id": "Trial A",
+        "budget_ms_exclusive": 250,
+        "p95_ms": 68.895,
+        "raw_ms": [
+          62.557,
+          65.319,
+          62.01,
+          61.563,
+          60.605,
+          61.136,
+          63.595,
+          63.5,
+          61.035,
+          62.365,
+          63.721,
+          65.096,
+          68.895,
+          64.257,
+          66.542,
+          63.374,
+          62.181,
+          61.176,
+          63.519,
+          64.453,
+          70.162,
+          62.968,
+          60.593,
+          63.508,
+          62.696,
+          61.553,
+          62.541,
+          61.191,
+          63.825,
+          62.097
+        ],
+        "result": "TRIAL_PASS"
+      },
+      {
+        "id": "Trial B",
+        "budget_ms_exclusive": 250,
+        "p95_ms": 71.461,
+        "raw_ms": [
+          71.461,
+          65.744,
+          60.574,
+          62.87,
+          59.905,
+          61.162,
+          59.528,
+          64.409,
+          60.671,
+          62.208,
+          62.288,
+          62.323,
+          60.724,
+          61.713,
+          61.897,
+          60.682,
+          63.971,
+          63.917,
+          62.805,
+          61.795,
+          63.596,
+          82.133,
+          63.048,
+          63.45,
+          63.526,
+          61.38,
+          63.633,
+          65.834,
+          66.169,
+          67.547
+        ],
+        "result": "TRIAL_PASS"
+      },
+      {
+        "id": "Trial C",
+        "budget_ms_exclusive": 250,
+        "p95_ms": 73.69,
+        "raw_ms": [
+          63.766,
+          68.196,
+          64.501,
+          60.916,
+          62.619,
+          62.371,
+          64.477,
+          62.7,
+          73.246,
+          62.226,
+          72.316,
+          64.18,
+          68.879,
+          69.299,
+          62.329,
+          61.573,
+          63.336,
+          73.69,
+          65.154,
+          65.086,
+          69.657,
+          65.245,
+          71.196,
+          70.514,
+          113.513,
+          70.098,
+          66.078,
+          67.843,
+          63.295,
+          66.029
+        ],
+        "result": "TRIAL_PASS"
+      }
+    ]
   },
   "limitations": [
     "Trials are evidence for these three disposable copies, not a universal performance claim.",
     "Codex and Git hooks are cooperative guardrails, not a hostile same-user security boundary.",
-    "P06 and A14 require the authorized in-app Browser and are not inferred from HTTP-only checks."
+    "Real-project trials are bounded harness trials: each copy uses ohno-trial fixtures rather than deep native business-test integration for TypeScript CLI / React Vite / Python OCR stacks.",
+    "P06 was measured with system Chrome/Edge via puppeteer-core after the Owner authorized external-browser acceptance when the in-app Browser rejected loopback navigation.",
+    "Package subject digest binds shipped runtime files only; it is not a signature or release attestation."
   ]
 }

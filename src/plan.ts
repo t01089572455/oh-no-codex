@@ -111,7 +111,8 @@ function normalizeTask(value: unknown): PlanTask {
     };
     if (!isPlanTask(task)) {
       throw new Error(
-        "invalid FROZEN task; stable task id and bounded contract are required",
+        "invalid FROZEN task; stable task id and bounded contract are required"
+        + "; allowed_files must use bounded non-root globs or concrete paths",
       );
     }
     return task;

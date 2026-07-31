@@ -48,11 +48,12 @@
 </p>
 
 > [!IMPORTANT]
-> **V1 remains `V1_CHANGES_REQUIRED`.** The CLI loops, cooperative hooks, Git
-> guard, and read-only Cockpit pass local public black boxes; three disposable
-> real-project copies pass P01–P05. Required in-app Browser acceptance A14 and
-> P06 could not run, so the project does not claim V1 trial acceptance. No npm
-> package has been published or released.
+> **V1 is a trial-acceptance candidate after Correction 2.** The CLI loops,
+> cooperative hooks, Git guard, read-only Cockpit, A14 browser matrix, and
+> P01–P06 trial receipts pass on the named local evidence. Status becomes
+> `V1_TRIAL_ACCEPTED` only after the clean final gate in
+> `docs/ACCEPTANCE.md` is recorded on a clean commit. No npm package has been
+> published or released.
 
 ## Why
 
@@ -247,10 +248,10 @@ Capability labels name the evidence actually held by this repository:
 | Capability | Status | Evidence boundary |
 | --- | --- | --- |
 | CLI state, plan, verify, resume, change, hooks, and atomic-write behavior | `LOCAL_PASS` | Public Node black boxes A01–A12, A15, and A16 |
-| Read-only Cockpit projection | `LOCAL_PASS` | A13 HTTP equality with `status --json`; no browser claim |
-| Three copied-project loops and P01–P05 | `TRIAL_PASS` | Anonymous TypeScript CLI, React/Vite Web, and Python OCR source copies |
-| Desktop/narrow visual and accessibility acceptance | `UNAVAILABLE` | A14 could not run in the required in-app Browser |
-| State-to-Cockpit browser reflection | `UNAVAILABLE` | P06 is `NOT_MEASURED`; HTTP timing is not substituted |
+| Read-only Cockpit projection | `LOCAL_PASS` | A13 HTTP equality with `status --json` |
+| Three copied-project loops and P01–P05 | `TRIAL_PASS` | Bounded harness trials on anonymous TypeScript CLI, React/Vite Web, and Python OCR source copies |
+| Desktop/narrow visual and accessibility acceptance | `LOCAL_PASS` | A14 via system Chrome/Edge after Owner authorized external browser |
+| State-to-Cockpit browser reflection | `TRIAL_PASS` | P06 three-copy browser receipt; worst p95 73.690 ms |
 | npm publication or release | `UNAVAILABLE` | Not authorized and not performed |
 
 The three-copy measurements use one untimed warm-up and 30 raw samples per
@@ -263,7 +264,7 @@ command per copy. Worst observed p95 values were:
 | `ohno resume` | `<500 ms` | `85.938 ms` | `TRIAL_PASS` |
 | Largest accepted resume capsule | `<4096 bytes` | `3194 bytes` | `TRIAL_PASS` |
 | Task-start harness overhead | `<2000 ms` | `97.667 ms` | `TRIAL_PASS` |
-| State-to-Cockpit browser reflection | `<250 ms` | `NOT_MEASURED` | `UNAVAILABLE` |
+| State-to-Cockpit browser reflection | `<250 ms` | `73.690 ms` | `TRIAL_PASS` |
 
 These are local trial results for the named anonymous copies and machine, not
 a universal speed or production-readiness guarantee.

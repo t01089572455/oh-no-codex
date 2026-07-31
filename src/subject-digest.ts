@@ -156,10 +156,21 @@ function addFramed(
   hash.update("\0");
 }
 
+function assertBoundedAllowedFiles(allowedFiles: string[]): void {
+  for (const pattern of allowedFiles) {
+    if (staticRoot(pattern) === ".") {
+      throw new Error(
+        `allowed_files pattern is unbounded at repository root: ${pattern}`,
+      );
+    }
+  }
+}
+
 export async function digestAllowedFiles(
   projectPath: string,
   allowedFiles: string[],
 ): Promise<string> {
+  assertBoundedAllowedFiles(allowedFiles);
   const hash = createHash("sha256");
   addFramed(hash, "format", "ohno-allowed-files-v1");
   for (const pattern of allowedFiles) {
@@ -266,6 +277,7 @@ export function digestAllowedIndex(
   projectPath: string,
   allowedFiles: string[],
 ): string {
+  assertBoundedAllowedFiles(allowedFiles);
   const hash = createHash("sha256");
   addFramed(hash, "format", "ohno-allowed-files-v1");
   for (const pattern of allowedFiles) {

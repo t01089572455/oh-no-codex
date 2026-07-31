@@ -157,6 +157,7 @@ async function scan(
         path,
         classification: kind,
         governing: true,
+        truth_target: truthTargets.has(path),
       });
     }
   }
@@ -197,7 +198,10 @@ export async function refreshTruthAtChangeBegin(
       );
     }
     if (
-      prior.classification === "TRUTH_TARGET"
+      (
+        prior.classification === "TRUTH_TARGET"
+        || prior.truth_target === true
+      )
       && !current.truthTargets.has(prior.path)
     ) {
       throw new Error(

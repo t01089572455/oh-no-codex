@@ -1,10 +1,11 @@
 # Codex-only V1 implementation plan
 
-Status: **V1_CHANGES_REQUIRED — A14_AND_P06_UNAVAILABLE**
+Status: **V1_TRIAL_ACCEPTED_CANDIDATE — Correction 2 complete; final clean gate pending after commit**
 
 Owner authorization: Tasks 1–7 below, including 6A–6C, were authorized as the
-complete V1 implementation scope on 2026-07-30. Execute them sequentially.
-Do not add another task or publish a package without new authorization.
+complete V1 implementation scope on 2026-07-30. Correction 2 (audit F3/F4/F5/F8,
+gate truth, external-browser A14/P06) was authorized by Owner handoff on
+2026-07-31. Do not publish a package without new authorization.
 
 ## Ledger
 
@@ -18,8 +19,9 @@ Do not add another task or publish a package without new authorization.
 | Task 5 — Codex hooks and Git pre-commit | LOCAL_PASS | A08, A09, A16 |
 | Task 6A — locked Cockpit design contract | LOCAL_PASS | design prerequisite for A13, A14 |
 | Task 6B — read-only Cockpit implementation | LOCAL_PASS | A13, part of P06 |
-| Task 6C — browser visual and functional acceptance | EXTERNAL_BROWSER_BLOCKED | A14 |
-| Task 7 — cross-project trials and final gate | V1_CHANGES_REQUIRED | A12, A15, A16, P01–P06 |
+| Task 6C — browser visual and functional acceptance | LOCAL_PASS | A14 (system Chrome/Edge after Owner external-browser authorization) |
+| Task 7 — cross-project trials and final gate | LOCAL_PASS pending clean commit gate | A12, A15, A16, P01–P06 |
+| Correction 2 — bounded scope, Truth shrink, pending summary, package subject, gate truth | LOCAL_PASS | F3–F5, F8; honest A14/P06 |
 
 ## Task 1 local evidence
 
@@ -445,35 +447,46 @@ Current row classification:
 | Rows | Classification |
 | --- | --- |
 | A01–A13, A15, A16 | `LOCAL_PASS` (also exercised on all three real copies where applicable) |
-| A14 | `UNAVAILABLE` — required in-app Browser rejected the authorized loopback URL |
+| A14 | `LOCAL_PASS` — system Chrome/Edge browser matrix after Owner authorized external browser |
 | P01–P05 | `TRIAL_PASS` on every copied project |
-| P06 | `UNAVAILABLE` / `NOT_MEASURED` — no valid browser samples |
+| P06 | `TRIAL_PASS` — three 30-sample browser receipts; worst p95 `73.690 ms` |
 
-Final clean-candidate gate was run once on commit
-`0c5e4f849e6f7b8191f965b950d917e8dfafed2f` (Node.js v24.11.1):
+### Correction 2 evidence (2026-07-31)
 
-| Command | Result |
-| --- | --- |
-| `npm ci` | exit 0; 3 packages installed |
-| `npm run typecheck` | exit 0 |
-| `npm run build` | exit 0 |
-| `npm test` | exit 0; 112/112 passed |
-| `npm run test:acceptance` | exit 0; 112/112 passed |
-| `npm run test:performance` | exit 1 by design; P01–P05/P04 passed and the sole failure is `P06_NOT_MEASURED: IN_APP_BROWSER_NAVIGATION_REJECTED` |
-| `npm pack --dry-run` | exit 0; private `oh-no-codex@0.0.0`, 39 intended runtime/package files, no tests/evidence/docs/source tree |
-| `git diff --check` | exit 0; no output |
-| `git status --short` | exit 0; no output (`WORKTREE_CLEAN`) |
+Audit findings F1–F8 from the V1 clean-candidate review were addressed without
+widening into a governance OS:
 
-No npm publish, tag, release, or network mutation is authorized or performed.
+- F1/F2: prior “exit 1 by design / Final clean-candidate gate” language is
+  retired. Performance exit 1 was a failed/unavailable attempt, not a pass.
+  Evidence is rebound to the current package subject and browser receipts.
+- F3: `allowed_files` rejects repository-root globs (`**`, `*.ts`, `README*`).
+  Owning black box: `test/blackbox/correction-2.test.mjs`.
+- F4: Truth inventory entries persist `truth_target` and include membership in
+  the inventory digest so removing a built-in path from Owner Truth fails closed.
+- F5: `change begin` persists bounded `summary` and `base_cursor`; pending
+  change-id binding includes those base fields without blocking legitimate
+  replacement-plan edits during `PENDING_REVIEW`.
+- F6: DESIGN documents cooperative platform-shell delivery (`shell: true`) with
+  no agent rewrite; no command parser was added.
+- F7: real-project trials remain bounded harness trials, not deep native-stack
+  business-test integration proofs.
+- F8: trial evidence binds `package_subject_sha256` recomputed from package
+  runtime files; `test/performance/local-latency.test.mjs` recomputes it.
+- Task 6C CSS: narrow masthead/rail overlap fix in `assets/cockpit/cockpit.css`.
+- A14: `node test/browser/a14-acceptance.mjs` → `A14_BROWSER_ACCEPTANCE_PASS`.
+- P06: `node test/browser/measure-p06.mjs` → `TRIAL_PASS` on Trials A–C.
+
+Pre-commit owning suite on this Correction 2 tree: `npm test` 116/116,
+`npm run test:performance` 2/2, `npm run typecheck` exit 0.
 
 ## Exact current action
 
 There is exactly one. **Unique next:**
 
-> **A14/P06 browser retry:** when the required in-app Browser can open the
-> authorized loopback URL, run the locked desktop/narrow visual matrix and the
-> three-copy browser receipt. Until then the exact status is
-> `V1_CHANGES_REQUIRED` with A14/P06 `UNAVAILABLE`. No Task 8.
+> **Commit Correction 2, then run the final clean ACCEPTANCE gate once**
+> (`npm ci` through `npm pack --dry-run`, `git diff --check`, clean status).
+> If every command exits 0, record public status to `V1_TRIAL_ACCEPTED` and stop.
+> No Task 8, no npm publish, no release.
 
 ## Shared implementation rules
 

@@ -677,6 +677,8 @@ test("pending document sync has one authoritative next action", async (t) => {
     ],
     reviewed_diff_digest: null,
     base_plan_revision: null,
+    base_cursor: state.cursor,
+    summary: "Owner fixture for pending document sync projection",
     started_at: new Date().toISOString(),
   };
   await writeFile(

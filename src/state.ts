@@ -18,6 +18,7 @@ export const displayFieldByteLimits = Object.freeze({
   title: 256,
   expectedBehavior: 512,
   testCommand: 1_024,
+  changeSummary: 512,
 });
 
 export type DisplayTextIssue = "LINE_BREAK" | "TOO_LARGE";
@@ -109,6 +110,7 @@ export interface TruthClassificationEntry {
   path: string;
   classification: TruthClassification;
   governing: true;
+  truth_target: boolean;
 }
 
 export interface TruthInventory {
@@ -142,6 +144,8 @@ export interface ProjectState {
       required_paths: string[];
       reviewed_diff_digest: string | null;
       base_plan_revision: string | null;
+      base_cursor: number;
+      summary: string;
       started_at: string;
     };
 }
@@ -212,6 +216,25 @@ function isSafePath(value: unknown): value is string {
     && !/[\0\r\n]/u.test(normalized);
 }
 
+/**
+ * Allowed-file patterns must stay inside a non-root static directory or name a
+ * concrete relative path. Root-level globs such as `**`, `*.ts`, or `README*`
+ * would enumerate the entire repository and are rejected.
+ */
+export function isBoundedAllowedPattern(value: unknown): value is string {
+  if (!isSafePath(value)) {
+    return false;
+  }
+  const magicIndex = [...value].findIndex((character) =>
+    "*?[]{}".includes(character)
+  );
+  if (magicIndex === -1) {
+    return true;
+  }
+  const prefix = value.slice(0, magicIndex);
+  return prefix.lastIndexOf("/") !== -1;
+}
+
 function isFrozenFields(value: Record<string, unknown>): boolean {
   return isBoundedDisplayString(
     value.expected_behavior,
@@ -224,7 +247,7 @@ function isFrozenFields(value: Record<string, unknown>): boolean {
     && isNonBlankString(value.stop_condition)
     && Array.isArray(value.allowed_files)
     && value.allowed_files.length > 0
-    && value.allowed_files.every(isNonBlankString)
+    && value.allowed_files.every(isBoundedAllowedPattern)
     && Number.isSafeInteger(value.time_budget_minutes)
     && (value.time_budget_minutes as number) > 0;
 }
@@ -430,12 +453,18 @@ function isTruthInventory(value: unknown): value is TruthInventory {
   for (const entry of value.classification) {
     if (
       !isRecord(entry)
-      || !hasExactKeys(entry, ["path", "classification", "governing"])
+      || !hasExactKeys(entry, [
+        "path",
+        "classification",
+        "governing",
+        "truth_target",
+      ])
       || !isSafePath(entry.path)
       || !truthClassifications.includes(
         entry.classification as TruthClassification,
       )
       || entry.governing !== true
+      || typeof entry.truth_target !== "boolean"
     ) {
       return false;
     }
@@ -452,7 +481,15 @@ export function truthInventoryDigestFor(
   classification: readonly TruthClassificationEntry[],
 ): string {
   return createHash("sha256")
-    .update(JSON.stringify(classification.map(({ path }) => path)))
+    .update(JSON.stringify(classification.map(({
+      path,
+      classification: kind,
+      truth_target,
+    }) => ({
+      path,
+      classification: kind,
+      truth_target,
+    }))))
     .digest("hex");
 }
 
@@ -482,6 +519,8 @@ function isDocumentSync(
     "required_paths",
     "reviewed_diff_digest",
     "base_plan_revision",
+    "base_cursor",
+    "summary",
     "started_at",
   ])
     && value.status === "PENDING_REVIEW"
@@ -495,6 +534,12 @@ function isDocumentSync(
     && (
       value.base_plan_revision === null
       || isSha256(value.base_plan_revision)
+    )
+    && Number.isSafeInteger(value.base_cursor)
+    && (value.base_cursor as number) >= 0
+    && isBoundedDisplayString(
+      value.summary,
+      displayFieldByteLimits.changeSummary,
     )
     && isRfc3339Timestamp(value.started_at);
 }

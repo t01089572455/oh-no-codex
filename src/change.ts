@@ -91,6 +91,10 @@ function pendingAuthorityDigest(
   state: ProjectState,
   nonce: string,
 ): string {
+  // Bind the non-display current authority that must not drift while a change
+  // is open. Live plan replacement fields stay mutable so a reviewed
+  // replacement plan can be proposed during PENDING_REVIEW; base plan identity
+  // is captured once in document_sync at begin.
   return createHash("sha256")
     .update(JSON.stringify({
       schema_version: state.schema_version,
@@ -105,6 +109,8 @@ function pendingAuthorityDigest(
           status: state.document_sync.status,
           required_paths: state.document_sync.required_paths,
           base_plan_revision: state.document_sync.base_plan_revision,
+          base_cursor: state.document_sync.base_cursor,
+          summary: state.document_sync.summary,
           started_at: state.document_sync.started_at,
         }
         : {
@@ -248,6 +254,8 @@ export async function beginChange(
       required_paths: requiredPaths,
       reviewed_diff_digest: null,
       base_plan_revision: state.plan_revision,
+      base_cursor: state.cursor,
+      summary: options.summary,
       started_at: startedAt,
     },
   };
@@ -260,6 +268,8 @@ export async function beginChange(
       required_paths: requiredPaths,
       reviewed_diff_digest: null,
       base_plan_revision: state.plan_revision,
+      base_cursor: state.cursor,
+      summary: options.summary,
       started_at: startedAt,
     },
   };

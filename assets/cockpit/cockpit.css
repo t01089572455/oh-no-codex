@@ -639,15 +639,24 @@ footer {
   }
 
   .masthead {
-    grid-template-columns: 64px minmax(0, 1fr) auto;
+    grid-template-columns: 64px minmax(0, 1fr);
+    grid-template-areas:
+      "aperture copy"
+      "aperture controls";
     gap: 12px;
     min-height: 112px;
     padding-block: 12px;
   }
 
   .brand-aperture {
+    grid-area: aperture;
+    align-self: start;
     width: 64px;
     height: 48px;
+  }
+
+  .brand-copy {
+    grid-area: copy;
   }
 
   h1 {
@@ -659,13 +668,14 @@ footer {
   }
 
   .masthead-controls {
+    grid-area: controls;
     align-self: start;
+    justify-content: flex-end;
+    flex-wrap: wrap;
   }
 
   .locality {
-    position: absolute;
-    right: 0;
-    bottom: 8px;
+    position: static;
   }
 
   button {
@@ -694,10 +704,10 @@ footer {
   .rail-copy {
     position: absolute;
     top: -64px;
-    left: 0;
+    left: 24px;
     display: grid;
     grid-template-columns: 1fr auto;
-    width: calc(100vw - 32px);
+    width: calc(100vw - 56px);
     min-height: 64px;
     padding: 10px 12px;
     border: 2px solid var(--ink);

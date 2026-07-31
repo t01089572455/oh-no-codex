@@ -48,10 +48,10 @@
 </p>
 
 > [!IMPORTANT]
-> **V1 当前仍是 `V1_CHANGES_REQUIRED`。** CLI 闭环、合作式 Hooks、Git
-> 护栏和只读驾驶舱已经通过本地公共黑盒；三个一次性真实项目副本通过了
-> P01–P05。必需的应用内 Browser 验收 A14 与 P06 未能运行，因此项目不声称
-> V1 试验验收完成。目前没有发布 npm 包或 Release。
+> **V1 在 Correction 2 后是试验验收候选。** CLI 闭环、合作式 Hooks、Git
+> 护栏、只读驾驶舱、A14 浏览器矩阵与 P01–P06 试验收据均已在命名本地证据上
+> 通过。只有在干净提交上记录 `docs/ACCEPTANCE.md` 最终 gate 之后，状态才
+> 可写为 `V1_TRIAL_ACCEPTED`。目前没有发布 npm 包或 Release。
 
 ## 为什么需要它
 
@@ -239,10 +239,10 @@ Oh No, Codex! 把它们变成约束、测试或明确不做的事情，而不是
 | 能力 | 状态 | 证据边界 |
 | --- | --- | --- |
 | CLI 状态、计划、验证、恢复、变更、Hooks 与原子写行为 | `LOCAL_PASS` | 公共 Node 黑盒 A01–A12、A15、A16 |
-| 只读驾驶舱投影 | `LOCAL_PASS` | A13 HTTP 输出与 `status --json` 相等；不包含浏览器声明 |
-| 三个项目副本的完整闭环与 P01–P05 | `TRIAL_PASS` | 匿名 TypeScript CLI、React/Vite Web 与 Python OCR 源码副本 |
-| 桌面/窄屏视觉与无障碍验收 | `UNAVAILABLE` | 必需的应用内 Browser 无法运行 A14 |
-| 状态到驾驶舱的浏览器反映延迟 | `UNAVAILABLE` | P06 为 `NOT_MEASURED`；没有用 HTTP 计时代替 |
+| 只读驾驶舱投影 | `LOCAL_PASS` | A13 HTTP 输出与 `status --json` 相等 |
+| 三个项目副本的完整闭环与 P01–P05 | `TRIAL_PASS` | 匿名 TypeScript CLI、React/Vite Web 与 Python OCR 源码副本上的有界 harness 试验 |
+| 桌面/窄屏视觉与无障碍验收 | `LOCAL_PASS` | Owner 授权外置浏览器后，用系统 Chrome/Edge 完成 A14 |
+| 状态到驾驶舱的浏览器反映延迟 | `TRIAL_PASS` | P06 三副本浏览器收据；最差 p95 73.690 ms |
 | npm 发布或 Release | `UNAVAILABLE` | 未授权，也未执行 |
 
 三个副本的测量均先做一次不计时 warm-up，再对每条命令保存 30 个原始样本。
@@ -255,7 +255,7 @@ Oh No, Codex! 把它们变成约束、测试或明确不做的事情，而不是
 | `ohno resume` | `<500 ms` | `85.938 ms` | `TRIAL_PASS` |
 | 最大合法恢复摘要 | `<4096 bytes` | `3194 bytes` | `TRIAL_PASS` |
 | 任务启动 Harness 开销 | `<2000 ms` | `97.667 ms` | `TRIAL_PASS` |
-| 状态到驾驶舱的浏览器反映延迟 | `<250 ms` | `NOT_MEASURED` | `UNAVAILABLE` |
+| 状态到驾驶舱的浏览器反映延迟 | `<250 ms` | `73.690 ms` | `TRIAL_PASS` |
 
 这些只是指定匿名副本与本机上的试验结果，不是通用速度或生产就绪保证。
 

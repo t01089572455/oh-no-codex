@@ -6,6 +6,8 @@ import { dirname, resolve } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
+import { computePackageSubjectSha256 } from "../helpers/package-subject.mjs";
+
 const repositoryRoot = resolve(
   dirname(fileURLToPath(import.meta.url)),
   "..",
@@ -48,6 +50,16 @@ test("three anonymous real-project receipts prove P01-P05 and the maximum P04 fi
     evidence.implementation.dist_cli_sha256,
     sha256(await readFile(cliPath)),
     "trial evidence must remain bound to the built CLI bytes",
+  );
+  assert.match(
+    evidence.implementation.package_subject_sha256 ?? "",
+    /^[a-f0-9]{64}$/u,
+    "trial evidence must bind a package subject digest",
+  );
+  assert.equal(
+    evidence.implementation.package_subject_sha256,
+    await computePackageSubjectSha256(repositoryRoot),
+    "package subject digest must recompute from current package runtime files",
   );
   const ancestor = spawnSync(
     "git",
@@ -126,14 +138,22 @@ test("three anonymous real-project receipts prove P01-P05 and the maximum P04 fi
   assert.equal(evidence.p04.result, "TRIAL_PASS");
 });
 
-test("P06 requires three real in-app Browser sample sets and cannot pass from HTTP checks", async () => {
+test("P06 requires three real browser sample sets and cannot pass from HTTP checks", async () => {
   const evidence = await readEvidence();
   assert.equal(
     evidence.p06.result,
     "TRIAL_PASS",
     `P06_NOT_MEASURED: ${evidence.p06.reason ?? "missing browser receipt"}`,
   );
-  assert.equal(evidence.p06.browser, "Codex in-app Browser");
+  assert.match(
+    evidence.p06.browser ?? "",
+    /Browser|Chrome|Chromium|Edge/iu,
+    "P06 must name a real browser surface, not an HTTP-only substitute",
+  );
+  assert.doesNotMatch(
+    evidence.p06.browser ?? "",
+    /HTTP-only/iu,
+  );
   assert.equal(evidence.p06.trials.length, 3);
   for (const trial of evidence.p06.trials) {
     assert.match(trial.id, /^Trial [A-C]$/u);
@@ -141,5 +161,6 @@ test("P06 requires three real in-app Browser sample sets and cannot pass from HT
     const recomputed = percentile95(trial.raw_ms);
     assert.equal(trial.p95_ms, Number(recomputed.toFixed(3)));
     assert.ok(recomputed < 250, `${trial.id} P06 p95 ${recomputed}`);
+    assert.equal(trial.result, "TRIAL_PASS");
   }
 });

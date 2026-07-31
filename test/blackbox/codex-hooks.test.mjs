@@ -179,6 +179,8 @@ async function setPendingDocumentSync(projectPath) {
     required_paths: ["docs/PLAN.md"],
     reviewed_diff_digest: null,
     base_plan_revision: state.plan_revision,
+    base_cursor: state.cursor,
+    summary: "Owner fixture for pending PreToolUse document sync",
     started_at: new Date().toISOString(),
   };
   await mkdir(resolve(projectPath, ".ohno"), { recursive: true });

@@ -197,7 +197,10 @@ The implementation does not attempt to decide whether prose is philosophically
 1. loads the active contract;
 2. captures the current Git HEAD (`UNBORN` is valid);
 3. hashes the contract and content/absence of files matched by `allowed_files`;
-4. runs the exact command without shell rewriting;
+4. runs the exact frozen command string by handing it unchanged to the
+   platform shell (`shell: true` / equivalent). The product does not tokenize,
+   normalize, rewrite, or re-quote the command; platform shell interpretation
+   remains cooperative OS behavior, not a security boundary;
 5. records exit code, timestamps, and subject digest;
 6. on failure, leaves the task active and returns non-zero;
 7. on success, rechecks the digest to detect test-time mutation;
