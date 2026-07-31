@@ -1,11 +1,9 @@
-<!-- Bilingual homepage: language switch uses in-page anchors only. -->
+<!-- Bilingual homepage: side-by-side language bar + in-page anchors (GitHub has no JS tabs). -->
 <p align="center">
-  <a href="#readme-en"><strong>English</strong></a>
-  &nbsp;·&nbsp;
-  <a href="#readme-zh"><strong>简体中文</strong></a>
+  <a href="#readme-en"><img alt="English" src="https://img.shields.io/badge/English-74D6B1?style=for-the-badge&labelColor=202624&color=74D6B1"></a>
+  &nbsp;
+  <a href="#readme-zh"><img alt="简体中文" src="https://img.shields.io/badge/%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87-FF4B35?style=for-the-badge&labelColor=202624&color=FF4B35"></a>
 </p>
-
-<p align="center"><sub>Same homepage — in-page jump, no other file.</sub></p>
 
 <a id="readme-en"></a>
 
@@ -579,9 +577,9 @@ or endorsed by OpenAI.
 <a id="readme-zh"></a>
 
 <p align="center">
-  <a href="#readme-en">English</a>
-  &nbsp;·&nbsp;
-  <strong>简体中文</strong>
+  <a href="#readme-en"><img alt="English" src="https://img.shields.io/badge/English-74D6B1?style=for-the-badge&labelColor=202624&color=74D6B1"></a>
+  &nbsp;
+  <a href="#readme-zh"><img alt="简体中文" src="https://img.shields.io/badge/%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87-FF4B35?style=for-the-badge&labelColor=202624&color=FF4B35"></a>
 </p>
 
 <p align="center">
