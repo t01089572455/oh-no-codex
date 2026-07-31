@@ -17,13 +17,13 @@
 </p>
 
 <p align="center">
-  <strong>再强的 Agent 也会跑偏。</strong><br>
-  本地 harness：冻结一块任务，用用户可见的黑盒证明它，<br>
-  做完就停 — 而不是「看起来做完了」。
+  <strong>Codex 能写出很好的代码，也仍然能把项目写歪。</strong><br>
+  Oh No 是本地 harness，用来在 vibe coding 时<strong>把项目拉回对齐</strong>：<br>
+  一个目标、一块冻结任务、一条用户可见的黑盒、新鲜证据 — 以及<strong>这一刀任务</strong>的干净收口。
 </p>
 
 <p align="center">
-  <code>一个目标</code>&nbsp;&nbsp;·&nbsp;&nbsp;<code>一块任务</code>&nbsp;&nbsp;·&nbsp;&nbsp;<code>一条测试</code>&nbsp;&nbsp;·&nbsp;&nbsp;<code>通过就停</code>
+  <code>对齐</code>&nbsp;&nbsp;·&nbsp;&nbsp;<code>有界</code>&nbsp;&nbsp;·&nbsp;&nbsp;<code>证明</code>&nbsp;&nbsp;·&nbsp;&nbsp;<code>恢复</code>
 </p>
 
 <p align="center">
@@ -35,87 +35,119 @@
 </p>
 
 <p align="center">
-  <a href="#为什么需要它">为什么</a> ·
+  <a href="#真正的问题">问题</a> ·
   <a href="#十八宗罪">十八宗罪</a> ·
-  <a href="#规则">规则</a> ·
+  <a href="#ohnocodex-是干什么的">它干什么</a> ·
   <a href="#安装">安装</a> ·
-  <a href="#你真正怎么用">使用</a> ·
-  <a href="#盒子里有什么">交付</a> ·
+  <a href="#日常怎么用">日常</a> ·
   <a href="#证据">证据</a>
 </p>
 
 ---
 
-## 为什么需要它
+## 真正的问题
 
-Codex 能写出很好的代码，也仍然能把仓库写得比开始更糟。
+主问题**不是**「Codex 服务没关干净」。  
+主问题是 **一边写代码一边跑偏（drift）**：仓库离你要的东西越来越远，而 Agent 看起来还在「很勤奋」。
 
-不是模型弱 — 是**长会话会自己发明权威**。
+常见形态：
 
-一句小需求膨胀成平台。  
-用户看不见的单测绿了，就宣布完成。  
-聊天摘要压过你昨天接受的计划。  
-验收过了，「下一步」被当成继续干的授权。
+| 优先级 | 出什么事 | 例子 |
+| --- | --- | --- |
+| **1 · 语义与范围** | 把你的话解释大、解释偏 | 「草稿保存」变成一整套平台 |
+| **2 · 假完成** | 内部绿灯 ≠ 用户看得见的成功 | mock 绿了，刷新草稿还是丢 |
+| **3 · 真相丢失** | 聊天 / 旧计划压过项目状态 | 新 Session 靠聊天考古重建现场 |
+| **4 · 这一刀收不掉** | 真验收过了还继续摊大 | 把「下一步」当成可以随便开新阶段的授权 |
 
-如果你在周五晚上经历过这些，这个仓库是为你写的。
+第 4 点是真的（十八宗罪第 3 条），但只是**跑偏的一种症状**，不是产品的全部定义。
 
-**Oh No, Codex!** 是合作式、本地的 harness —  
-不是云产品，不是策略引擎，也不假装能锁死你自己账号下的恶意进程。
+我们真正优化的，是新 Session 能否从**项目文件**里立刻回答：
+
+1. Owner 要达成什么？  
+2. 已经完成了什么？  
+3. **当前唯一**有边界的任务是什么？  
+4. 用户可见行为 + **精确**测试命令是什么？  
+5. 卡在哪？  
+6. **唯一下一步**是什么？（只是**定位**，不是新授权）
+
+这就是产品合同的白话版。
+
+---
+
+## 两句容易读歪的话（先说清楚）
+
+### 「验收之后，下一步被当成可以继续干」
+
+意思是：
+
+- 某一刀任务已经 PASS 了；  
+- Agent 却把 `next` / 「下一步建议」当成**新权限**，自动开下一坨未授权工作。  
+
+Oh No 的处理是：`next` **只告诉你计划里下一刀是什么**，**不等于**已经批准开工；新一刀仍要冻结合同、再 `task start` / `verify`。
+
+### 「冻结任务 + 黑盒 + 停下」
+
+意思是：
+
+| 说法 | 正确含义 | 不是 |
+| --- | --- | --- |
+| 冻结任务 | 写代码前把行为、测试、文件范围、停止条件写死 | 冻结整个 Codex 软件 |
+| 用户可见黑盒 | 用你关心的那条命令证明（例如保存后刷新仍在） | 只跑内部 mock 就叫完成 |
+| 停下 | **这一刀任务**收口，禁止假完成、禁止摊成平台 | **关掉 Codex 服务 / 退出应用** |
 
 ---
 
 ## 十八宗罪
 
-我们把反复出现的 Codex 失败审成 **十八宗罪**。  
-这是产品的敌情表 — 放在正文里，不藏折叠。
+长会话失败模式的点名表 — 设计敌情，不是十八个新功能。
 
 | # | 宗罪 | 一句话 |
 | ---: | --- | --- |
-| 1 | 越俎代庖 | 你要一扇门，它盖一座城。 |
-| 2 | 最大解释 | 「控制」变成整套平台。 |
-| 3 | 完成以后不停 | 验收过了还继续干。 |
-| 4 | 审查变改权 | 「看看」变成「我已经改完了」。 |
-| 5 | 僵尸权威 | 旧计划压过你最新决定。 |
-| 6 | 摘要当真 | 压缩稿硬化成假历史。 |
-| 7 | 局部绿灯 | 一个 mock 当产品完成。 |
-| 8 | 自证闭环 | 同一 Agent 写主张也写掌声。 |
-| 9 | 测试戏剧 | 内部全绿，用户路径仍坏。 |
+| 1 | 越俎代庖 | 你要门，它盖城。 |
+| 2 | 最大解释 | 「控制」变成平台。 |
+| 3 | 完成以后不停 | 这一刀过了还继续摊。 |
+| 4 | 审查变改权 | 「看看」变成偷改。 |
+| 5 | 僵尸权威 | 旧计划压过新决定。 |
+| 6 | 摘要当真 | 压缩稿变假历史。 |
+| 7 | 局部绿灯 | mock 绿 = 产品完成。 |
+| 8 | 自证闭环 | 自己写主张自己鼓掌。 |
+| 9 | 测试戏剧 | 内部绿、用户路径坏。 |
 | 10 | 代理目标 | 覆盖率压过你的结果。 |
 | 11 | 审稿膨胀 | 验收项越加越多。 |
-| 12 | 控制税 | 工具比跑偏本身更贵。 |
+| 12 | 控制税 | 工具比跑偏更贵。 |
 | 13 | 重造世界 | 丢掉 Git 和普通测试。 |
-| 14 | 工作区混乱 | 写进错误树或脏目录。 |
-| 15 | 交接税 | 新 Session 先考古聊天。 |
-| 16 | 体验最后还 | 内部堆几周，UI 未过浏览器。 |
+| 14 | 工作区混乱 | 写错目录/分支。 |
+| 15 | 交接税 | 新 Session 先考古。 |
+| 16 | 体验最后还 | UI 拖到最后且未验收。 |
 | 17 | 附和与吹 | 秒道歉 + 无证据承诺。 |
-| 18 | 道歉无约束 | 软软对不起，明天再犯。 |
+| 18 | 道歉无约束 | 对不起，明天再犯。 |
 
-完整审计（脱敏）：[`docs/CODEX-SINS.md`](./docs/CODEX-SINS.md)。
-
-Oh No **不会**为十八宗罪各造十八个衙门。  
-它只留几条硬边：**Owner 原话、一块任务、黑盒 verify、单一状态文件、停就是停。**
+全文：[`docs/CODEX-SINS.md`](./docs/CODEX-SINS.md)。
 
 ---
 
-## 规则
+## Oh No 是干什么的
+
+**不是**关掉 Codex 应用。  
+**是**让每一刀工作：**有界、可证、可恢复**。
 
 <p align="center">
   <img
     src="./assets/brand/oh-no-loop.png"
     width="880"
-    alt="目标 → 任务 → 证明 → 停下"
+    alt="目标 → 任务 → 证明 → 收口这一刀（不是关掉 Codex）"
   >
 </p>
 
-| 时刻 | 没有它 | 有 Oh No |
-| --- | --- | --- |
-| **开工** | 任务未冻就开始写 | 只启光标任务：行为、一条测试、文件、预算、停止 |
-| **收工** | 「看着行」 | `ohno verify` 跑精确黑盒 |
-| **改需求** | 文档落后代码狂奔 | 展示治理 diff，换 plan 前拦住编码 |
-| **恢复** | 聊天考古 | `ohno resume`：目标、证明、阻塞、下一步 |
+| 能力 | 含义 |
+| --- | --- |
+| **冻结任务** | 受支持写入前：用户可见行为、一条黑盒命令、允许文件、时间预算、停止条件 |
+| **黑盒证明** | `ohno verify` 跑**那条**命令，不是 Agent 自述 |
+| **收口这一刀** | 新鲜 PASS 关闭当前任务并推进计划光标；`next` 只**指向**下一刀，不自动授权乱开 |
+| **恢复现场** | `ohno resume` / 驾驶舱读 `.ohno/state.json`（唯一运行时权威） |
 
-**唯一运行时权威：** `.ohno/state.json`  
-其余全部是**投影**，不是第二真相。
+Hooks 与 pre-commit 是**合作式护栏**。  
+不是敌对安全沙箱。
 
 ---
 
@@ -128,30 +160,26 @@ ohno init --goal "让草稿保存可靠"
 ohno install
 ```
 
-需要 **Node.js ≥ 22.20** 与普通 Git 仓库。  
-包：[npm 上的 oh-no-codex](https://www.npmjs.com/package/oh-no-codex)（`0.1.1`）。
+Node.js **≥ 22.20**，普通 Git 仓库。  
+npm：[oh-no-codex](https://www.npmjs.com/package/oh-no-codex)（`0.1.1`）。
 
 ---
 
-## 你真正怎么用
+## 日常怎么用
 
-`init` + `install` 之后，多数时候**对 Codex 说话**。  
-Hooks 注入 resume、刷新投影、协作拦越权写。
+装好后主要**和 Codex 说话**，harness 在下面托着。
 
-| 你的意思 | Codex 执行 |
+| 意图 | 命令 |
 | --- | --- |
-| 开工 | `ohno task start`（或先 plan） |
-| 做完了 | **只** `ohno verify` |
+| 开这一刀 | `ohno task start` |
+| 证明这一刀 | **只** `ohno verify` |
 | 需求变了 | `ohno change begin --summary "…"` |
-| 记下来 | `ohno requirements note --text "…"` |
-| 卡在哪 | `ohno resume` / `ohno doctor` |
+| 记下 Owner 原话 | `ohno requirements note --text "…"` |
+| 现在卡在哪 | `ohno resume` · `ohno doctor` · `ohno cockpit` |
 
-映射写在 `AGENTS.md` 托管块。可选：[`skills/oh-no-control/SKILL.md`](./skills/oh-no-control/SKILL.md)。
+对话映射在 `AGENTS.md` 托管块；可选 [`skills/oh-no-control/SKILL.md`](./skills/oh-no-control/SKILL.md)。
 
-```bash
-ohno cockpit          # 只读玻璃看板，与 status --json 同源
-ohno preferences show # 默认：先调研、复用开源、前端先抄再改
-```
+工艺默认（可关）：先调研、复用开源、前端基于参考改 — `ohno preferences show`。
 
 **永不静默：** 未审 accept · 伪造 PASS · 把 `next` 当空白支票。
 
@@ -161,43 +189,27 @@ ohno preferences show # 默认：先调研、复用开源、前端先抄再改
 
 | 表面 | 作用 |
 | --- | --- |
-| `plan` · `task` · `verify` | 有界开工 → 证据收工 |
-| `status` · `resume` · `next` · `doctor` | 秒级恢复 |
-| `change` | 诚实需求与文档同步 |
-| `projectors` | PROGRESS + AGENTS 胶囊 |
-| `preferences` · `requirements` | 工艺开关 + Owner 日志 |
-| hooks · pre-commit | 合作式护栏 |
-| `cockpit` | 只读任务板 |
+| `plan` · `task` · `verify` | 有界 → 证明 → 收口 |
+| `status` · `resume` · `next` · `doctor` | 不用聊天考古 |
+| `change` | 需求与治理文档同步 |
+| `projectors` · `preferences` · `requirements` | 进度、工艺、原话日志 |
+| hooks · pre-commit · `cockpit` | 护栏 + 只读看板 |
 
-**V1 故意没有：** 数据库、守护进程、技能市场、多 Agent 调度、敌对同用户硬隔离。
+**V1 故意没有：** 数据库、守护进程、技能市场、多 Agent 操作系统、「绝对安全」。
 
 ---
 
 ## 证据
 
-诚实是品牌的一部分（第 17 宗）。
-
 | 主张 | 标签 |
 | --- | --- |
-| 公开状态 | `V1_TRIAL_ACCEPTED` |
+| 产品状态 | `V1_TRIAL_ACCEPTED` |
 | CLI / hooks / 原子状态 | `LOCAL_PASS` |
-| 驾驶舱 = status JSON | `LOCAL_PASS` |
+| 驾驶舱 = `status --json` | `LOCAL_PASS` |
 | 可弃用真实副本 | `TRIAL_PASS`（P01–P06） |
 | npm | **`0.1.1`** |
 
-本地试验 p95（命名副本，非普适 SLA）：`status`/`next`/`resume` 百毫秒级，驾驶舱反射 &lt; 80 ms 级。
-
 合同：[产品](./docs/PRODUCT-CONTRACT.md) · [设计](./docs/DESIGN.md) · [验收](./docs/ACCEPTANCE.md) · [账本](./docs/IMPLEMENTATION-PLAN.md)
-
----
-
-## 什么时候值得 star
-
-- 你用 Codex vibe coding，周末被跑偏吃掉  
-- 你要的是**停止条件**，不是又一个编排框架  
-- 你更信**可测标签**，而不是 “production-ready” 表演  
-
-贡献约定：切片要小，黑盒要用户可见，不要发明第二权威。
 
 ---
 
@@ -206,7 +218,7 @@ ohno preferences show # 默认：先调研、复用开源、前端先抄再改
 </p>
 
 <p align="center">
-  <strong>量清任务。证明行为。停下 Agent。</strong>
+  <strong>对齐项目。证明这一刀。干净收口。</strong>
 </p>
 
 <p align="center"><a href="#readme-top">↑ 顶部</a></p>
