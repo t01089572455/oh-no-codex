@@ -131,7 +131,9 @@ function render(model) {
   elements.goal.textContent = model.goal ?? "NO GOAL AVAILABLE";
   elements.status.textContent = model.status;
   elements.nowHeading.textContent = task?.id ?? (
-    model.status === "BLOCKED_DOC_SYNC"
+    !available
+      ? "UNAVAILABLE"
+      : model.status === "BLOCKED_DOC_SYNC"
       ? "BLOCKED_DOC_SYNC"
       : "NO ACTIVE TASK"
   );

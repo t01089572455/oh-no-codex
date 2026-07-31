@@ -1,6 +1,6 @@
 # Codex-only V1 implementation plan
 
-Status: **IMPLEMENTATION_IN_PROGRESS — TASK_6B_LOCAL_PASS**
+Status: **V1_CHANGES_REQUIRED — TASK_6C_BROWSER_BLOCKED**
 
 Owner authorization: Tasks 1–7 below, including 6A–6C, were authorized as the
 complete V1 implementation scope on 2026-07-30. Execute them sequentially.
@@ -18,8 +18,8 @@ Do not add another task or publish a package without new authorization.
 | Task 5 — Codex hooks and Git pre-commit | LOCAL_PASS | A08, A09, A16 |
 | Task 6A — locked Cockpit design contract | LOCAL_PASS | design prerequisite for A13, A14 |
 | Task 6B — read-only Cockpit implementation | LOCAL_PASS | A13, part of P06 |
-| Task 6C — browser visual and functional acceptance | NOT_STARTED | A14 |
-| Task 7 — cross-project trials and final gate | NOT_STARTED | A12, A15, A16, P01–P06 |
+| Task 6C — browser visual and functional acceptance | EXTERNAL_BROWSER_BLOCKED | A14 |
+| Task 7 — cross-project trials and final gate | IN_PROGRESS | A12, A15, A16, P01–P06 |
 
 ## Task 1 local evidence
 
@@ -356,14 +356,37 @@ This earns local functional evidence for A13 and the implementation needed to
 measure P06. It does not earn browser visual acceptance A14 or the three-copy
 P06 performance result; both remain explicit Task 6C/7 work.
 
+## Task 6C browser acceptance evidence
+
+Recorded on 2026-07-30:
+
+- Browser pre-flight against the running built Cockpit demonstrated three
+  bounded acceptance defects: the skip link used a transform while unfocused,
+  the rail jaw and stop retained transforms under reduced motion, and an
+  unavailable projection was headed `NO ACTIVE TASK`. The minimal UI fix uses
+  positional offsets instead of transforms, labels the refresh control, and
+  renders `UNAVAILABLE` explicitly.
+- After the Owner explicitly authorized
+  `http://127.0.0.1:12261/`, the in-app Browser still rejected direct
+  navigation under an external browser security policy. The agent did not use
+  Chrome, standalone Playwright, raw CDP, another port, or any other
+  circumvention.
+- Because the required browser could not open the target, the locked desktop,
+  narrow, keyboard, focus, contrast, reduced-motion, overflow, and complete
+  state screenshot matrix was not rerun after the fixes. A14 therefore remains
+  unproved, and P06 has no valid browser samples.
+
+This slice stops at the exact external blocker permitted by its frozen stop
+condition. It does not call the Cockpit polished, browser-accepted, or complete.
+
 ## Exact current action
 
 There is exactly one. **Unique next:**
 
-> **Task 6C:** run the built Cockpit in a real browser against the locked
-> desktop/narrow, keyboard, focus, contrast, reduced-motion, state-treatment,
-> overflow, and canonical-equality matrix. Record the named screenshots and
-> fix only demonstrated acceptance defects; do not redesign.
+> **Task 7:** complete every non-browser-dependent real-project trial,
+> performance, atomic-state, Truth-scan isolation, packaging, README, and final
+> gate item. Keep A14 and P06 explicitly unavailable until the required in-app
+> Browser can open the authorized loopback URL.
 
 ## Shared implementation rules
 
