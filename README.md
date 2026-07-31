@@ -134,9 +134,15 @@ They are not a hostile security boundary under your own credentials.
 ```bash
 npm install -g oh-no-codex
 cd your-git-repo
-ohno init --goal "Ship reliable draft save"
+
+# --goal = your project outcome in one short line (Owner wording, free text)
+ohno init --goal "Users can log in and see their own dashboard"
 ohno install
 ```
+
+`--goal` is **not** a special keyword or template. It is the Owner’s plain-language
+outcome for this repo — stored as the current project goal. Change later with
+the requirement-change flow, not by re-running `init`.
 
 Node.js **≥ 22.20**, ordinary Git repo.  
 npm: [oh-no-codex](https://www.npmjs.com/package/oh-no-codex) (`0.1.1`).
