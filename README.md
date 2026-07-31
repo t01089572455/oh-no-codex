@@ -108,8 +108,9 @@ The next action is a locator, not fresh authorization.
 ## What is implemented
 
 **V1 harness scope is complete** as `V1_TRIAL_ACCEPTED` on named local black-box
-and disposable-project evidence. That does **not** mean npm publication,
-hostile-agent security, or a universal speed guarantee.
+and disposable-project evidence. npm package `oh-no-codex@0.1.0` is public on
+registry.npmjs.org. That still does **not** mean hostile-agent security or a
+universal speed guarantee.
 
 | Area | Commands / surfaces | Status |
 | --- | --- | --- |
