@@ -36,11 +36,13 @@ If both skill and AGENTS managed block exist: **state/board from AGENTS**;
 ```bash
 npm install -g oh-no-codex
 cd <git-project>
-ohno init --goal "<one-line Owner outcome in their words>"
-ohno install          # hooks + installs this skill into ~/.codex/skills
+ohno init             # no top-line goal required
+ohno install          # hooks + this skill → ~/.codex/skills
 ```
 
-`--goal` is free text (project outcome), **not** Codex Goal-mode syntax.
+Optional: `ohno init --goal "…"` only if Owner wants a resume slogan.
+Scope lives in **plan tasks** / requirements notes — not a forced project goal.
+Not Codex Goal-mode syntax.
 
 If the skill is missing:
 

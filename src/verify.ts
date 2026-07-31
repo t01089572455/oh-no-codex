@@ -52,7 +52,7 @@ async function acquireVerificationLock(
       );
     }
     if (code === "ENOENT") {
-      throw new Error("project is not initialized; run ohno init --goal <goal>");
+      throw new Error("project is not initialized; run ohno init");
     }
     throw error;
   }

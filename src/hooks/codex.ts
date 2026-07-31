@@ -170,7 +170,7 @@ async function handlePreToolUse(
   } catch {
     return denial(
       "current state is unavailable; repair .ohno/state.json "
-      + "or run ohno init --goal <goal>",
+      + "or run ohno init",
     );
   }
 

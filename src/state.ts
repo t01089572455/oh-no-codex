@@ -183,6 +183,17 @@ function isBoundedDisplayString(
     && displayTextIssue(value, byteLimit) === null;
 }
 
+/** Project-level goal may be empty (Owner opted out of a top-line slogan). */
+function isProjectGoal(value: unknown): value is string {
+  if (typeof value !== "string" || /[\r\n]/u.test(value)) {
+    return false;
+  }
+  if (value === "") {
+    return true;
+  }
+  return isBoundedDisplayString(value, displayFieldByteLimits.goal);
+}
+
 function isSha256(value: unknown): value is string {
   return typeof value === "string" && /^[a-f0-9]{64}$/u.test(value);
 }
@@ -563,7 +574,7 @@ function isProjectState(value: unknown): value is ProjectState {
       "document_sync",
     ])
     || value.schema_version !== 2
-    || !isBoundedDisplayString(value.goal, displayFieldByteLimits.goal)
+    || !isProjectGoal(value.goal)
     || !Number.isSafeInteger(value.cursor)
     || (value.cursor as number) < 0
     || !(
@@ -659,7 +670,7 @@ export function emptyTruthInventory(): TruthInventory {
 }
 
 export function initialState(
-  goal: string,
+  goal = "",
   truthInventory = emptyTruthInventory(),
 ): ProjectState {
   return {
@@ -703,7 +714,7 @@ export async function readState(projectPath: string): Promise<ProjectState> {
     parsed = JSON.parse(await readFile(path, "utf8"));
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      throw new Error("project is not initialized; run ohno init --goal <goal>");
+      throw new Error("project is not initialized; run ohno init");
     }
     throw new Error(`cannot read valid state from ${path}`);
   }

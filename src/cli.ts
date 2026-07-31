@@ -65,7 +65,7 @@ import { resolve } from "node:path";
 
 const usageText = [
   "usage:",
-  "  ohno init --goal <goal>",
+  "  ohno init [--goal <optional product line>]",
   "  ohno plan propose --file <review.json>",
   "  ohno plan accept --revision <sha256> --diff <sha256>",
   "  ohno task start",
@@ -118,11 +118,15 @@ function boundedDisplayValue(
 }
 
 async function initialize(projectPath: string, args: string[]): Promise<void> {
-  const goal = boundedDisplayValue(
-    requiredValue(args, "--goal"),
-    "--goal",
-    displayFieldByteLimits.goal,
-  );
+  // Project-level --goal is optional. Real work is bounded by plan tasks.
+  let goal = "";
+  if (args.includes("--goal")) {
+    goal = boundedDisplayValue(
+      requiredValue(args, "--goal"),
+      "--goal",
+      displayFieldByteLimits.goal,
+    );
+  }
   if (await stateExists(projectPath)) {
     throw new Error("project is already initialized");
   }
@@ -143,11 +147,20 @@ async function initialize(projectPath: string, args: string[]): Promise<void> {
     ].join("\n"),
     "utf8",
   );
-  await appendRequirementsNote(
-    projectPath,
-    `Project goal set: ${goal}`,
-    "init",
-  ).catch(() => undefined);
+  if (goal !== "") {
+    await appendRequirementsNote(
+      projectPath,
+      `Project goal set: ${goal}`,
+      "init",
+    ).catch(() => undefined);
+  } else {
+    await appendRequirementsNote(
+      projectPath,
+      "Project initialized without a top-line goal; use plan tasks and "
+      + "requirements notes for Owner intent.",
+      "init",
+    ).catch(() => undefined);
+  }
   await appendRequirementsNote(
     projectPath,
     "Default working method ON: research before implement; prefer existing OSS; "
@@ -156,7 +169,7 @@ async function initialize(projectPath: string, args: string[]): Promise<void> {
   ).catch(() => undefined);
   await refreshProjectors(projectPath).catch(() => undefined);
   process.stdout.write(
-    `Initialized goal: ${goal}\n`
+    `Initialized${goal === "" ? " (no top-line goal)" : ` goal: ${goal}`}\n`
     + `AGENTS: managed block ${agentsBeginMarker} … ${agentsEndMarker}\n`
     + "REQUIREMENTS: .ohno/REQUIREMENTS.md\n"
     + "PREFERENCES: .ohno/preferences.json\n",

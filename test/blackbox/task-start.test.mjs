@@ -88,29 +88,33 @@ function activeStateBytes(state, task) {
   }, null, 2)}\n`);
 }
 
-test("init requires one Owner goal and refuses silent re-initialization", async (t) => {
+test("init allows no top-line goal and refuses silent re-initialization", async (t) => {
   const projectPath = await createProject(t);
-  const missing = runCli(projectPath, ["init"]);
-  assert.notEqual(missing.status, 0);
-  assert.match(missing.stderr, /--goal\b/);
-  const blank = runCli(projectPath, ["init", "--goal", "   "]);
+  const withoutGoal = runCli(projectPath, ["init"]);
+  assert.equal(withoutGoal.status, 0, withoutGoal.stderr);
+  assert.equal((await readState(projectPath)).goal, "");
+  assert.match(withoutGoal.stdout, /no top-line goal/i);
+
+  const projectPath2 = await createProject(t);
+  const blank = runCli(projectPath2, ["init", "--goal", "   "]);
   assert.notEqual(blank.status, 0);
   assert.match(blank.stderr, /--goal\b/);
 
-  await initialize(projectPath, "Keep the current coding task aligned");
-  const before = await readStateBytes(projectPath);
+  const projectPath3 = await createProject(t);
+  await initialize(projectPath3, "Keep the current coding task aligned");
+  const before = await readStateBytes(projectPath3);
   assert.equal(
-    (await readState(projectPath)).goal,
+    (await readState(projectPath3)).goal,
     "Keep the current coding task aligned",
   );
-  const repeated = runCli(projectPath, [
+  const repeated = runCli(projectPath3, [
     "init",
     "--goal",
     "Silently replace the original goal",
   ]);
   assert.notEqual(repeated.status, 0);
   assert.match(repeated.stderr, /already initialized/i);
-  assert.deepEqual(await readStateBytes(projectPath), before);
+  assert.deepEqual(await readStateBytes(projectPath3), before);
 });
 
 for (const field of requiredFrozenFields) {

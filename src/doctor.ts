@@ -29,7 +29,7 @@ export async function runDoctor(projectPath: string): Promise<DoctorReport> {
     checks.push({
       id: "state",
       status: "FAIL",
-      detail: ".ohno/state.json missing — run ohno init --goal …",
+      detail: ".ohno/state.json missing — run ohno init",
     });
   } else {
     try {

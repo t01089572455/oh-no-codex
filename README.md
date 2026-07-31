@@ -134,15 +134,12 @@ They are not a hostile security boundary under your own credentials.
 ```bash
 npm install -g oh-no-codex
 cd your-git-repo
-
-# --goal = the WHOLE product / program for this repo (not a small slice)
-ohno init --goal "Build a foreign-trade ops system: orders, customers, and docs"
-ohno install
+ohno init              # enough — no slogan required
+ohno install           # hooks + Codex skill oh-no-control
 ```
 
-`--goal` is the **Owner’s top-level project aim** (what the repo is for) — free
-text, not Codex Goal-mode syntax. Small steps (“login page”, “export PDF”)
-belong in the **plan tasks**, not in `init --goal`.
+Optional: `ohno init --goal "…"` if you want a one-line product name in resume.
+Real scope lives in **plan tasks** and **requirements notes**, not a forced slogan.
 
 Node.js **≥ 22.20**, ordinary Git repo.  
 npm: [oh-no-codex](https://www.npmjs.com/package/oh-no-codex) (`0.1.1`).

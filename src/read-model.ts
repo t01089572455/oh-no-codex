@@ -337,7 +337,7 @@ export async function readModel(projectPath: string): Promise<ReadModel> {
   return {
     schema_version: 2,
     availability: "AVAILABLE",
-    goal: state.goal,
+    goal: state.goal === "" ? null : state.goal,
     status: state.status,
     plan_revision: state.plan_revision,
     cursor: state.cursor,

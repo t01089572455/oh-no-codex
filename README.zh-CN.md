@@ -156,16 +156,12 @@ Hooks 与 pre-commit 是**合作式护栏**。
 ```bash
 npm install -g oh-no-codex
 cd your-git-repo
-
-# --goal = 这个仓库要做的「整盘产品/系统」（不是某一个小步骤）
-ohno init --goal "做一个外贸业务系统：订单、客户、单证"
-ohno install
+ohno init              # 够了 — 不必先编一句「项目口号」
+ohno install           # hooks + Codex skill oh-no-control
 ```
 
-`--goal` 是 **Owner 的顶层项目目标**（这个库是干什么的），自由文本，  
-**不是** Codex Goal 模式语法。  
-「先做登录」「先做导出 PDF」这类 **子步骤** 写在 **plan 任务**里，  
-不要当成 `init --goal`。
+可选：`ohno init --goal "……"` 只在你想在 resume 里挂一句产品名时用。  
+真正范围在 **plan 任务** 和 **requirements 笔记**里，不靠强制 goal。
 
 Node.js **≥ 22.20**，普通 Git 仓库。  
 npm：[oh-no-codex](https://www.npmjs.com/package/oh-no-codex)（`0.1.1`）。
