@@ -130,7 +130,7 @@ ohno skill status
 # open a new Codex session so discovery picks them up
 ```
 
-Node.js **≥ 22.20**. Package: [oh-no-codex](https://www.npmjs.com/package/oh-no-codex) (`0.1.1` on npm; git may be ahead).
+Node.js **≥ 22.20**. Package: [oh-no-codex](https://www.npmjs.com/package/oh-no-codex) (`0.1.2`).
 
 ---
 
@@ -152,7 +152,28 @@ Cockpit: http://127.0.0.1:53123/
 1. Open that URL in a browser on the same machine.  
 2. The page polls `/api/state` about every 2.5s.  
 3. Stop with Ctrl+C in the terminal (no background daemon).  
-4. Or ask Codex via skill **`oh-no-cockpit`** (“打开驾驶舱”).
+4. Or ask Codex via skill **`oh-no-cockpit`**.
+
+### Where cockpit data comes from
+
+```text
+plan accept / task start / verify …
+        ↓ write
+  .ohno/state.json          ← sole authority
+        ↓ readModel()
+  GET /api/state            ← same as status --json
+        ↓ browser poll
+  cockpit UI
+```
+
+| On screen | Source |
+| --- | --- |
+| How many tasks | `ordered_tasks.length` → `task_count` |
+| How far along | `cursor` + `active_task` |
+| Progress bar | **`cursor / task_count`** only (no fake trust %) |
+| Board phases | Derived from cursor / proof — not a second store |
+
+The cockpit **never** advances work. CLI/skills mutate state; the UI only reads.
 
 ---
 
@@ -207,7 +228,7 @@ Speak normally, or name a skill. Codex should run the matching shell command.
 | CLI / hooks / atomic state | `LOCAL_PASS` |
 | Cockpit = status JSON | `LOCAL_PASS` |
 | Disposable real copies | `TRIAL_PASS` (P01–P06) |
-| npm | **`0.1.1`** published; skill suite on `main` |
+| npm | **`0.1.2`** (skill suite, no project `--goal`, cockpit docs) |
 
 Contracts: [Product](./docs/PRODUCT-CONTRACT.md) · [Design](./docs/DESIGN.md) · [Acceptance](./docs/ACCEPTANCE.md) · [Sins](./docs/CODEX-SINS.md)
 

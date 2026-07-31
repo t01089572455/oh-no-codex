@@ -130,7 +130,7 @@ ohno skill status
 # 新开一个 Codex 会话，方便 skill 被扫到
 ```
 
-需要 Node.js **≥ 22.20**。包名：[oh-no-codex](https://www.npmjs.com/package/oh-no-codex)（npm 上当前是 `0.1.1`；本仓库 `main` 可能更新）。
+需要 Node.js **≥ 22.20**。包名：[oh-no-codex](https://www.npmjs.com/package/oh-no-codex)（`0.1.2`）。
 
 ---
 
@@ -153,6 +153,27 @@ Cockpit: http://127.0.0.1:53123/
 2. 页面大约每 2.5 秒拉一次 `/api/state`。  
 3. 终端里 Ctrl+C 结束（没有后台守护进程）。  
 4. 或在 Codex 里用 skill **`oh-no-cockpit`** / 说「打开驾驶舱」。
+
+### 驾驶舱数据从哪来（它不「管」进度）
+
+```text
+plan accept / task start / verify …
+        ↓ 写入
+  .ohno/state.json          ← 唯一权威
+        ↓ readModel()
+  GET /api/state            ← 与 status --json 同源
+        ↓ 浏览器轮询
+  驾驶舱画面
+```
+
+| 你在屏上看到的 | 实际怎么来的 |
+| --- | --- |
+| 一共多少子任务 | 计划里 `ordered_tasks.length`（`task_count`） |
+| 推进到哪一刀 | 状态里的 `cursor` + 当前 `active_task` |
+| 总体完成度条 | 前端用 **`cursor / task_count`**（没有别的假百分比） |
+| 看板 DONE/ACTIVE… | 由 cursor、任务类型、验收是否失败推导，**不另存库** |
+
+进度只由 CLI / skill 改 state 推动；驾驶舱**只读展示**，点不了「完成 50%」。
 
 ---
 
@@ -209,7 +230,7 @@ Cockpit: http://127.0.0.1:53123/
 | CLI / hooks / 原子状态 | `LOCAL_PASS` |
 | 驾驶舱 = status JSON | `LOCAL_PASS` |
 | 真实项目副本试验 | `TRIAL_PASS`（P01–P06） |
-| npm | 已发 **`0.1.1`**；skill 套件在 git `main` |
+| npm | **`0.1.2`**（含 skill 套件、去掉项目 `--goal`、驾驶舱说明） |
 
 合同：[产品](./docs/PRODUCT-CONTRACT.md) · [设计](./docs/DESIGN.md) · [验收](./docs/ACCEPTANCE.md) · [十八宗罪](./docs/CODEX-SINS.md)
 
