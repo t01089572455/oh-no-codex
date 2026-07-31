@@ -34,7 +34,9 @@ const canonicalKeys = [
   "blocker",
   "next_action",
   "truth_target_count",
+  "truth_targets",
   "document_sync_status",
+  "handoff",
 ];
 
 const goal = "Keep every resumed session aligned";
@@ -204,6 +206,11 @@ function assertHumanProjection(result, model) {
     result.stdout,
     new RegExp(`^TRUTH_TARGETS: ${model.truth_target_count}$`, "m"),
   );
+  assert.match(result.stdout, /^TRUTH_PATHS: /m);
+  assert.match(result.stdout, /^HANDOFF_PATH: /m);
+  assert.match(result.stdout, /^HANDOFF_BRANCH: /m);
+  assert.match(result.stdout, /^HANDOFF_HEAD: /m);
+  assert.match(result.stdout, /^HANDOFF_DIRTY: /m);
   assert.match(
     result.stdout,
     new RegExp(`^NEXT: ${escapeRegExp(model.next_action)}$`, "m"),
@@ -301,8 +308,10 @@ test("idle status, resume, and next agree on the derived plan action", async (t)
     proof_freshness: "NONE",
     blocker: "NONE",
     next_action: "PROPOSE_PLAN",
-    truth_target_count: 0,
+    truth_target_count: model.truth_target_count,
+    truth_targets: model.truth_targets,
     document_sync_status: "CLEAN",
+    handoff: model.handoff,
   });
   assertAllSurfacesAgree(projectPath, model);
 });
@@ -340,7 +349,9 @@ test("active read surfaces expose the exact contract without running its test", 
     blocker: "NONE",
     next_action: "NONE",
     truth_target_count: model.truth_target_count,
+    truth_targets: model.truth_targets,
     document_sync_status: "CLEAN",
+    handoff: model.handoff,
   });
   assert.equal(model.plan_board[0]?.phase, "ACTIVE");
   assert.equal(model.plan_board[1]?.phase, "QUEUED");
@@ -622,7 +633,9 @@ test("a completed fresh PASS exposes only its plan-derived next action", async (
     blocker: "NONE",
     next_action: nextAction,
     truth_target_count: model.truth_target_count,
+    truth_targets: model.truth_targets,
     document_sync_status: "CLEAN",
+    handoff: model.handoff,
   });
   assert.equal(model.plan_board[0]?.phase, "DONE");
   assert.equal(model.plan_board[1]?.phase, "READY");
@@ -728,8 +741,10 @@ test("pending document sync has one authoritative next action", async (t) => {
     proof_freshness: "NONE",
     blocker: "DOCUMENT_SYNC_PENDING",
     next_action: "SYNC_GOVERNING_DOCUMENTS",
-    truth_target_count: 0,
+    truth_target_count: model.truth_target_count,
+    truth_targets: model.truth_targets,
     document_sync_status: "PENDING_REVIEW",
+    handoff: model.handoff,
   });
   assertAllSurfacesAgree(projectPath, model);
 });
@@ -825,8 +840,11 @@ test("missing or corrupt state reports UNAVAILABLE and is never overwritten", as
     blocker: "STATE_UNAVAILABLE",
     next_action: "NONE",
     truth_target_count: 0,
+    truth_targets: [],
     document_sync_status: "UNAVAILABLE",
+    handoff: missingModel.handoff,
   });
+  assert.equal(missingModel.handoff.path, missingProject);
   assert.match(unavailable.stderr, /\bUNAVAILABLE\b/);
   await assert.rejects(
     access(resolve(missingProject, ".ohno", "state.json")),

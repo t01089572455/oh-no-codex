@@ -1,3 +1,7 @@
+import { execFile } from "node:child_process";
+import { realpath } from "node:fs/promises";
+import { promisify } from "node:util";
+
 import { nextActionFromPlan } from "./plan-next.js";
 import { digestAllowedFiles } from "./subject-digest.js";
 import { readState } from "./state.js";
@@ -6,6 +10,8 @@ import type {
   TaskContract,
   VerificationReceipt,
 } from "./state.js";
+
+const execFileAsync = promisify(execFile);
 
 export type ProofFreshness =
   | "NONE"
@@ -68,7 +74,14 @@ export interface ReadModel {
     | "STATE_UNAVAILABLE";
   next_action: string;
   truth_target_count: number;
+  truth_targets: string[];
   document_sync_status: "CLEAN" | "PENDING_REVIEW" | "UNAVAILABLE";
+  handoff: {
+    path: string;
+    branch: string | null;
+    head: string | null;
+    dirty: boolean;
+  };
 }
 
 const completedSummaryLimit = 3;
@@ -233,7 +246,54 @@ function planBoardFor(
   });
 }
 
-function unavailableReadModel(): ReadModel {
+async function handoffIdentity(projectPath: string): Promise<ReadModel["handoff"]> {
+  const resolvedPath = await realpath(projectPath).catch(() => projectPath);
+  const base = {
+    path: resolvedPath,
+    branch: null as string | null,
+    head: null as string | null,
+    dirty: false,
+  };
+  try {
+    const [branch, head, dirty] = await Promise.all([
+      execFileAsync("git", ["-C", resolvedPath, "branch", "--show-current"], {
+        windowsHide: true,
+        maxBuffer: 64 * 1024,
+      }).then((r) => r.stdout.trim() || null).catch(() => null),
+      execFileAsync("git", ["-C", resolvedPath, "rev-parse", "HEAD"], {
+        windowsHide: true,
+        maxBuffer: 64 * 1024,
+      }).then((r) => r.stdout.trim() || null).catch(async () => {
+        // Unborn repository: report symbolic HEAD rather than lying about a commit.
+        try {
+          const symbolic = await execFileAsync(
+            "git",
+            ["-C", resolvedPath, "rev-parse", "--symbolic-full-name", "HEAD"],
+            { windowsHide: true, maxBuffer: 64 * 1024 },
+          );
+          return symbolic.stdout.trim() || "UNBORN";
+        } catch {
+          return "UNBORN";
+        }
+      }),
+      execFileAsync(
+        "git",
+        ["-C", resolvedPath, "status", "--porcelain"],
+        { windowsHide: true, maxBuffer: 1024 * 1024 },
+      ).then((r) => r.stdout.trim().length > 0).catch(() => false),
+    ]);
+    return {
+      path: resolvedPath,
+      branch,
+      head,
+      dirty: Boolean(dirty),
+    };
+  } catch {
+    return base;
+  }
+}
+
+function unavailableReadModel(projectPath = "."): ReadModel {
   return {
     schema_version: 2,
     availability: "UNAVAILABLE",
@@ -250,7 +310,14 @@ function unavailableReadModel(): ReadModel {
     blocker: "STATE_UNAVAILABLE",
     next_action: "NONE",
     truth_target_count: 0,
+    truth_targets: [],
     document_sync_status: "UNAVAILABLE",
+    handoff: {
+      path: projectPath,
+      branch: null,
+      head: null,
+      dirty: false,
+    },
   };
 }
 
@@ -259,9 +326,14 @@ export async function readModel(projectPath: string): Promise<ReadModel> {
   try {
     state = await readState(projectPath);
   } catch {
-    return unavailableReadModel();
+    return unavailableReadModel(projectPath);
   }
   const freshness = await proofFreshness(projectPath, state);
+  const truthTargets = state.truth_inventory.classification
+    .filter((entry) => entry.truth_target)
+    .map((entry) => entry.path)
+    .toSorted();
+  const handoff = await handoffIdentity(projectPath);
   return {
     schema_version: 2,
     availability: "AVAILABLE",
@@ -277,9 +349,9 @@ export async function readModel(projectPath: string): Promise<ReadModel> {
     proof_freshness: freshness,
     blocker: blockerFor(state, freshness),
     next_action: nextActionFor(state, freshness),
-    truth_target_count: state.truth_inventory.classification.filter(
-      (entry) => entry.truth_target,
-    ).length,
+    truth_target_count: truthTargets.length,
+    truth_targets: truthTargets,
     document_sync_status: state.document_sync.status,
+    handoff,
   };
 }

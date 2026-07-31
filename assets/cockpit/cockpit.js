@@ -39,7 +39,9 @@ const elements = {
   vectorStops: document.querySelectorAll(".vector-stop"),
   planBoard: document.querySelector("#plan-board-list"),
   truthTargetCount: document.querySelector("#truth-target-count"),
+  truthTargetsList: document.querySelector("#truth-targets-list"),
   docSyncStatus: document.querySelector("#doc-sync-status"),
+  handoffLine: document.querySelector("#handoff-line"),
 };
 
 const unavailableProjection = Object.freeze({
@@ -58,7 +60,14 @@ const unavailableProjection = Object.freeze({
   blocker: "STATE_UNAVAILABLE",
   next_action: "NONE",
   truth_target_count: 0,
+  truth_targets: [],
   document_sync_status: "UNAVAILABLE",
+  handoff: {
+    path: ".",
+    branch: null,
+    head: null,
+    dirty: false,
+  },
 });
 
 const RING_CIRCUMFERENCE = 2 * Math.PI * 148;
@@ -384,6 +393,29 @@ function render(model) {
   if (elements.docSyncStatus) {
     elements.docSyncStatus.textContent = model.document_sync_status
       ?? "UNAVAILABLE";
+  }
+  if (elements.truthTargetsList) {
+    elements.truthTargetsList.replaceChildren();
+    const targets = model.truth_targets ?? [];
+    if (targets.length === 0) {
+      const empty = document.createElement("li");
+      empty.className = "empty-ledger";
+      empty.textContent = "NO TRUTH TARGETS";
+      elements.truthTargetsList.append(empty);
+    } else {
+      for (const path of targets) {
+        const item = document.createElement("li");
+        item.textContent = path;
+        elements.truthTargetsList.append(item);
+      }
+    }
+  }
+  if (elements.handoffLine) {
+    const handoff = model.handoff ?? {};
+    elements.handoffLine.textContent =
+      `Handoff: ${(handoff.branch ?? "DETACHED")} @ `
+      + `${(handoff.head ?? "NONE").slice(0, 12)}`
+      + `${handoff.dirty ? " (dirty)" : " (clean)"}`;
   }
   renderRecent(model);
   renderPlanBoard(model);

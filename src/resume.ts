@@ -51,6 +51,15 @@ export function serializeResume(model: ReadModel): string {
     `BLOCKER: ${model.blocker}`,
     `DOC_SYNC: ${model.document_sync_status}`,
     `TRUTH_TARGETS: ${model.truth_target_count}`,
+    `TRUTH_PATHS: ${
+      model.truth_targets.length === 0
+        ? "NONE"
+        : model.truth_targets.join(" | ")
+    }`,
+    `HANDOFF_PATH: ${model.handoff.path}`,
+    `HANDOFF_BRANCH: ${model.handoff.branch ?? "NONE"}`,
+    `HANDOFF_HEAD: ${model.handoff.head ?? "NONE"}`,
+    `HANDOFF_DIRTY: ${model.handoff.dirty ? "YES" : "NO"}`,
     `NEXT: ${model.next_action}`,
     "",
   ].join("\n");

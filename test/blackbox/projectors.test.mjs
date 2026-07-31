@@ -120,4 +120,22 @@ test("plan board marks HALF when active proof is FAIL", async (t) => {
   assert.equal(model.proof_freshness, "FAIL");
   assert.equal(model.document_sync_status, "CLEAN");
   assert.ok(model.truth_target_count >= 0);
+  assert.ok(Array.isArray(model.truth_targets));
+  assert.equal(typeof model.handoff.path, "string");
+});
+
+test("doctor reports state and projection health", async (t) => {
+  const projectPath = await createProject(t);
+  runCli(projectPath, ["init", "--goal", "Doctor health surface"]);
+  const doctor = runCli(projectPath, ["doctor"]);
+  assert.equal(doctor.status, 0, doctor.stderr);
+  assert.match(doctor.stdout, /^OK: YES$/m);
+  assert.match(doctor.stdout, /PASS: state/);
+  assert.match(doctor.stdout, /NEXT:/);
+
+  const json = runCli(projectPath, ["doctor", "--json"]);
+  assert.equal(json.status, 0, json.stderr);
+  const report = JSON.parse(json.stdout);
+  assert.equal(report.ok, true);
+  assert.ok(Array.isArray(report.checks));
 });

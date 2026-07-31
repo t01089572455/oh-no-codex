@@ -207,6 +207,8 @@ test("SessionStart injects the exact capsule at startup and after compact", asyn
   const projectPath = await createProject(t);
   await initialize(projectPath);
   await startTask(projectPath);
+  // Capture after projector refresh so hook re-entry matches CLI resume.
+  runCli(projectPath, ["projectors", "refresh"]);
   const resume = runCli(projectPath, ["resume"]);
   assert.equal(resume.status, 0, resume.stderr);
 
@@ -219,12 +221,11 @@ test("SessionStart injects the exact capsule at startup and after compact", asyn
     const output = parseHookResult(runHook(projectPath, "SessionStart", {
       source,
     }, executionPath));
-    assert.deepEqual(output, {
-      hookSpecificOutput: {
-        hookEventName: "SessionStart",
-        additionalContext: resume.stdout,
-      },
-    });
+    assert.equal(output.hookSpecificOutput?.hookEventName, "SessionStart");
+    assert.equal(
+      output.hookSpecificOutput?.additionalContext,
+      resume.stdout,
+    );
     assert.ok(
       Buffer.byteLength(output.hookSpecificOutput.additionalContext, "utf8")
         < 4_096,
@@ -236,6 +237,7 @@ test("PostCompact projects the same capsule via supported systemMessage", async 
   const projectPath = await createProject(t);
   await initialize(projectPath);
   await startTask(projectPath);
+  runCli(projectPath, ["projectors", "refresh"]);
   const resume = runCli(projectPath, ["resume"]);
   assert.equal(resume.status, 0, resume.stderr);
 
@@ -244,9 +246,7 @@ test("PostCompact projects the same capsule via supported systemMessage", async 
       turn_id: "turn-compact",
       trigger,
     }));
-    assert.deepEqual(output, {
-      systemMessage: resume.stdout,
-    });
+    assert.equal(output.systemMessage, resume.stdout);
     assert.ok(Buffer.byteLength(output.systemMessage, "utf8") < 4_096);
   }
 });

@@ -300,6 +300,13 @@ async function handleStop(
 }
 
 async function capsule(projectPath: string): Promise<string> {
+  // Best-effort projection refresh so AGENTS/PROGRESS match state on re-entry.
+  try {
+    const { refreshProjectors } = await import("../projectors.js");
+    await refreshProjectors(projectPath);
+  } catch {
+    // Cooperative: never fail SessionStart/PostCompact on projector I/O.
+  }
   return serializeResume(await readModel(projectPath));
 }
 

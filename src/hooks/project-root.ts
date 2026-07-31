@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { realpathSync } from "node:fs";
 import { resolve } from "node:path";
 
 export function findProjectRoot(startPath: string): string {
@@ -18,5 +19,10 @@ export function findProjectRoot(startPath: string): string {
   ) {
     throw new Error("cannot locate the Git project root");
   }
-  return resolve(result.stdout.trim());
+  const toplevel = resolve(result.stdout.trim());
+  try {
+    return realpathSync(toplevel);
+  } catch {
+    return toplevel;
+  }
 }

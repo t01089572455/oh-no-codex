@@ -116,6 +116,8 @@ flowchart LR
 | 只读驾驶舱 | `ohno cockpit`（玻璃态任务仪表盘 + 计划看板） | 已完成 |
 | 计划看板投影 | `status --json` 的 `plan_board`（DONE/HALF/READY/OUTLINE…） | 已完成 |
 | 生成式进度/AGENTS 托管块 | `ohno projectors refresh` → `.ohno/PROGRESS.md` + `AGENTS.md` 托管段 | 已完成 |
+| 健康检查 | `ohno doctor [--json]` | 已完成 |
+| Handoff 身份 | resume 中的 path/branch/head/dirty | 已完成 |
 | 原子状态权威 | `.ohno/state.json` 唯一运行时权威 | 已完成 |
 | Truth 适用清单 | `.ohno/truth.json` 由 Owner 维护 | 已完成 |
 

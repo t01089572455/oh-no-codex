@@ -28,12 +28,24 @@ import {
   installGuardrails,
 } from "./install.js";
 import { serializeNext } from "./next.js";
-import { refreshProjectors } from "./projectors.js";
+import {
+  runDoctor,
+  serializeDoctor,
+} from "./doctor.js";
+import {
+  agentsBeginMarker,
+  agentsEndMarker,
+  refreshProjectors,
+  renderAgentsManagedBlock,
+} from "./projectors.js";
 import { readModel } from "./read-model.js";
 import { serializeResume } from "./resume.js";
 import { serializeStatus } from "./status.js";
 import { startTask } from "./task-start.js";
 import { verifyTask } from "./verify.js";
+import { realpathSync } from "node:fs";
+import { writeFile } from "node:fs/promises";
+import { resolve } from "node:path";
 
 const usageText = [
   "usage:",
@@ -44,6 +56,7 @@ const usageText = [
   "  ohno verify | ohno status [--json] | ohno resume | ohno next",
   "  ohno cockpit",
   "  ohno projectors refresh [--no-agents]",
+  "  ohno doctor [--json]",
   "  ohno change begin --summary <owner words> [--concerns <labels>] [--candidates <Truth paths>]",
   "  ohno change diff | ohno change accept --change <id> --diff <displayed digest>",
   "  ohno install | ohno hooks status --json",
@@ -93,7 +106,24 @@ async function initialize(projectPath: string, args: string[]): Promise<void> {
 
   const truthInventory = await classifyTruthAtInit(projectPath);
   await writeStateAtomic(projectPath, initialState(goal, truthInventory));
-  process.stdout.write(`Initialized goal: ${goal}\n`);
+  const model = await readModel(projectPath);
+  await writeFile(
+    resolve(projectPath, "AGENTS.md"),
+    [
+      "# Agent instructions",
+      "",
+      "Owner rules live outside the Oh No managed block below.",
+      "",
+      renderAgentsManagedBlock(model),
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+  await refreshProjectors(projectPath).catch(() => undefined);
+  process.stdout.write(
+    `Initialized goal: ${goal}\n`
+    + `AGENTS: managed block ${agentsBeginMarker} … ${agentsEndMarker}\n`,
+  );
 }
 
 async function writeReadSurface(
@@ -120,7 +150,12 @@ async function writeReadSurface(
 
 async function main(): Promise<void> {
   const [command, subcommand, ...args] = process.argv.slice(2);
-  const projectPath = process.cwd();
+  let projectPath = process.cwd();
+  try {
+    projectPath = realpathSync(projectPath);
+  } catch {
+    // keep cwd
+  }
 
   if (
     (command === "--help" || command === "help")
@@ -250,6 +285,23 @@ async function main(): Promise<void> {
       `NEXT: ${result.model.next_action}`,
       "",
     ].join("\n"));
+    return;
+  }
+
+  if (
+    command === "doctor"
+    && (subcommand === undefined || subcommand === "--json")
+    && args.length === 0
+  ) {
+    const report = await runDoctor(projectPath);
+    if (subcommand === "--json") {
+      process.stdout.write(`${JSON.stringify(report)}\n`);
+    } else {
+      process.stdout.write(serializeDoctor(report));
+    }
+    if (!report.ok) {
+      process.exitCode = 1;
+    }
     return;
   }
 

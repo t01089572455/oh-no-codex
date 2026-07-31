@@ -536,13 +536,27 @@ Owning black boxes (2026-07-31):
 
 Ledger status for this port: **LOCAL_PASS**.
 
+## Essence backlog E4–E8 (2026-07-31)
+
+Full inventory and reading honesty: `docs/ESSENCE-BACKLOG.md`.
+
+| ID | Deliverable | Status |
+| --- | --- | --- |
+| E4 | `truth_targets[]` + Cockpit truth list | LOCAL_PASS |
+| E5 | `handoff` path/branch/head/dirty on resume | LOCAL_PASS |
+| E6 | SessionStart/PostCompact best-effort projectors refresh | LOCAL_PASS |
+| E7 | `ohno doctor [--json]` | LOCAL_PASS |
+| E8 | `ohno init` scaffolds AGENTS managed block | LOCAL_PASS |
+
+Owning checks: projectors, codex-hooks, resume-status-next, cockpit black boxes.
+
 ## Exact current action
 
 There is exactly one. **Unique next:**
 
-> **Stop after Essence port A.** V1 remains accepted; projections are additive.
-> Do not reintroduce Gateway / adapter / multi-authority design. Do not publish
-> npm without new Owner authorization.
+> **Stop.** Essence ports E1–E8 are complete as projections of
+> `.ohno/state.json`. Do not reintroduce Gateway / multi-authority design. Do
+> not publish npm without new Owner authorization.
 
 ## Shared implementation rules
 

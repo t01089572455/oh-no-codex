@@ -420,12 +420,23 @@ button:focus-visible,
 }
 
 .board-list,
+.truth-list,
 .recent-list {
   margin: 10px 0 0;
   padding: 0;
   list-style: none;
   display: grid;
   gap: 8px;
+}
+
+.truth-list li {
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.78rem;
+  word-break: break-all;
 }
 
 .board-item {
