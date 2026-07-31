@@ -119,6 +119,8 @@ hostile-agent security, or a universal speed guarantee.
 | Read-only Cockpit | `ohno cockpit` (glass mission dashboard + plan board) | Done |
 | Plan board projection | `status --json` field `plan_board` (DONE/HALF/READY/OUTLINE…) | Done |
 | Generated progress + AGENTS block | `ohno projectors refresh` → `.ohno/PROGRESS.md` + managed AGENTS section | Done |
+| Doctor health surface | `ohno doctor [--json]` | Done |
+| Handoff identity | resume `HANDOFF_*` path/branch/head/dirty | Done |
 | Atomic state authority | `.ohno/state.json` sole runtime authority | Done |
 | Truth applicability | `.ohno/truth.json` Owner list | Done |
 
