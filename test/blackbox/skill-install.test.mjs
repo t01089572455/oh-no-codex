@@ -43,4 +43,6 @@ test("skill install writes oh-no-control into a home skills dir", async (t) => {
   assert.equal(status.status, 0, status.stderr);
   assert.match(status.stdout, /INSTALLED: codex\/oh-no-verify/);
   assert.match(status.stdout, /INSTALLED: codex\/oh-no-task/);
+  assert.doesNotMatch(status.stdout, /oh-no-init/);
+  assert.doesNotMatch(status.stdout, /oh-no-install/);
 });

@@ -31,7 +31,7 @@
   <a href="https://www.npmjs.com/package/oh-no-codex"><img alt="npm" src="https://img.shields.io/npm/v/oh-no-codex?style=flat-square&color=74D6B1&labelColor=202624&label=npm"></a>
   <img alt="status" src="https://img.shields.io/badge/status-V1_TRIAL_ACCEPTED-74D6B1?style=flat-square&labelColor=202624">
   <img alt="codex" src="https://img.shields.io/badge/for-Codex_CLI-FF4B35?style=flat-square&labelColor=202624">
-  <img alt="skills" src="https://img.shields.io/badge/UX-15_Codex_skills-74D6B1?style=flat-square&labelColor=202624">
+  <img alt="skills" src="https://img.shields.io/badge/UX-13_Codex_skills-74D6B1?style=flat-square&labelColor=202624">
   <a href="./LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-FFF1CE?style=flat-square&labelColor=202624"></a>
 </p>
 
@@ -111,7 +111,8 @@ Enemy list from a long session audit — not eighteen features. Full text: [`doc
 
 **Cooperative** hooks (SessionStart / PreToolUse / Stop + Git pre-commit) inject the capsule and scope writes. Not a hostile security sandbox.
 
-**Skill suite:** every CLI surface is also a Codex skill under `~/.codex/skills/oh-no-*` so agents discover procedure without chat-paste CLI dumps.
+**Skill suite:** day-to-day CLI surfaces map to Codex skills under
+`~/.codex/skills/oh-no-*` (setup stays terminal-only: `ohno init` / `ohno install`).
 
 ---
 
@@ -121,7 +122,7 @@ Enemy list from a long session audit — not eighteen features. Full text: [`doc
 npm install -g oh-no-codex
 cd your-git-repo
 ohno init                 # creates .ohno/ — no --goal
-ohno install              # hooks + all 15 oh-no-* skills
+ohno install              # hooks + day-to-day oh-no-* skills
 ```
 
 ```bash
@@ -229,25 +230,26 @@ ohno install
 | Want a dashboard | Terminal or chat: `ohno cockpit` / “open cockpit” |
 | Skill missing after upgrade | `ohno skill install`, new Codex session |
 
-### Skill map (reference — not a daily checklist)
+### Day-to-day skills (reference — not a checklist)
 
-| Skill | You mean | Shell |
-| --- | --- | --- |
-| `oh-no-init` | bootstrap | `ohno init` |
-| `oh-no-install` | hooks + skills | `ohno install` |
-| `oh-no-plan` | plan | `ohno plan …` |
-| `oh-no-task` | start slice | `ohno task start` |
-| `oh-no-verify` | done / verify | **`ohno verify`** |
-| `oh-no-resume` | where are we | `ohno resume` |
-| `oh-no-status` | status | `ohno status` |
-| `oh-no-next` | next locator | `ohno next` |
-| `oh-no-change` | requirements changed | `ohno change …` |
-| `oh-no-requirements` | remember words | `ohno requirements …` |
-| `oh-no-preferences` | craft rules | `ohno preferences …` |
-| `oh-no-doctor` | health | `ohno doctor` |
-| `oh-no-cockpit` | board | `ohno cockpit` |
-| `oh-no-projectors` | refresh files | `ohno projectors refresh` |
-| `oh-no-control` | hub | routing table |
+Setup (`ohno init` / `ohno install`) is **terminal-only**, not a skill.  
+Shell details live inside each skill file for Codex; users need not memorize them.
+
+| Skill | You mean |
+| --- | --- |
+| `oh-no-plan` | plan / accept plan |
+| `oh-no-task` | start this slice |
+| `oh-no-verify` | done / verify |
+| `oh-no-resume` | where are we |
+| `oh-no-status` | status |
+| `oh-no-next` | next locator |
+| `oh-no-change` | requirements changed |
+| `oh-no-requirements` | remember my words |
+| `oh-no-preferences` | craft rules |
+| `oh-no-doctor` | health check |
+| `oh-no-cockpit` | open board |
+| `oh-no-projectors` | refresh PROGRESS/AGENTS |
+| `oh-no-control` | hub / which skill? |
 
 **Do not** paste long CLI into chat.  
 **Do not** claim done without PASS.  
@@ -260,7 +262,7 @@ ohno install
 | Piece | Role |
 | --- | --- |
 | CLI | `init` · `plan` · `task` · `verify` · `change` · `resume` · … |
-| 15 Codex skills | Discoverable procedure for each surface |
+| 13 Codex skills | Day-to-day discoverable procedure (setup is CLI) |
 | Hooks + pre-commit | Capsule inject, scope guard |
 | Projectors | `PROGRESS.md`, REQUIREMENTS, short AGENTS capsule |
 | Preferences | Optional craft defaults (research / OSS / UI adapt) |

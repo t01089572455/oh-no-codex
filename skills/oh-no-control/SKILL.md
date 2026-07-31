@@ -3,50 +3,50 @@ name: oh-no-control
 description: >
   Hub skill for Oh No, Codex! (oh-no-codex / ohno) anti-drift harness. Use when
   the user mentions ohno, oh-no, oh no codex, harness, bounded task, plan board,
-  .ohno, anti-drift, vibe coding control, or asks which ohno skill/command to
-  use. Routes to the right shell `ohno …` command. Prefer specific oh-no-* skills
-  when the intent is clear (verify, resume, init, change, task, plan, doctor).
+  .ohno, anti-drift, vibe coding control, or asks which ohno skill to use.
+  Prefer specific oh-no-* skills when intent is clear (verify, resume, change,
+  task, plan, doctor, cockpit). Setup (ohno init / install) is terminal-only,
+  not a skill.
 ---
 
 # Oh No — control hub
 
 ## What this is
 
-Oh No is a **local CLI** (`ohno`). Skills do **not** replace the binary; they
-tell Codex **which shell command to run** so the human does not paste CLI soup.
+Oh No is a **local CLI** (`ohno`). Day-to-day skills tell Codex **when** to run
+which command. Humans should not paste long CLI into chat.
 
-Install once:
+**One-time setup (human / terminal — not skills):**
 
 ```bash
 npm install -g oh-no-codex
 cd <git-repo>
-ohno init             # no --goal
-ohno install          # hooks + all oh-no-* skills → ~/.codex/skills
-ohno cockpit          # optional: prints http://127.0.0.1:PORT/ for the board
+ohno init
+ohno install          # hooks + day-to-day oh-no-* skills
 ```
 
-## Skill → command map (call these as skills / run the shell line)
+## Day-to-day skills (user speaks → you act)
 
-| Skill name | When user means | Shell |
-| --- | --- | --- |
-| `oh-no-init` | 初始化项目 / init this repo | `ohno init` |
-| `oh-no-install` | 装 hooks 和 skills | `ohno install` |
-| `oh-no-plan` | 提计划 / 接受计划 | `ohno plan propose` / `accept` |
-| `oh-no-task` | 开工 / start slice | `ohno task start` |
-| `oh-no-verify` | 做完了 / 验收 / done | `ohno verify` |
-| `oh-no-resume` | 卡在哪 / where are we | `ohno resume` |
-| `oh-no-status` | 状态 / status | `ohno status` |
-| `oh-no-next` | 下一步是什么 | `ohno next` |
-| `oh-no-change` | 需求变了 | `ohno change begin/diff/accept` |
-| `oh-no-requirements` | 记下来 / owner note | `ohno requirements note/show` |
-| `oh-no-preferences` | 改规矩 / craft rules | `ohno preferences …` |
-| `oh-no-doctor` | 体检 / doctor | `ohno doctor` |
-| `oh-no-cockpit` | 打开看板 | `ohno cockpit` |
-| `oh-no-projectors` | 刷新 AGENTS/PROGRESS | `ohno projectors refresh` |
+| Skill | When user means |
+| --- | --- |
+| `oh-no-plan` | 排计划 / 接受计划 |
+| `oh-no-task` | 开工 |
+| `oh-no-verify` | 做完了 / 验收 |
+| `oh-no-resume` | 卡在哪 |
+| `oh-no-status` | 状态 |
+| `oh-no-next` | 下一步是什么 |
+| `oh-no-change` | 需求变了 |
+| `oh-no-requirements` | 记下来 |
+| `oh-no-preferences` | 改规矩 |
+| `oh-no-doctor` | 体检 |
+| `oh-no-cockpit` | 打开看板 |
+| `oh-no-projectors` | 刷新 PROGRESS / AGENTS |
+
+Exact shell lines live **inside each skill file** (for you), not in the user chat.
 
 ## Hard rules
 
 1. Never claim done without **`ohno verify` PASS**.  
 2. `next` is a locator, not new permission.  
 3. `.ohno/state.json` is sole runtime authority.  
-4. Live board text in `AGENTS.md` managed block — procedure in these skills.
+4. Live board in `AGENTS.md` managed block — procedure in these skills.

@@ -30,7 +30,7 @@
   <a href="https://www.npmjs.com/package/oh-no-codex"><img alt="npm" src="https://img.shields.io/npm/v/oh-no-codex?style=flat-square&color=74D6B1&labelColor=202624&label=npm"></a>
   <img alt="状态" src="https://img.shields.io/badge/status-V1_TRIAL_ACCEPTED-74D6B1?style=flat-square&labelColor=202624">
   <img alt="codex" src="https://img.shields.io/badge/for-Codex_CLI-FF4B35?style=flat-square&labelColor=202624">
-  <img alt="skills" src="https://img.shields.io/badge/15_个_Codex_skill-74D6B1?style=flat-square&labelColor=202624">
+  <img alt="skills" src="https://img.shields.io/badge/13_个_Codex_skill-74D6B1?style=flat-square&labelColor=202624">
   <a href="./LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-FFF1CE?style=flat-square&labelColor=202624"></a>
 </p>
 
@@ -111,7 +111,9 @@ Oh No 要解决的是：打开项目就能从**文件**里读出进度，而不�
 
 Hooks 和 Git pre-commit 是**合作式护栏**（注入进度、拦越权写），不是防你自己账号作恶的安全沙箱。
 
-日常给模型用的入口是 **15 个 Codex skill**（`oh-no-init`、`oh-no-verify` …），装在 `~/.codex/skills/` 下，和别的 skill 一样可被发现。别把长命令整段贴进聊天——会被冲淡。
+日常给模型用的入口是 **13 个 Codex skill**（`oh-no-verify`、`oh-no-task` …），装在 `~/.codex/skills/` 下。  
+**初始化 / 装 hooks 只在终端做**（`ohno init`、`ohno install`），不做成 skill。  
+别把长命令整段贴进聊天——会被冲淡。
 
 ---
 
@@ -121,7 +123,7 @@ Hooks 和 Git pre-commit 是**合作式护栏**（注入进度、拦越权写）
 npm install -g oh-no-codex
 cd 你的业务仓库
 ohno init                 # 建 .ohno/，不要再写 --goal
-ohno install              # hooks + 全套 oh-no-* skill
+ohno install              # hooks + 日常 oh-no-* skill
 ```
 
 ```bash
@@ -229,25 +231,26 @@ ohno install
 | 想盯进度板 | 终端 / 对话：`ohno cockpit` 或「开驾驶舱」 |
 | 升级后 skill 丢了 | `ohno skill install`，新开会话 |
 
-### Skill 对照表（备查，不是每天勾选清单）
+### 日常 skill（备查，不是每天勾选）
 
-| Skill | 你怎么说 | 背后命令 |
-| --- | --- | --- |
-| `oh-no-init` | 初始化护栏 | `ohno init` |
-| `oh-no-install` | 装 hooks / skill | `ohno install` |
-| `oh-no-plan` | 排计划、接计划 | `ohno plan …` |
-| `oh-no-task` | 开工 | `ohno task start` |
-| `oh-no-verify` | 做完了、验收 | **`ohno verify`** |
-| `oh-no-resume` | 卡在哪 | `ohno resume` |
-| `oh-no-status` | 看状态 | `ohno status` |
-| `oh-no-next` | 下一步是啥 | `ohno next` |
-| `oh-no-change` | 需求变了 | `ohno change …` |
-| `oh-no-requirements` | 把这句话记下来 | `ohno requirements …` |
-| `oh-no-preferences` | 改工作习惯开关 | `ohno preferences …` |
-| `oh-no-doctor` | 体检 | `ohno doctor` |
-| `oh-no-cockpit` | 开驾驶舱 | `ohno cockpit` |
-| `oh-no-projectors` | 刷进度文件 | `ohno projectors refresh` |
-| `oh-no-control` | 不知道用哪个 | 总表 |
+`ohno init` / `ohno install` **只在终端做**，不做成 skill。  
+具体 shell 写在各 skill 文件里给模型看，用户表里不列「背后命令」，避免你去背 CLI。
+
+| Skill | 你怎么说 |
+| --- | --- |
+| `oh-no-plan` | 排计划、接计划 |
+| `oh-no-task` | 开工 |
+| `oh-no-verify` | 做完了、验收 |
+| `oh-no-resume` | 卡在哪 |
+| `oh-no-status` | 看状态 |
+| `oh-no-next` | 下一步是啥 |
+| `oh-no-change` | 需求变了 |
+| `oh-no-requirements` | 把这句话记下来 |
+| `oh-no-preferences` | 改工作习惯开关 |
+| `oh-no-doctor` | 体检 |
+| `oh-no-cockpit` | 开驾驶舱 |
+| `oh-no-projectors` | 刷进度文件 |
+| `oh-no-control` | 不知道用哪个 |
 
 硬规矩：没 **verify PASS** 不许说做完；**next 不是开工证**；真相只在 **`.ohno/state.json`**。
 
@@ -258,7 +261,7 @@ ohno install
 | 块 | 干什么 |
 | --- | --- |
 | CLI | init / plan / task / verify / change / resume … |
-| 15 个 skill | 每条能力对应可发现的 skill |
+| 13 个 skill | 日常可发现流程（init/install 仍走终端） |
 | Hooks + pre-commit | 注入现场、拦越权写 |
 | 投影文件 | PROGRESS、需求日志、AGENTS 短胶囊 |
 | 偏好 | 可选：先调研、复用开源、前端先抄再改 |

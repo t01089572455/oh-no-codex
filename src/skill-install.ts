@@ -4,6 +4,7 @@ import {
   mkdir,
   readdir,
   readFile,
+  rm,
   writeFile,
 } from "node:fs/promises";
 import {
@@ -148,6 +149,16 @@ export async function installOhNoSkill(
   const roots = await rootsToInstall(home);
   const installed: string[] = [];
   const updated: string[] = [];
+
+  // Drop retired setup skills so old installs do not keep dead entries.
+  const retired = ["oh-no-init", "oh-no-install"] as const;
+  for (const { root } of roots) {
+    for (const id of retired) {
+      await rm(join(root, id), { recursive: true, force: true }).catch(
+        () => undefined,
+      );
+    }
+  }
 
   for (const skillId of skills) {
     const source = skillSourcePath(skillId);
