@@ -1,11 +1,19 @@
-<!-- Bilingual homepage: side-by-side language bar + in-page anchors (GitHub has no JS tabs). -->
+<!-- Bilingual homepage: <details> panels keep each language at the same place.
+     GitHub README cannot run JS, so true tabs / no-scroll SPA switching is impossible. -->
 <p align="center">
-  <a href="#readme-en"><img alt="English" src="https://img.shields.io/badge/English-74D6B1?style=for-the-badge&labelColor=202624&color=74D6B1"></a>
+  <a href="#lang-en"><img alt="English" src="https://img.shields.io/badge/English-74D6B1?style=for-the-badge&labelColor=202624&color=74D6B1"></a>
   &nbsp;
-  <a href="#readme-zh"><img alt="简体中文" src="https://img.shields.io/badge/%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87-FF4B35?style=for-the-badge&labelColor=202624&color=FF4B35"></a>
+  <a href="#lang-zh"><img alt="简体中文" src="https://img.shields.io/badge/%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87-FF4B35?style=for-the-badge&labelColor=202624&color=FF4B35"></a>
 </p>
 
-<a id="readme-en"></a>
+<p align="center"><sub>
+  Same spot on the page: expand one language panel and collapse the other.
+  GitHub does not allow real dropdown tabs inside README (no JavaScript).
+</sub></p>
+
+<a id="lang-en"></a>
+<details open>
+<summary><strong>English</strong> — click the arrow to expand / collapse</summary>
 
 <p align="center">
   <img
@@ -570,17 +578,13 @@ or endorsed by OpenAI.
   <strong>Measure the task. Prove the behavior. Stop the agent.</strong>
 </p>
 
-<p align="center"><a href="#readme-en">Back to top ↑</a></p>
+<p align="center"><a href="#lang-en">Back to top ↑</a></p>
 
----
+</details>
 
-<a id="readme-zh"></a>
-
-<p align="center">
-  <a href="#readme-en"><img alt="English" src="https://img.shields.io/badge/English-74D6B1?style=for-the-badge&labelColor=202624&color=74D6B1"></a>
-  &nbsp;
-  <a href="#readme-zh"><img alt="简体中文" src="https://img.shields.io/badge/%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87-FF4B35?style=for-the-badge&labelColor=202624&color=FF4B35"></a>
-</p>
+<a id="lang-zh"></a>
+<details>
+<summary><strong>简体中文</strong> — 点击箭头展开 / 折叠</summary>
 
 <p align="center">
   <img
@@ -1133,4 +1137,6 @@ Oh No, Codex! 是独立社区项目，与 OpenAI 没有隶属关系，也未获�
   <strong>量好边界，验证行为，然后让 Agent 停手。</strong>
 </p>
 
-<p align="center"><a href="#readme-zh">返回顶部 ↑</a></p>
+<p align="center"><a href="#lang-zh">返回顶部 ↑</a></p>
+
+</details>
