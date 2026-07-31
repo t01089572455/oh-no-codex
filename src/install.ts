@@ -9,6 +9,10 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { findProjectRoot } from "./hooks/project-root.js";
+import {
+  installOhNoSkill,
+  serializeSkillInstallResult,
+} from "./skill-install.js";
 
 type IntegrationFileStatus =
   | "MISSING"
@@ -154,12 +158,21 @@ export async function installGuardrails(
     );
   }
 
+  const skillLines = await installOhNoSkill()
+    .then((result) => serializeSkillInstallResult(result).trimEnd().split("\n"))
+    .catch((error: unknown) => [
+      `Skill install skipped: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    ]);
+
   if (states.every(({ status }) => status === "INSTALLED_TEMPLATE")) {
     return [
       "COOPERATIVE_GUARDRAIL already installed (idempotent).",
       "  .codex/hooks.json: SessionStart, PostCompact, PreToolUse, Stop",
       "  .git/hooks/pre-commit",
       "Codex hook feature and trust: UNVERIFIED; review with /hooks.",
+      ...skillLines,
       "",
     ].join("\n");
   }
@@ -193,6 +206,7 @@ export async function installGuardrails(
     "  .git/hooks/pre-commit",
     "Codex hook feature and trust: UNVERIFIED; review with /hooks.",
     "Coverage is limited to supported local hook paths and ordinary Git.",
+    ...skillLines,
     "",
   ].join("\n");
 }

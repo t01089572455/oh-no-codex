@@ -98,7 +98,7 @@ test("projectors write PROGRESS.md and AGENTS managed block from state", async (
   assert.match(agents, /projection/);
   assert.match(agents, /research_before_implement/);
   assert.match(agents, /frontend_adapt_not_invent/);
-  assert.match(agents, /Conversation protocol/);
+  assert.match(agents, /skill-first|oh-no-control/);
   assert.match(agents, /ohno verify/);
   assert.match(agents, /ohno task start/);
   assert.match(requirements, /research_before_implement/);

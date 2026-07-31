@@ -7,6 +7,7 @@ import {
   loadPreferences,
 } from "./preferences.js";
 import { readModel } from "./read-model.js";
+import { skillInstallStatus } from "./skill-install.js";
 import { readState, stateExists } from "./state.js";
 
 export interface DoctorReport {
@@ -194,6 +195,27 @@ export async function runDoctor(projectPath: string): Promise<DoctorReport> {
   } catch (error) {
     checks.push({
       id: "hooks",
+      status: "WARN",
+      detail: error instanceof Error ? error.message : String(error),
+    });
+  }
+
+  try {
+    const skills = await skillInstallStatus();
+    const codexSkill = skills.targets.find((t) => t.id === "codex");
+    const st = codexSkill?.status ?? "MISSING";
+    checks.push({
+      id: "control_skill",
+      status: st === "INSTALLED" ? "PASS" : "WARN",
+      detail: st === "INSTALLED"
+        ? `oh-no-control skill at ${codexSkill?.skillMd}`
+        : st === "DRIFT"
+        ? "oh-no-control skill drifted — run ohno skill install"
+        : "oh-no-control skill missing — run ohno skill install",
+    });
+  } catch (error) {
+    checks.push({
+      id: "control_skill",
       status: "WARN",
       detail: error instanceof Error ? error.message : String(error),
     });

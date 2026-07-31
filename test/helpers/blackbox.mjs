@@ -37,10 +37,11 @@ export async function createProject(t) {
   return projectPath;
 }
 
-export function runCli(cwd, args) {
+export function runCli(cwd, args, options = {}) {
   return spawnSync(process.execPath, [cliPath, ...args], {
     cwd,
     encoding: "utf8",
+    env: options.env,
   });
 }
 

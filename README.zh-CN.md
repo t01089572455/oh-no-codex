@@ -170,21 +170,33 @@ npm：[oh-no-codex](https://www.npmjs.com/package/oh-no-codex)（`0.1.1`）。
 
 ---
 
-## 日常怎么用
+## 日常怎么用（Skill 优先）
 
-装好后主要**和 Codex 说话**，harness 在下面托着。
+`ohno install` 会把 **Codex skill** 装到 `~/.codex/skills/oh-no-control/`。
 
-| 意图 | 命令 |
+这才是给 Agent 的主入口：Codex 可按 skill 的 `description` **自己发现**
+（ohno、验收、开工、anti-drift…）。长 CLI 不要整段贴进聊天——会被上下文稀释。
+
+| 谁 | 做什么 |
+| --- | --- |
+| **你** | 每个项目一次 `init` + `install`；日常说人话 |
+| **Skill `oh-no-control`** | 何时跑哪条 `ohno` |
+| **Hooks** | 后台注入 resume、拦写范围 |
+| **AGENTS 托管块** | 只放现场目标/看板/下一步（短） |
+
+```bash
+ohno skill install    # 刷新 skill 到 ~/.codex/skills
+ohno skill status
+# 新开一个 Codex 会话，便于 skill 发现生效
+```
+
+| 意图 | Codex 应跑（由 skill 约定） |
 | --- | --- |
 | 开这一刀 | `ohno task start` |
 | 证明这一刀 | **只** `ohno verify` |
 | 需求变了 | `ohno change begin --summary "…"` |
 | 记下 Owner 原话 | `ohno requirements note --text "…"` |
 | 现在卡在哪 | `ohno resume` · `ohno doctor` · `ohno cockpit` |
-
-对话映射在 `AGENTS.md` 托管块；可选 [`skills/oh-no-control/SKILL.md`](./skills/oh-no-control/SKILL.md)。
-
-工艺默认（可关）：先调研、复用开源、前端基于参考改 — `ohno preferences show`。
 
 **永不静默：** 未审 accept · 伪造 PASS · 把 `next` 当空白支票。
 

@@ -1,53 +1,98 @@
 ---
 name: oh-no-control
 description: >
-  Thin Oh No, Codex! conversation protocol. Use when the project has
-  oh-no-codex installed and the user is doing vibe coding with bounded tasks,
-  verify, requirement change, preferences, or resume. Not a skill router.
+  Use for Oh No, Codex! (oh-no-codex / ohno) project harness control during
+  Codex vibe coding. Trigger when the user or project mentions ohno, oh-no,
+  oh no codex, anti-drift harness, bounded task, black-box verify, resume
+  capsule, plan board, REQUIREMENTS log, preferences research-first, 开工,
+  做完了, 验收, 需求变了, 卡在哪, task start, ohno verify, or when coding in a
+  repo that has .ohno/state.json or AGENTS.md ohno:managed-begin markers.
+  You run shell `ohno` CLI at task boundaries; do not claim done without verify.
 ---
 
-# Oh No, Codex! control protocol
+# Oh No, Codex! — control skill
 
-## When to use
+## What this is
 
-Project already has `ohno init` + `ohno install` (or you are setting that up).
-The human should **not** memorize the full CLI. You run boundary commands.
+**Oh No** is a **local CLI harness** (`ohno`), not a cloud service and not a
+replacement for Codex Goal mode.
 
-## Daily path
+This skill is the **primary way** you (Codex) should learn *when* to run `ohno`.
+Do **not** wait for the human to paste long CLI recipes into chat — that
+dilutes. Follow this skill + the live capsule in `AGENTS.md` when present.
 
-1. Human: install once (`npm i -g oh-no-codex`), then `ohno init --goal "…"`, `ohno install`.
-2. Human: talks in ordinary language.
-3. You: follow the table below.
-4. Hooks (background): SessionStart/PostCompact inject resume; PreToolUse scope check; Stop completion marker; projectors refresh.
-
-## Command map
-
-| Human intent | You run |
+| Layer | Role |
 | --- | --- |
-| Start this slice / 开工 | `ohno task start` if cursor task is frozen; else plan propose/accept after Owner review |
-| This slice is done / 做完了 | **Only** `ohno verify` — no PASS, no “done” |
-| Requirements changed / 需求变了 | `ohno change begin --summary "…"` then sync + replacement plan |
-| Remember my words / 记下来 | `ohno requirements note --text "…"` |
-| Change craft rules / 改规矩 | `ohno preferences set …` or edit `.ohno/preferences.json` |
-| Where are we / 卡在哪 | `ohno resume` or `ohno doctor` |
+| This skill | When / how to call `ohno` |
+| `.ohno/state.json` | Sole runtime authority |
+| `AGENTS.md` `<!-- ohno:managed-begin -->` | Live goal / board / next (projection) |
+| Hooks | Auto resume inject + write scope (after `ohno install`) |
 
-## Working method defaults
+If both skill and AGENTS managed block exist: **state/board from AGENTS**;  
+**procedure from this skill**.
 
-See `.ohno/preferences.json` (also projected into `AGENTS.md`). Defaults favor:
+## Setup (human once per machine / project)
 
-- research open-source before consequential implementation;
-- prefer existing packages/templates;
-- frontend: adapt a real reference, do not invent a full UI from scratch.
+```bash
+npm install -g oh-no-codex
+cd <git-project>
+ohno init --goal "<one-line Owner outcome in their words>"
+ohno install          # hooks + installs this skill into ~/.codex/skills
+```
 
-Owner may disable any rule. Preferences are craft, not a second runtime authority.
+`--goal` is free text (project outcome), **not** Codex Goal-mode syntax.
 
-## Authority
+If the skill is missing:
 
-- Sole runtime authority: `.ohno/state.json`
-- Projections: `.ohno/PROGRESS.md`, `.ohno/REQUIREMENTS.md`, AGENTS managed block
-- Never auto-accept plans or invent verify PASS
-- `next` is a locator, not permission
+```bash
+ohno skill install
+```
 
-## Prefer project AGENTS block
+## When to activate
 
-If the project `AGENTS.md` contains `<!-- ohno:managed-begin -->` … `<!-- ohno:managed-end -->`, that live capsule **outranks** this static skill copy for current goal, board, and next action.
+Use this skill whenever:
+
+- The repo has `.ohno/` or Oh No is mentioned
+- User says start / done / verify / requirements changed / where are we
+- User Chinese: 开工 / 做完了 / 验收 / 需求变了 / 卡在哪 / 记下来
+- You are about to claim a task complete
+- You need current goal, cursor task, or proof freshness
+
+## Command map (you run these in the project shell)
+
+| Human intent | You run | Notes |
+| --- | --- | --- |
+| Init project (rare) | `ohno init --goal "…"` | Once per repo; human may do this |
+| Install hooks + skill | `ohno install` | Once per repo / refresh skill |
+| Start frozen slice | `ohno task start` | Plan cursor must be frozen |
+| Need a plan | prepare review JSON → `ohno plan propose` / `accept` | Accept only after Owner review |
+| Slice done | **`ohno verify` only** | No PASS → not done. Never invent PASS |
+| Requirements changed | `ohno change begin --summary "…"` | Then doc sync + new plan |
+| Remember Owner words | `ohno requirements note --text "…"` | Append-only log |
+| Craft rules | `ohno preferences show` / `set` | research / OSS / frontend defaults |
+| Where are we | `ohno resume` or `ohno doctor` | Read-only |
+| Dashboard | `ohno cockpit` | Read-only browser board |
+
+## Hard rules
+
+1. **Do not** claim completion without a fresh `ohno verify` PASS.  
+2. **`next` is a locator**, not permission to start a new unauthorized phase.  
+3. **Do not** silent `plan accept` or invent proof.  
+4. **`.ohno/state.json`** is the only current runtime authority.  
+5. Prefer **narrow** `allowed_files` and a **user-visible** black-box test.  
+6. Working-method defaults (unless disabled): research before big build; reuse
+   OSS; frontend adapt a real reference — see `ohno preferences show`.
+
+## First turns in an Oh No project
+
+1. `ohno resume` (or read AGENTS managed block) — learn goal / cursor / next.  
+2. If no plan → help Owner produce a linear plan (frozen cursor task).  
+3. If plan ready → `ohno task start` before broad edits.  
+4. When user says done → `ohno verify`, report real exit status.  
+5. On fail → stay on the same task; do not declare product complete.
+
+## What you never say
+
+- “Fully controlled” / “production ready” without named evidence  
+- “Done” after only unit mocks or agent prose  
+- That this skill **stops the Codex app** — it only closes **the task slice**

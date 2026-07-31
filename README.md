@@ -149,22 +149,34 @@ npm: [oh-no-codex](https://www.npmjs.com/package/oh-no-codex) (`0.1.1`).
 
 ---
 
-## Daily use
+## Daily use (skill-first)
 
-After init + install, you mostly **talk to Codex**. The harness sits underneath.
+`ohno install` also copies a **Codex skill** to `~/.codex/skills/oh-no-control/`.
 
-| Intent | Command |
+That is the main agent UX: Codex can **discover** the skill from its description
+(keywords: ohno, verify, 开工, 验收, anti-drift…). Long CLI recipes are **not**
+meant to live as chat paste — they dilute.
+
+| Who | What |
+| --- | --- |
+| **You** | Once: `init` + `install`. Daily: ordinary language |
+| **Skill `oh-no-control`** | When to run which `ohno` command |
+| **Hooks** | Resume inject + write scope (background) |
+| **AGENTS managed block** | Live goal / board / next only (short) |
+
+```bash
+ohno skill install    # refresh skill into ~/.codex/skills
+ohno skill status
+# then start a new Codex session so discovery picks it up
+```
+
+| Intent | Codex runs (via skill) |
 | --- | --- |
 | Start the frozen slice | `ohno task start` |
 | Prove this slice | **`ohno verify` only** |
 | Requirements changed | `ohno change begin --summary "…"` |
 | Keep Owner words | `ohno requirements note --text "…"` |
 | Where are we? | `ohno resume` · `ohno doctor` · `ohno cockpit` |
-
-Conversation map is projected into `AGENTS.md`.  
-Optional: [`skills/oh-no-control/SKILL.md`](./skills/oh-no-control/SKILL.md).
-
-Defaults you can turn off: research-before-build, prefer existing OSS, adapt UI from a real reference — `ohno preferences show`.
 
 **Never automated:** silent plan accept · invented PASS · treating `next` as a blank cheque.
 

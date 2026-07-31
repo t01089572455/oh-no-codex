@@ -27,6 +27,12 @@ import {
   hooksIntegrationStatus,
   installGuardrails,
 } from "./install.js";
+import {
+  installOhNoSkill,
+  serializeSkillInstallResult,
+  serializeSkillStatus,
+  skillInstallStatus,
+} from "./skill-install.js";
 import { serializeNext } from "./next.js";
 import {
   runDoctor,
@@ -75,9 +81,11 @@ const usageText = [
   "  ohno change begin --summary <owner words> [--concerns <labels>] [--candidates <Truth paths>]",
   "  ohno change diff | ohno change accept --change <id> --diff <displayed digest>",
   "  ohno install | ohno hooks status --json",
+  "  ohno skill install | ohno skill status",
   "  ohno hook | ohno git pre-commit",
   "",
   "Hook classification: COOPERATIVE_GUARDRAIL.",
+  "Primary agent UX: Codex skill oh-no-control (ohno skill install).",
   "Codex hook feature and trust: UNVERIFIED until reviewed in Codex.",
   "Hosted and specialized mutation paths are outside complete hook coverage.",
   "",
@@ -222,6 +230,28 @@ async function main(): Promise<void> {
     && args.length === 0
   ) {
     process.stdout.write(await installGuardrails(projectPath));
+    return;
+  }
+
+  if (
+    command === "skill"
+    && subcommand === "install"
+    && args.length === 0
+  ) {
+    process.stdout.write(
+      serializeSkillInstallResult(await installOhNoSkill()),
+    );
+    return;
+  }
+
+  if (
+    command === "skill"
+    && subcommand === "status"
+    && args.length === 0
+  ) {
+    process.stdout.write(
+      serializeSkillStatus(await skillInstallStatus()),
+    );
     return;
   }
 
