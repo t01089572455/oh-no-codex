@@ -3,16 +3,32 @@
   "version": "0.0.0",
   "private": true,
   "description": "A cooperative anti-drift harness for Codex projects",
+  "license": "MIT",
   "type": "module",
   "bin": {
     "ohno": "./dist/cli.js"
   },
+  "files": [
+    "dist",
+    "assets/brand/oh-no-codex-plush-hero.png",
+    "assets/cockpit/index.html",
+    "assets/cockpit/cockpit.css",
+    "assets/cockpit/cockpit.js",
+    "assets/cockpit/fonts",
+    "templates",
+    "README.md",
+    "README.zh-CN.md",
+    "LICENSE"
+  ],
   "engines": {
     "node": ">=22.20.0"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --test test/blackbox/*.test.mjs",
+    "test:acceptance": "node --test test/blackbox/*.test.mjs",
+    "test:performance": "node --test test/performance/local-latency.test.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

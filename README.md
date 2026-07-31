@@ -25,8 +25,8 @@
 </p>
 
 <p align="center">
-  <a href="./docs/IMPLEMENTATION-PLAN.md">
-    <img alt="Status: building V1" src="https://img.shields.io/badge/status-building_V1-F4AA2A?style=for-the-badge&labelColor=202624">
+  <a href="https://github.com/t01089572455/oh-no-codex/blob/main/docs/IMPLEMENTATION-PLAN.md">
+    <img alt="Status: V1 changes required" src="https://img.shields.io/badge/status-V1_changes_required-FF4B35?style=for-the-badge&labelColor=202624">
   </a>
   <img alt="Codex only" src="https://img.shields.io/badge/harness-Codex_only-FF4B35?style=for-the-badge&labelColor=202624">
   <img alt="Node.js 22.20 or newer" src="https://img.shields.io/badge/Node.js-%E2%89%A522.20-74D6B1?style=for-the-badge&labelColor=202624">
@@ -48,9 +48,11 @@
 </p>
 
 > [!IMPORTANT]
-> **V1 is under construction.** No package has been released. The commands,
-> hooks, performance targets, and Cockpit below describe the accepted product
-> contract; they are not availability claims.
+> **V1 remains `V1_CHANGES_REQUIRED`.** The CLI loops, cooperative hooks, Git
+> guard, and read-only Cockpit pass local public black boxes; three disposable
+> real-project copies pass P01–P05. Required in-app Browser acceptance A14 and
+> P06 could not run, so the project does not claim V1 trial acceptance. No npm
+> package has been published or released.
 
 ## Why
 
@@ -81,35 +83,34 @@ flowchart LR
     C --> D{"Fresh PASS?"}
     D -- "FAIL / UNKNOWN" --> B
     D -- "Yes" --> E["Stop"]
-    E --> F["One proposed next action"]
+    E --> F["One plan-derived next action"]
 ```
 
 The next action is a locator, not fresh authorization.
 
 | Loop | Drift it prevents | Smallest useful behavior |
 | --- | --- | --- |
-| **Start** | Coding before the task is understood | Freeze expected behavior, one test, allowed files, time budget, stop condition, and one next action. |
+| **Start** | Coding before the task is understood | Activate only the frozen cursor task: expected behavior, one test, allowed files, time budget, and stop condition. |
 | **Finish** | “Looks done” completion claims | Run the exact black box and bind PASS to the current task and Git subject. |
 | **Change** | Requirements and governing documents diverging | Select required documents from Owner-maintained Truth, show the exact diff, and block coding until review. |
 | **Resume** | New sessions rebuilding state from prose | Return the goal, current task, proof, blocker, and one next action from one atomic state file. |
 
 ## Thirty-second contract preview
 
-> The interface is designed, but it is not released yet.
+> These commands are implemented from source. No npm release exists.
 
 ```bash
 # Anchor one project goal
 ohno init --goal "Ship reliable draft persistence"
 
-# Start one bounded task
-ohno task start \
-  --id "draft-persistence" \
-  --expect "A saved draft survives page reload" \
-  --test "npm test -- draft-persistence" \
-  --files "src/drafts/**,test/draft-persistence.test.*" \
-  --minutes 60 \
-  --stop "Stop when the black-box test passes" \
-  --next "Add draft deletion"
+# Propose a reviewed ordered plan stored in .ohno/review-plan.json
+ohno plan propose --file .ohno/review-plan.json
+
+# Accept only the exact values printed by the proposal
+ohno plan accept --revision <PLAN_REVISION> --diff <DIFF_DIGEST>
+
+# Start only ordered_tasks[cursor]; callers cannot override its contract
+ohno task start
 
 # Let evidence decide, then recover state in any new session
 ohno verify
@@ -126,7 +127,7 @@ moment Codex is about to act:
 | --- | --- |
 | `SessionStart` / `PostCompact` | Inject the goal, current task, proof, blocker, and one next action. |
 | `PreToolUse` | Block supported writes when the task contract is missing or the path is outside the declared scope. |
-| `Stop` | Keep the task open when fresh PASS evidence or required document synchronization is missing. |
+| `Stop` | On the exact `OHNO_COMPLETE:<task-id>` marker, keep the task open unless proof is fresh and document sync is clean. Missing or paraphrased markers are not completion signals. |
 | Git `pre-commit` | Reject an out-of-scope or unverified commit. |
 
 Hooks are guardrails around cooperative Codex use—not an unbreakable security
@@ -162,16 +163,22 @@ abstraction earns its place only when a failing public black-box test needs it.
 
 ## Oh No Cockpit
 
-The planned Cockpit is a read-only recovery surface, not a generic SaaS
-dashboard. Its largest area answers two questions:
+The Cockpit is implemented as a local, GET-only projection of the same read
+model as `ohno status --json`; it owns no state, cache, database, or write
+route. Its largest area answers two questions:
 
 1. **What is happening now?**
 2. **What is the one next action?**
 
 > [!NOTE]
-> **Preview slot only. The Cockpit is not implemented.** A real desktop and
-> narrow-viewport screenshot will replace this panel only after the running UI
-> passes visual, responsive, accessibility, and functional acceptance.
+> **Functional `LOCAL_PASS`, browser acceptance unavailable.** The running
+> HTTP surface passes A13, but the required in-app Browser rejected the
+> authorized loopback URL. This conceptual panel is therefore not presented as
+> an A14 screenshot, and P06 remains `NOT_MEASURED`.
+
+```bash
+ohno cockpit
+```
 
 ```text
 +-- OH NO COCKPIT -------------------------- LOCAL / READ ONLY --+
@@ -188,7 +195,7 @@ dashboard. Its largest area answers two questions:
 +------------------------------------------------------------------+
 ```
 
-The planned palette follows product meaning:
+The locked palette follows product meaning:
 
 | Color | Role |
 | --- | --- |
@@ -229,32 +236,47 @@ explicit non-goals—not eighteen new subsystems.
 | 18 | **Apology without constraint** | Every confirmed incident becomes a rule, regression, or non-goal. |
 
 Read the privacy-scrubbed audit and evidence boundary in
-[`docs/CODEX-SINS.md`](./docs/CODEX-SINS.md).
+[`docs/CODEX-SINS.md`](https://github.com/t01089572455/oh-no-codex/blob/main/docs/CODEX-SINS.md).
 
 </details>
 
 ## Evidence, not promises
 
-These are V1 acceptance targets. They are **not earned performance claims**
-until measured on three disposable real-project copies.
+Capability labels name the evidence actually held by this repository:
 
-| Surface | Target |
-| --- | ---: |
-| `ohno status` / `ohno next` | local p95 `<250 ms` |
-| `ohno resume` | local p95 `<500 ms` |
-| Resume capsule | `<4 KiB` |
-| Task-start overhead | `<2 s`, excluding the user’s test |
-| State-to-Cockpit reflection | local p95 `<250 ms` |
+| Capability | Status | Evidence boundary |
+| --- | --- | --- |
+| CLI state, plan, verify, resume, change, hooks, and atomic-write behavior | `LOCAL_PASS` | Public Node black boxes A01–A12, A15, and A16 |
+| Read-only Cockpit projection | `LOCAL_PASS` | A13 HTTP equality with `status --json`; no browser claim |
+| Three copied-project loops and P01–P05 | `TRIAL_PASS` | Anonymous TypeScript CLI, React/Vite Web, and Python OCR source copies |
+| Desktop/narrow visual and accessibility acceptance | `UNAVAILABLE` | A14 could not run in the required in-app Browser |
+| State-to-Cockpit browser reflection | `UNAVAILABLE` | P06 is `NOT_MEASURED`; HTTP timing is not substituted |
+| npm publication or release | `UNAVAILABLE` | Not authorized and not performed |
+
+The three-copy measurements use one untimed warm-up and 30 raw samples per
+command per copy. Worst observed p95 values were:
+
+| Surface | Frozen budget | Worst observed | Result |
+| --- | ---: | ---: | --- |
+| `ohno status` | `<250 ms` | `92.249 ms` | `TRIAL_PASS` |
+| `ohno next` | `<250 ms` | `84.213 ms` | `TRIAL_PASS` |
+| `ohno resume` | `<500 ms` | `85.938 ms` | `TRIAL_PASS` |
+| Largest accepted resume capsule | `<4096 bytes` | `3194 bytes` | `TRIAL_PASS` |
+| Task-start harness overhead | `<2000 ms` | `97.667 ms` | `TRIAL_PASS` |
+| State-to-Cockpit browser reflection | `<250 ms` | `NOT_MEASURED` | `UNAVAILABLE` |
+
+These are local trial results for the named anonymous copies and machine, not
+a universal speed or production-readiness guarantee.
 
 ## Project contracts
 
 Public product truth lives in a small set of documents:
 
-1. [Product contract](./docs/PRODUCT-CONTRACT.md)
-2. [V1 design](./docs/DESIGN.md)
-3. [Acceptance contract](./docs/ACCEPTANCE.md)
-4. [Implementation ledger](./docs/IMPLEMENTATION-PLAN.md)
-5. [The Codex sins](./docs/CODEX-SINS.md)
+1. [Product contract](https://github.com/t01089572455/oh-no-codex/blob/main/docs/PRODUCT-CONTRACT.md)
+2. [V1 design](https://github.com/t01089572455/oh-no-codex/blob/main/docs/DESIGN.md)
+3. [Acceptance contract](https://github.com/t01089572455/oh-no-codex/blob/main/docs/ACCEPTANCE.md)
+4. [Implementation ledger](https://github.com/t01089572455/oh-no-codex/blob/main/docs/IMPLEMENTATION-PLAN.md)
+5. [The Codex sins](https://github.com/t01089572455/oh-no-codex/blob/main/docs/CODEX-SINS.md)
 
 ## License
 

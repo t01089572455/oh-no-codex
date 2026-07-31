@@ -1,6 +1,6 @@
 # Codex-only V1 implementation plan
 
-Status: **V1_CHANGES_REQUIRED — TASK_6C_BROWSER_BLOCKED**
+Status: **V1_CHANGES_REQUIRED — A14_AND_P06_UNAVAILABLE**
 
 Owner authorization: Tasks 1–7 below, including 6A–6C, were authorized as the
 complete V1 implementation scope on 2026-07-30. Execute them sequentially.
@@ -19,7 +19,7 @@ Do not add another task or publish a package without new authorization.
 | Task 6A — locked Cockpit design contract | LOCAL_PASS | design prerequisite for A13, A14 |
 | Task 6B — read-only Cockpit implementation | LOCAL_PASS | A13, part of P06 |
 | Task 6C — browser visual and functional acceptance | EXTERNAL_BROWSER_BLOCKED | A14 |
-| Task 7 — cross-project trials and final gate | IN_PROGRESS | A12, A15, A16, P01–P06 |
+| Task 7 — cross-project trials and final gate | V1_CHANGES_REQUIRED | A12, A15, A16, P01–P06 |
 
 ## Task 1 local evidence
 
@@ -379,14 +379,80 @@ Recorded on 2026-07-30:
 This slice stops at the exact external blocker permitted by its frozen stop
 condition. It does not call the Cockpit polished, browser-accepted, or complete.
 
+## Task 7 trial and final-truth evidence
+
+Recorded on 2026-07-30 with Node.js v24.11.1 on Windows 10.0.19044 x64,
+13th Gen Intel(R) Core(TM) i7-13700KF:
+
+- Script RED: before Task 7, `npm test`, `npm run test:acceptance`, and
+  `npm run test:performance` exited 1 because those package scripts did not
+  exist. The real scripts now own the public black boxes and performance
+  receipt verifier; no publication script or side effect was added.
+- A12/A15 GREEN: `node --test test/blackbox/atomic-state.test.mjs` exited 0
+  with 3/3 passing. It proves corrupt authority preserves exact bytes,
+  interrupted atomic replacement leaves valid old or new authority, and
+  `status`/`next`/`resume`, all four supported Codex hook events, and Cockpit
+  refresh neither rescan Truth nor execute the frozen project test. The same
+  inventory drift is detected only at explicit `change begin`.
+- The real-project harness first failed twice on its own overly narrow
+  expectations (`INSTALLED` instead of the public `INSTALLED_TEMPLATE`, then
+  an invented capsule heading). Both harness errors were corrected against
+  existing public black boxes without product changes. A third run exited 0.
+- `test/evidence/task7-real-project-trials.json` records the built CLI SHA-256,
+  implementation HEAD/tree, machine context, anonymous copy identities, every
+  flow result, one untimed warm-up, 30 raw samples per command per copy, and
+  nearest-rank p95 values. It contains no private path, source, or project name.
+- All three disposable copies exercised task start, exact FAIL, exact PASS,
+  cursor advance, normal commit freshness, scoped-subject staleness, resume,
+  requirement-change diff/accept, Codex hook status/events, installed Git
+  pre-commit, and Cockpit API equality. Originals were never mutated.
+
+| Anonymous copy | Stack | Identity SHA-256 | `status` p95 | `next` p95 | `resume` p95 | task-start p95 |
+| --- | --- | --- | ---: | ---: | ---: | ---: |
+| Trial A | TypeScript CLI | `d0ca63441534558b59f4c909f095ca68434d9c72f9e74375452f974c9cd35a2d` | 92.249 ms | 84.213 ms | 85.938 ms | 97.667 ms |
+| Trial B | React/Vite Web | `9fe7a804796484b47c895dc62e0d5b13a697e45fbd8fc8985c362730002651fa` | 61.451 ms | 68.916 ms | 63.930 ms | 64.583 ms |
+| Trial C | Python OCR source | `c6770c9f28ab00222cdebfc3bfda6015643a8295e84097838139387a691a42c8` | 83.777 ms | 67.922 ms | 77.903 ms | 85.791 ms |
+
+- P01, P02, P03, and P05 are `TRIAL_PASS` on every copy. The largest accepted
+  P04 fixture uses the maximum 256-byte goal, 96-byte stable id, 512-byte
+  expected behavior, 1024-byte exact command, and 120 completed contracts; its
+  serialized capsule is 3194 bytes, below the exclusive 4096-byte budget.
+- The performance receipt test has a deliberate, truthful boundary: its P01–P05
+  and P04 case passes, while its P06 case exits non-zero with
+  `P06_NOT_MEASURED: IN_APP_BROWSER_NAVIGATION_REJECTED`. HTTP-only Cockpit
+  checks are not substituted for a real browser measurement.
+- `package.json` remains private at version `0.0.0`, declares MIT, keeps zero
+  runtime dependencies, exposes real `test`, `test:acceptance`, and
+  `test:performance` scripts, and narrows packed Cockpit files to runtime assets
+  so test evidence is not shipped. README English and Simplified Chinese now
+  show the exact linear-plan interface, plan-derived next, exact Stop marker,
+  implemented A13 boundary, measured P01–P05 values, and unavailable A14/P06.
+- `docs/PRODUCT-CONTRACT.md`, `docs/DESIGN.md`, and `docs/ACCEPTANCE.md` were
+  reread and intentionally retain only stable requirements. Dynamic status and
+  trial evidence remain solely in this bootstrap ledger, while product runtime
+  authority remains solely `.ohno/state.json`.
+
+Current row classification:
+
+| Rows | Classification |
+| --- | --- |
+| A01–A13, A15, A16 | `LOCAL_PASS` (also exercised on all three real copies where applicable) |
+| A14 | `UNAVAILABLE` — required in-app Browser rejected the authorized loopback URL |
+| P01–P05 | `TRIAL_PASS` on every copied project |
+| P06 | `UNAVAILABLE` / `NOT_MEASURED` — no valid browser samples |
+
+The exact clean-checkout final gate result is recorded below after the Task 7
+candidate commit is created. No npm publish, tag, release, or network mutation
+is authorized or performed.
+
 ## Exact current action
 
 There is exactly one. **Unique next:**
 
-> **Task 7:** complete every non-browser-dependent real-project trial,
-> performance, atomic-state, Truth-scan isolation, packaging, README, and final
-> gate item. Keep A14 and P06 explicitly unavailable until the required in-app
-> Browser can open the authorized loopback URL.
+> **Task 7 final gate:** commit the scoped candidate, run every frozen final
+> command exactly once from its clean checkout, record the exact results, and
+> stop at `V1_CHANGES_REQUIRED` unless the required in-app Browser becomes
+> available for A14 and P06. No Task 8.
 
 ## Shared implementation rules
 

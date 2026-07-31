@@ -1,7 +1,7 @@
 <a id="readme-top"></a>
 
 <p align="center">
-  <a href="https://github.com/t01089572455/oh-no-codex">English</a>
+  <a href="./README.md">English</a>
   ·
   <strong>简体中文</strong>
 </p>
@@ -25,8 +25,8 @@
 </p>
 
 <p align="center">
-  <a href="./docs/IMPLEMENTATION-PLAN.md">
-    <img alt="状态：正在实现 V1" src="https://img.shields.io/badge/status-building_V1-F4AA2A?style=for-the-badge&labelColor=202624">
+  <a href="https://github.com/t01089572455/oh-no-codex/blob/main/docs/IMPLEMENTATION-PLAN.md">
+    <img alt="状态：V1 尚需变更" src="https://img.shields.io/badge/status-V1_changes_required-FF4B35?style=for-the-badge&labelColor=202624">
   </a>
   <img alt="仅支持 Codex" src="https://img.shields.io/badge/harness-Codex_only-FF4B35?style=for-the-badge&labelColor=202624">
   <img alt="Node.js 22.20 或更高版本" src="https://img.shields.io/badge/Node.js-%E2%89%A522.20-74D6B1?style=for-the-badge&labelColor=202624">
@@ -48,8 +48,10 @@
 </p>
 
 > [!IMPORTANT]
-> **V1 正在实现。** 目前没有发布任何安装包。下面的命令、Hooks、性能目标和
-> 驾驶舱描述的是已经确认的产品合同，不代表它们现在已经可用。
+> **V1 当前仍是 `V1_CHANGES_REQUIRED`。** CLI 闭环、合作式 Hooks、Git
+> 护栏和只读驾驶舱已经通过本地公共黑盒；三个一次性真实项目副本通过了
+> P01–P05。必需的应用内 Browser 验收 A14 与 P06 未能运行，因此项目不声称
+> V1 试验验收完成。目前没有发布 npm 包或 Release。
 
 ## 为什么需要它
 
@@ -78,35 +80,34 @@ flowchart LR
     C --> D{"当前证据 PASS？"}
     D -- "FAIL / UNKNOWN" --> B
     D -- "是" --> E["停止"]
-    E --> F["唯一建议下一步"]
+    E --> F["由计划推导的唯一下一步"]
 ```
 
 “下一步”只是定位信息，不是新的执行授权。
 
 | 闭环 | 防止什么漂移 | 最小有用行为 |
 | --- | --- | --- |
-| **开始** | 任务没想清楚就开写 | 固定预期行为、一个测试、文件范围、时间预算、停止条件和唯一下一步。 |
+| **开始** | 任务没想清楚就开写 | 只激活 cursor 指向的冻结任务：预期行为、一个测试、文件范围、时间预算和停止条件。 |
 | **完成** | “看起来好了”冒充完成 | 执行指定黑盒，并把 PASS 绑定到当前任务和 Git 对象。 |
 | **变更** | 需求与规范文档不同步 | 从 Owner 维护的 Truth 清单确定必改文档，展示精确 diff，确认前阻止编码。 |
 | **恢复** | 新 Session 从聊天里拼现场 | 从一个原子状态文件返回目标、当前任务、证据、阻塞和唯一下一步。 |
 
 ## 30 秒合同预览
 
-> 下面的接口已经完成设计，但软件尚未发布。
+> 下面的命令已经能从源码运行，但目前没有 npm Release。
 
 ```bash
 # 固定一个项目目标
 ohno init --goal "让草稿保存可靠"
 
-# 开始一个有边界的任务
-ohno task start \
-  --id "draft-persistence" \
-  --expect "保存后的草稿在刷新页面后仍然存在" \
-  --test "npm test -- draft-persistence" \
-  --files "src/drafts/**,test/draft-persistence.test.*" \
-  --minutes 60 \
-  --stop "黑盒测试通过后立即停止" \
-  --next "增加草稿删除"
+# 提议保存在 .ohno/review-plan.json 中的有序计划
+ohno plan propose --file .ohno/review-plan.json
+
+# 只接受 proposal 输出的精确值
+ohno plan accept --revision <PLAN_REVISION> --diff <DIFF_DIGEST>
+
+# 只启动 ordered_tasks[cursor]，调用者不能覆盖任务合同
+ohno task start
 
 # 让证据决定是否完成，并让任何新 Session 一条命令恢复现场
 ohno verify
@@ -122,7 +123,7 @@ CLI 掌握状态和判断；Hooks 只负责在 Codex 即将行动的时刻执行
 | --- | --- |
 | `SessionStart` / `PostCompact` | 注入目标、当前任务、证据、阻塞和唯一下一步。 |
 | `PreToolUse` | 缺少任务合同，或路径超出声明范围时，阻止受支持的写操作。 |
-| `Stop` | 缺少新鲜 PASS 或仍有规范文档待同步时，保持任务未完成。 |
+| `Stop` | 只在看到精确的 `OHNO_COMPLETE:<task-id>` 标记时检查：若 PASS 不新鲜或文档同步未清理，则保持任务未完成。缺失或改写过的标记不算完成信号。 |
 | Git `pre-commit` | 拒绝超范围或未经验证的提交。 |
 
 Hooks 是约束合作型 Codex 的护栏，不是不可绕过的安全边界。
@@ -155,15 +156,21 @@ V1 不做数据库、后台守护进程、托管服务、策略语言、插件�
 
 ## Oh No 驾驶舱
 
-计划中的驾驶舱是只读的现场恢复界面，不是通用 SaaS 后台。最大的视觉
-区域只回答两个问题：
+驾驶舱已经实现为本地、仅 GET 的只读界面，和 `ohno status --json`
+读取同一个 read model；它没有自己的状态、缓存、数据库或写接口。最大的
+视觉区域只回答两个问题：
 
 1. **现在在做什么？**
 2. **唯一下一步是什么？**
 
 > [!NOTE]
-> **这里只是预览占位，驾驶舱尚未实现。** 只有真实运行的界面通过视觉、
-> 响应式、无障碍和功能验收后，才会用桌面与窄屏截图替换下面的面板。
+> **功能为 `LOCAL_PASS`，浏览器验收不可用。** 运行中的 HTTP 界面已经通过
+> A13，但必需的应用内 Browser 拒绝了已授权的 loopback 地址。所以下面的
+> 概念面板不冒充 A14 截图，P06 仍是 `NOT_MEASURED`。
+
+```bash
+ohno cockpit
+```
 
 ```text
 +-- OH NO 驾驶舱 ------------------------------ 本地 / 只读 --+
@@ -180,7 +187,7 @@ V1 不做数据库、后台守护进程、托管服务、策略语言、插件�
 +------------------------------------------------------------------+
 ```
 
-计划配色严格跟随产品语义：
+冻结配色严格跟随产品语义：
 
 | 颜色 | 用途 |
 | --- | --- |
@@ -221,32 +228,46 @@ Oh No, Codex! 把它们变成约束、测试或明确不做的事情，而不是
 | 18 | **道歉没有变成约束** | 每次确认的问题都要落成规则、回归测试或明确不做。 |
 
 完整的脱敏审计与证据边界见
-[`docs/CODEX-SINS.md`](./docs/CODEX-SINS.md)。
+[`docs/CODEX-SINS.md`](https://github.com/t01089572455/oh-no-codex/blob/main/docs/CODEX-SINS.md)。
 
 </details>
 
 ## 用证据，不用口号
 
-下面是 V1 的验收目标。在三个一次性真实项目副本完成测量之前，它们都
-不是已经兑现的性能承诺。
+能力标签只描述仓库当前真正持有的证据：
 
-| 场景 | 目标 |
-| --- | ---: |
-| `ohno status` / `ohno next` | 本地 p95 `<250 ms` |
-| `ohno resume` | 本地 p95 `<500 ms` |
-| 恢复摘要 | `<4 KiB` |
-| 任务启动控制开销 | `<2 s`，不含用户测试 |
-| 状态反映到驾驶舱 | 本地 p95 `<250 ms` |
+| 能力 | 状态 | 证据边界 |
+| --- | --- | --- |
+| CLI 状态、计划、验证、恢复、变更、Hooks 与原子写行为 | `LOCAL_PASS` | 公共 Node 黑盒 A01–A12、A15、A16 |
+| 只读驾驶舱投影 | `LOCAL_PASS` | A13 HTTP 输出与 `status --json` 相等；不包含浏览器声明 |
+| 三个项目副本的完整闭环与 P01–P05 | `TRIAL_PASS` | 匿名 TypeScript CLI、React/Vite Web 与 Python OCR 源码副本 |
+| 桌面/窄屏视觉与无障碍验收 | `UNAVAILABLE` | 必需的应用内 Browser 无法运行 A14 |
+| 状态到驾驶舱的浏览器反映延迟 | `UNAVAILABLE` | P06 为 `NOT_MEASURED`；没有用 HTTP 计时代替 |
+| npm 发布或 Release | `UNAVAILABLE` | 未授权，也未执行 |
+
+三个副本的测量均先做一次不计时 warm-up，再对每条命令保存 30 个原始样本。
+最差 p95 如下：
+
+| 场景 | 冻结预算 | 最差观测值 | 结果 |
+| --- | ---: | ---: | --- |
+| `ohno status` | `<250 ms` | `92.249 ms` | `TRIAL_PASS` |
+| `ohno next` | `<250 ms` | `84.213 ms` | `TRIAL_PASS` |
+| `ohno resume` | `<500 ms` | `85.938 ms` | `TRIAL_PASS` |
+| 最大合法恢复摘要 | `<4096 bytes` | `3194 bytes` | `TRIAL_PASS` |
+| 任务启动 Harness 开销 | `<2000 ms` | `97.667 ms` | `TRIAL_PASS` |
+| 状态到驾驶舱的浏览器反映延迟 | `<250 ms` | `NOT_MEASURED` | `UNAVAILABLE` |
+
+这些只是指定匿名副本与本机上的试验结果，不是通用速度或生产就绪保证。
 
 ## 项目合同
 
 公开产品事实只由下面这组小而明确的文档管理：
 
-1. [产品合同](./docs/PRODUCT-CONTRACT.md)
-2. [V1 设计](./docs/DESIGN.md)
-3. [验收合同](./docs/ACCEPTANCE.md)
-4. [实现账本](./docs/IMPLEMENTATION-PLAN.md)
-5. [Codex 十八宗罪](./docs/CODEX-SINS.md)
+1. [产品合同](https://github.com/t01089572455/oh-no-codex/blob/main/docs/PRODUCT-CONTRACT.md)
+2. [V1 设计](https://github.com/t01089572455/oh-no-codex/blob/main/docs/DESIGN.md)
+3. [验收合同](https://github.com/t01089572455/oh-no-codex/blob/main/docs/ACCEPTANCE.md)
+4. [实现账本](https://github.com/t01089572455/oh-no-codex/blob/main/docs/IMPLEMENTATION-PLAN.md)
+5. [Codex 十八宗罪](https://github.com/t01089572455/oh-no-codex/blob/main/docs/CODEX-SINS.md)
 
 ## 开源许可
 
