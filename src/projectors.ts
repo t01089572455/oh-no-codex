@@ -10,6 +10,7 @@ import {
   type ReadModel,
   readModel,
 } from "./read-model.js";
+import { refreshRequirementsProjection } from "./requirements.js";
 
 export const agentsBeginMarker = "<!-- ohno:managed-begin -->";
 export const agentsEndMarker = "<!-- ohno:managed-end -->";
@@ -111,6 +112,7 @@ export function renderAgentsManagedBlock(model: ReadModel): string {
     "",
     "This block is a **projection** of `.ohno/state.json`.",
     "It is not authorization and not a second source of truth.",
+    "Owner requirement history: `.ohno/REQUIREMENTS.md`.",
     "Refresh with `ohno projectors refresh`.",
     "",
     `- **Goal:** ${model.goal ?? "NONE"}`,
@@ -150,6 +152,7 @@ export function upsertAgentsManagedBlock(
 
 export interface ProjectorResult {
   progress_path: string;
+  requirements_path: string;
   agents_path: string | null;
   agents_updated: boolean;
   model: ReadModel;
@@ -164,6 +167,10 @@ export async function refreshProjectors(
   await mkdir(ohnoDir, { recursive: true });
   const progressPath = resolve(ohnoDir, "PROGRESS.md");
   await writeFile(progressPath, renderProgressMarkdown(model), "utf8");
+  const requirementsPath = await refreshRequirementsProjection(
+    projectPath,
+    model,
+  );
 
   let agentsPath: string | null = null;
   let agentsUpdated = false;
@@ -194,6 +201,7 @@ export async function refreshProjectors(
 
   return {
     progress_path: ".ohno/PROGRESS.md",
+    requirements_path: requirementsPath,
     agents_path: agentsPath === null ? null : "AGENTS.md",
     agents_updated: agentsUpdated,
     model,

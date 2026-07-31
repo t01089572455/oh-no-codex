@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 
 import { hooksIntegrationStatus } from "./install.js";
 import { readModel } from "./read-model.js";
-import { stateExists } from "./state.js";
+import { readState, stateExists } from "./state.js";
 
 export interface DoctorReport {
   ok: boolean;
@@ -60,6 +60,41 @@ export async function runDoctor(projectPath: string): Promise<DoctorReport> {
         detail: `${model.truth_target_count} truth targets; `
           + `doc_sync=${model.document_sync_status}`,
       });
+
+      // Eighteen-sins pressure: broad scope and trivial black boxes.
+      try {
+        const state = await readState(projectPath);
+        const active = state.active_task;
+        if (active !== null) {
+          const broad = active.allowed_files.some((pattern) =>
+            pattern === "**"
+            || pattern === "*"
+            || pattern === "**/*"
+            || pattern.startsWith("**/")
+            || /^[^/]*\*$/u.test(pattern)
+          );
+          checks.push({
+            id: "scope_discipline",
+            status: broad ? "WARN" : "PASS",
+            detail: broad
+              ? "active allowed_files look very broad — risk of framework sprawl"
+              : "active allowed_files look bounded",
+          });
+          const trivial = /process\.exit\(0\)|exit 0|true\s*;?\s*$/iu.test(
+            active.test_command,
+          )
+            || active.test_command.trim().length < 8;
+          checks.push({
+            id: "blackbox_discipline",
+            status: trivial ? "WARN" : "PASS",
+            detail: trivial
+              ? "active test_command looks trivial — risk of test theatre"
+              : "active test_command present",
+          });
+        }
+      } catch {
+        // state already reported
+      }
     } catch (error) {
       checks.push({
         id: "state",
@@ -81,6 +116,21 @@ export async function runDoctor(projectPath: string): Promise<DoctorReport> {
       id: "progress_projection",
       status: "WARN",
       detail: "PROGRESS.md missing — run ohno projectors refresh",
+    });
+  }
+
+  try {
+    await access(resolve(projectPath, ".ohno", "REQUIREMENTS.md"));
+    checks.push({
+      id: "requirements_log",
+      status: "PASS",
+      detail: ".ohno/REQUIREMENTS.md present",
+    });
+  } catch {
+    checks.push({
+      id: "requirements_log",
+      status: "WARN",
+      detail: "REQUIREMENTS.md missing — run ohno projectors refresh",
     });
   }
 

@@ -39,6 +39,10 @@ import {
   renderAgentsManagedBlock,
 } from "./projectors.js";
 import { readModel } from "./read-model.js";
+import {
+  appendRequirementsNote,
+  showRequirements,
+} from "./requirements.js";
 import { serializeResume } from "./resume.js";
 import { serializeStatus } from "./status.js";
 import { startTask } from "./task-start.js";
@@ -56,6 +60,8 @@ const usageText = [
   "  ohno verify | ohno status [--json] | ohno resume | ohno next",
   "  ohno cockpit",
   "  ohno projectors refresh [--no-agents]",
+  "  ohno requirements note --text <owner words>",
+  "  ohno requirements show",
   "  ohno doctor [--json]",
   "  ohno change begin --summary <owner words> [--concerns <labels>] [--candidates <Truth paths>]",
   "  ohno change diff | ohno change accept --change <id> --diff <displayed digest>",
@@ -119,10 +125,16 @@ async function initialize(projectPath: string, args: string[]): Promise<void> {
     ].join("\n"),
     "utf8",
   );
+  await appendRequirementsNote(
+    projectPath,
+    `Project goal set: ${goal}`,
+    "init",
+  ).catch(() => undefined);
   await refreshProjectors(projectPath).catch(() => undefined);
   process.stdout.write(
     `Initialized goal: ${goal}\n`
-    + `AGENTS: managed block ${agentsBeginMarker} … ${agentsEndMarker}\n`,
+    + `AGENTS: managed block ${agentsBeginMarker} … ${agentsEndMarker}\n`
+    + "REQUIREMENTS: .ohno/REQUIREMENTS.md\n",
   );
 }
 
@@ -253,6 +265,11 @@ async function main(): Promise<void> {
       requiredValue(args, "--revision"),
       requiredValue(args, "--diff"),
     );
+    await appendRequirementsNote(
+      projectPath,
+      `Plan accepted revision=${requiredValue(args, "--revision").slice(0, 12)}…`,
+      "plan-accept",
+    ).catch(() => undefined);
     await refreshProjectors(projectPath).catch(() => undefined);
     process.stdout.write(message);
     return;
@@ -279,12 +296,37 @@ async function main(): Promise<void> {
     });
     process.stdout.write([
       `PROGRESS: ${result.progress_path}`,
+      `REQUIREMENTS: ${result.requirements_path}`,
       result.agents_path === null
         ? "AGENTS: SKIPPED"
         : `AGENTS: ${result.agents_path}`,
       `NEXT: ${result.model.next_action}`,
       "",
     ].join("\n"));
+    return;
+  }
+
+  if (
+    command === "requirements"
+    && subcommand === "note"
+    && args.length === 2
+    && args[0] === "--text"
+  ) {
+    const path = await appendRequirementsNote(
+      projectPath,
+      requiredValue(args, "--text"),
+      "owner-note",
+    );
+    process.stdout.write(`REQUIREMENTS: ${path}\n`);
+    return;
+  }
+
+  if (
+    command === "requirements"
+    && subcommand === "show"
+    && args.length === 0
+  ) {
+    process.stdout.write(await showRequirements(projectPath));
     return;
   }
 
@@ -334,7 +376,18 @@ async function main(): Promise<void> {
   }
 
   if (command === "change" && subcommand === "begin") {
-    process.stdout.write(await beginChange(projectPath, args));
+    const message = await beginChange(projectPath, args);
+    const summaryIndex = args.indexOf("--summary");
+    const summary = summaryIndex === -1 ? "" : args[summaryIndex + 1] ?? "";
+    if (summary.trim() !== "") {
+      await appendRequirementsNote(
+        projectPath,
+        `Change begin: ${summary.trim()}`,
+        "change-begin",
+      ).catch(() => undefined);
+    }
+    await refreshProjectors(projectPath).catch(() => undefined);
+    process.stdout.write(message);
     return;
   }
 

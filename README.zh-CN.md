@@ -119,6 +119,7 @@ flowchart LR
 | 只读驾驶舱 | `ohno cockpit`（玻璃态任务仪表盘 + 计划看板） | 已完成 |
 | 计划看板投影 | `status --json` 的 `plan_board`（DONE/HALF/READY/OUTLINE…） | 已完成 |
 | 生成式进度/AGENTS 托管块 | `ohno projectors refresh` → `.ohno/PROGRESS.md` + `AGENTS.md` 托管段 | 已完成 |
+| Owner 需求汇总日志 | `ohno requirements note/show` → `.ohno/REQUIREMENTS.md` | 已完成 |
 | 健康检查 | `ohno doctor [--json]` | 已完成 |
 | Handoff 身份 | resume 中的 path/branch/head/dirty | 已完成 |
 | 原子状态权威 | `.ohno/state.json` 唯一运行时权威 | 已完成 |
@@ -318,6 +319,7 @@ ohno projectors refresh --no-agents
 | 文件 | 含义 |
 | --- | --- |
 | `.ohno/PROGRESS.md` | 从 state 生成的进度表（**不是**权威，勿手改当真相） |
+| `.ohno/REQUIREMENTS.md` | Owner 备注 + 目标/看板/Truth 投影 |
 | `AGENTS.md` 中 `<!-- ohno:managed-begin/end -->` 段 | 注入目标/看板/下一步；**块外**仍是你的规则 |
 
 `task start` / `verify` / `plan accept` / `change accept` 成功后也会尽量自动刷新投影。
@@ -345,7 +347,8 @@ ohno task start
 ohno verify
 ohno install                 # 可选：合作式 hooks
 ohno doctor                  # 健康检查
-ohno projectors refresh      # PROGRESS.md + AGENTS 托管块
+ohno projectors refresh      # PROGRESS + REQUIREMENTS + AGENTS
+ohno requirements note --text "Owner: 先做用户可见保存，不要先造平台"
 ohno resume
 ohno next
 ohno cockpit                 # GET /api/state，约 2.5s 轮询

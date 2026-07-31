@@ -122,6 +122,7 @@ hostile-agent security, or a universal speed guarantee.
 | Read-only Cockpit | `ohno cockpit` (glass mission dashboard + plan board) | Done |
 | Plan board projection | `status --json` field `plan_board` (DONE/HALF/READY/OUTLINE…) | Done |
 | Generated progress + AGENTS block | `ohno projectors refresh` → `.ohno/PROGRESS.md` + managed AGENTS section | Done |
+| Owner requirements log | `ohno requirements note/show` → `.ohno/REQUIREMENTS.md` | Done |
 | Doctor health surface | `ohno doctor [--json]` | Done |
 | Handoff identity | resume `HANDOFF_*` path/branch/head/dirty | Done |
 | Atomic state authority | `.ohno/state.json` sole runtime authority | Done |
@@ -323,6 +324,7 @@ Writes:
 | File | Meaning |
 | --- | --- |
 | `.ohno/PROGRESS.md` | Generated board/progress table (**not** authority) |
+| `.ohno/REQUIREMENTS.md` | Owner notes + live projection of goal/board/truth |
 | `AGENTS.md` between `<!-- ohno:managed-begin/end -->` | Live capsule for agents; owner prose outside the block is preserved |
 
 `task start`, `verify`, `plan accept`, and `change accept` also refresh
@@ -351,7 +353,8 @@ ohno task start
 ohno verify
 ohno install                 # optional cooperative hooks
 ohno doctor                  # health surface
-ohno projectors refresh      # PROGRESS.md + AGENTS managed block
+ohno projectors refresh      # PROGRESS + REQUIREMENTS + AGENTS block
+ohno requirements note --text "Owner: ship user-visible save first"
 ohno resume
 ohno next
 ohno cockpit                 # GET /api/state, ~2.5s poll

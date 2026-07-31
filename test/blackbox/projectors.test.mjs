@@ -55,7 +55,29 @@ test("projectors write PROGRESS.md and AGENTS managed block from state", async (
   const refreshed = runCli(projectPath, ["projectors", "refresh"]);
   assert.equal(refreshed.status, 0, refreshed.stderr);
   assert.match(refreshed.stdout, /PROGRESS: \.ohno\/PROGRESS\.md/);
+  assert.match(refreshed.stdout, /REQUIREMENTS: \.ohno\/REQUIREMENTS\.md/);
   assert.match(refreshed.stdout, /AGENTS: AGENTS\.md/);
+
+  const requirements = await readFile(
+    resolve(projectPath, ".ohno", "REQUIREMENTS.md"),
+    "utf8",
+  );
+  assert.match(requirements, /ohno:requirements-projection-begin/);
+  assert.match(requirements, /board-active/);
+
+  const noted = runCli(projectPath, [
+    "requirements",
+    "note",
+    "--text",
+    "Owner wants draft save before any platform rewrite",
+  ]);
+  assert.equal(noted.status, 0, noted.stderr);
+  const requirements2 = await readFile(
+    resolve(projectPath, ".ohno", "REQUIREMENTS.md"),
+    "utf8",
+  );
+  assert.match(requirements2, /Owner wants draft save before any platform rewrite/);
+  assert.match(requirements2, /Owner notes \(append-only\)/);
 
   const progress = await readFile(
     resolve(projectPath, ".ohno", "PROGRESS.md"),

@@ -1,6 +1,6 @@
 # VibeTether → Oh No, Codex! essence backlog
 
-Status: **COMPLETE** (Owner 2026-07-31)
+Status: **COMPLETE + REQUIREMENTS LOG** (Owner 2026-07-31)
 
 ## Reading honesty (must read)
 
@@ -45,6 +45,8 @@ ideas live.
 | E6 | Session re-entry refresh | re-enter at start/compact | SessionStart/PostCompact → projectors | **DONE** |
 | E7 | Doctor health surface | `vibetether doctor` | `ohno doctor [--json]` | **DONE** |
 | E8 | Init scaffolds AGENTS markers | bootstrap | `ohno init` writes managed block | **DONE** |
+| E9 | Owner requirements aggregation file | “all asks in one file” pattern + VT intent | `.ohno/REQUIREMENTS.md` + `ohno requirements note/show` | **DONE** |
+| E10 | Doctor pressure on sprawl / fake tests | sins #2/#9/#13 | `scope_discipline` + `blackbox_discipline` WARN | **DONE** |
 
 ## Explicitly not scheduled (non-essences)
 
