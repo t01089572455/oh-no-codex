@@ -26,6 +26,26 @@ export interface CurrentTaskSummary {
   test_command: string;
 }
 
+/**
+ * Projection of plan progress for humans, Cockpit, and managed AGENTS blocks.
+ * Not a second authority — always derived from `.ohno/state.json`.
+ */
+export type PlanBoardPhase =
+  | "DONE"
+  | "ACTIVE"
+  | "HALF"
+  | "READY"
+  | "QUEUED"
+  | "OUTLINE";
+
+export interface PlanBoardEntry {
+  index: number;
+  id: string;
+  title: string;
+  phase: PlanBoardPhase;
+  kind: "FROZEN" | "OUTLINE";
+}
+
 export interface ReadModel {
   schema_version: 2;
   availability: "AVAILABLE" | "UNAVAILABLE";
@@ -37,6 +57,7 @@ export interface ReadModel {
   completed_count: number;
   completed: CompletedSummary[];
   current_task: CurrentTaskSummary | null;
+  plan_board: PlanBoardEntry[];
   proof_freshness: ProofFreshness;
   blocker:
     | "NONE"
@@ -46,6 +67,8 @@ export interface ReadModel {
     | "DOCUMENT_SYNC_PENDING"
     | "STATE_UNAVAILABLE";
   next_action: string;
+  truth_target_count: number;
+  document_sync_status: "CLEAN" | "PENDING_REVIEW" | "UNAVAILABLE";
 }
 
 const completedSummaryLimit = 3;
@@ -178,6 +201,38 @@ function nextActionFor(
   return nextActionFromPlan(state);
 }
 
+function planBoardFor(
+  state: ProjectState,
+  freshness: ProofFreshness,
+): PlanBoardEntry[] {
+  return state.ordered_tasks.map((task, index) => {
+    const kind = task.status === "OUTLINE" ? "OUTLINE" : "FROZEN";
+    let phase: PlanBoardPhase;
+    if (index < state.cursor) {
+      phase = "DONE";
+    } else if (index > state.cursor) {
+      phase = task.status === "OUTLINE" ? "OUTLINE" : "QUEUED";
+    } else if (state.active_task?.id === task.id) {
+      phase = freshness === "FAIL"
+          || freshness === "UNKNOWN"
+          || freshness === "STALE"
+        ? "HALF"
+        : "ACTIVE";
+    } else if (task.status === "OUTLINE") {
+      phase = "OUTLINE";
+    } else {
+      phase = "READY";
+    }
+    return {
+      index,
+      id: task.id,
+      title: task.title,
+      phase,
+      kind,
+    };
+  });
+}
+
 function unavailableReadModel(): ReadModel {
   return {
     schema_version: 2,
@@ -190,9 +245,12 @@ function unavailableReadModel(): ReadModel {
     completed_count: 0,
     completed: [],
     current_task: null,
+    plan_board: [],
     proof_freshness: "UNAVAILABLE",
     blocker: "STATE_UNAVAILABLE",
     next_action: "NONE",
+    truth_target_count: 0,
+    document_sync_status: "UNAVAILABLE",
   };
 }
 
@@ -215,8 +273,13 @@ export async function readModel(projectPath: string): Promise<ReadModel> {
     completed_count: state.completed.length,
     completed: completedSummaries(state.completed),
     current_task: currentTaskSummary(state.active_task),
+    plan_board: planBoardFor(state, freshness),
     proof_freshness: freshness,
     blocker: blockerFor(state, freshness),
     next_action: nextActionFor(state, freshness),
+    truth_target_count: state.truth_inventory.classification.filter(
+      (entry) => entry.truth_target,
+    ).length,
+    document_sync_status: state.document_sync.status,
   };
 }

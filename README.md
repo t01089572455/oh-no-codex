@@ -116,7 +116,9 @@ hostile-agent security, or a universal speed guarantee.
 | Codex cooperative hooks | SessionStart / PostCompact / PreToolUse / Stop | Done |
 | Git pre-commit guard | `ohno install` · `ohno git pre-commit` | Done |
 | Hook introspection | `ohno hooks status --json` · `ohno hook` | Done |
-| Read-only Cockpit | `ohno cockpit` (glass mission dashboard) | Done |
+| Read-only Cockpit | `ohno cockpit` (glass mission dashboard + plan board) | Done |
+| Plan board projection | `status --json` field `plan_board` (DONE/HALF/READY/OUTLINE…) | Done |
+| Generated progress + AGENTS block | `ohno projectors refresh` → `.ohno/PROGRESS.md` + managed AGENTS section | Done |
 | Atomic state authority | `.ohno/state.json` sole runtime authority | Done |
 | Truth applicability | `.ohno/truth.json` Owner list | Done |
 
@@ -303,7 +305,25 @@ Then review and trust the project hooks inside Codex. Hooks are
 **cooperative guardrails**, not hostile-agent containment. Ordinary Git can
 still use `--no-verify`.
 
-### 9. Open the Cockpit
+### 9. Refresh projections (progress table + AGENTS managed block)
+
+```bash
+ohno projectors refresh
+# or skip AGENTS.md:
+ohno projectors refresh --no-agents
+```
+
+Writes:
+
+| File | Meaning |
+| --- | --- |
+| `.ohno/PROGRESS.md` | Generated board/progress table (**not** authority) |
+| `AGENTS.md` between `<!-- ohno:managed-begin/end -->` | Live capsule for agents; owner prose outside the block is preserved |
+
+`task start`, `verify`, `plan accept`, and `change accept` also refresh
+projections best-effort.
+
+### 10. Open the Cockpit
 
 ```bash
 ohno cockpit
@@ -311,7 +331,8 @@ ohno cockpit
 ```
 
 Open that loopback URL in a browser. The glass dashboard is **read-only** and
-always projects the same model as `status --json` (no second authority).
+always projects the same model as `status --json` (no second authority). The
+**PLAN BOARD** panel lists DONE / HALF / READY / OUTLINE rows from that model.
 
 ### End-to-end cheat sheet
 

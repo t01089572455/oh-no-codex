@@ -28,6 +28,7 @@ import {
   installGuardrails,
 } from "./install.js";
 import { serializeNext } from "./next.js";
+import { refreshProjectors } from "./projectors.js";
 import { readModel } from "./read-model.js";
 import { serializeResume } from "./resume.js";
 import { serializeStatus } from "./status.js";
@@ -42,6 +43,7 @@ const usageText = [
   "  ohno task start",
   "  ohno verify | ohno status [--json] | ohno resume | ohno next",
   "  ohno cockpit",
+  "  ohno projectors refresh [--no-agents]",
   "  ohno change begin --summary <owner words> [--concerns <labels>] [--candidates <Truth paths>]",
   "  ohno change diff | ohno change accept --change <id> --diff <displayed digest>",
   "  ohno install | ohno hooks status --json",
@@ -177,6 +179,7 @@ async function main(): Promise<void> {
 
   if (command === "task" && subcommand === "start") {
     const contract = await startTask(projectPath, args);
+    await refreshProjectors(projectPath).catch(() => undefined);
     process.stdout.write(`Started task ${contract.id}\n`);
     return;
   }
@@ -210,21 +213,44 @@ async function main(): Promise<void> {
     && args[0] === "--revision"
     && args[2] === "--diff"
   ) {
-    process.stdout.write(await acceptPlan(
+    const message = await acceptPlan(
       projectPath,
       requiredValue(args, "--revision"),
       requiredValue(args, "--diff"),
-    ));
+    );
+    await refreshProjectors(projectPath).catch(() => undefined);
+    process.stdout.write(message);
     return;
   }
 
   if (command === "verify" && subcommand === undefined) {
     const outcome = await verifyTask(projectPath);
     if (outcome.result === "PASS") {
+      await refreshProjectors(projectPath).catch(() => undefined);
       process.stdout.write(`${outcome.nextAction}\n`);
       return;
     }
+    await refreshProjectors(projectPath).catch(() => undefined);
     throw new Error(outcome.message);
+  }
+
+  if (
+    command === "projectors"
+    && subcommand === "refresh"
+    && (args.length === 0 || (args.length === 1 && args[0] === "--no-agents"))
+  ) {
+    const result = await refreshProjectors(projectPath, {
+      agents: args[0] !== "--no-agents",
+    });
+    process.stdout.write([
+      `PROGRESS: ${result.progress_path}`,
+      result.agents_path === null
+        ? "AGENTS: SKIPPED"
+        : `AGENTS: ${result.agents_path}`,
+      `NEXT: ${result.model.next_action}`,
+      "",
+    ].join("\n"));
+    return;
   }
 
   if (
@@ -270,7 +296,9 @@ async function main(): Promise<void> {
   }
 
   if (command === "change" && subcommand === "accept") {
-    process.stdout.write(await acceptChange(projectPath, args));
+    const message = await acceptChange(projectPath, args);
+    await refreshProjectors(projectPath).catch(() => undefined);
+    process.stdout.write(message);
     return;
   }
 

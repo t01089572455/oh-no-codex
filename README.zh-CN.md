@@ -113,7 +113,9 @@ flowchart LR
 | Codex 合作式 Hooks | SessionStart / PostCompact / PreToolUse / Stop | 已完成 |
 | Git pre-commit 护栏 | `ohno install` · `ohno git pre-commit` | 已完成 |
 | Hook 状态查询 | `ohno hooks status --json` · `ohno hook` | 已完成 |
-| 只读驾驶舱 | `ohno cockpit`（玻璃态任务仪表盘） | 已完成 |
+| 只读驾驶舱 | `ohno cockpit`（玻璃态任务仪表盘 + 计划看板） | 已完成 |
+| 计划看板投影 | `status --json` 的 `plan_board`（DONE/HALF/READY/OUTLINE…） | 已完成 |
+| 生成式进度/AGENTS 托管块 | `ohno projectors refresh` → `.ohno/PROGRESS.md` + `AGENTS.md` 托管段 | 已完成 |
 | 原子状态权威 | `.ohno/state.json` 唯一运行时权威 | 已完成 |
 | Truth 适用清单 | `.ohno/truth.json` 由 Owner 维护 | 已完成 |
 
@@ -298,7 +300,24 @@ ohno hooks status --json
 然后在 Codex 里审查并信任项目 Hooks。Hooks 是**合作型护栏**，不是敌对安全
 边界；普通 Git 仍可用 `--no-verify` 绕过。
 
-### 9. 打开驾驶舱
+### 9. 刷新投影（进度表 + AGENTS 托管块）
+
+```bash
+ohno projectors refresh
+# 或只写进度、不碰 AGENTS.md：
+ohno projectors refresh --no-agents
+```
+
+会生成：
+
+| 文件 | 含义 |
+| --- | --- |
+| `.ohno/PROGRESS.md` | 从 state 生成的进度表（**不是**权威，勿手改当真相） |
+| `AGENTS.md` 中 `<!-- ohno:managed-begin/end -->` 段 | 注入目标/看板/下一步；**块外**仍是你的规则 |
+
+`task start` / `verify` / `plan accept` / `change accept` 成功后也会尽量自动刷新投影。
+
+### 10. 打开驾驶舱
 
 ```bash
 ohno cockpit
@@ -306,7 +325,8 @@ ohno cockpit
 ```
 
 用浏览器打开该 loopback 地址。玻璃态仪表盘**只读**，并与 `status --json`
-使用同一 read model（没有第二套权威）。
+使用同一 read model（没有第二套权威）。右侧 **PLAN BOARD** 用
+DONE / HALF / READY / OUTLINE 等相位显示整张计划表。
 
 ### 端到端速查
 

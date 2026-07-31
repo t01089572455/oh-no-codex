@@ -142,6 +142,7 @@ test("cockpit serves the locked local shell and shuts down cleanly", async (t) =
   assert.match(html, />DRIFT</);
   assert.match(html, />NEXT</);
   assert.match(html, /CALIBRATION RAIL/);
+  assert.match(html, /PLAN BOARD/);
   assert.match(html, /top-nav|OVERALL PROGRESS|CURRENT STAGE/);
   assert.match(html, /oh-no-codex-plush-hero\.png/);
   assert.doesNotMatch(html, /<form\b/i);

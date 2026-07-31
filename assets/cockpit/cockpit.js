@@ -37,6 +37,9 @@ const elements = {
   guardWarn: document.querySelector(".guardrail-segment.warn"),
   guardFail: document.querySelector(".guardrail-segment.fail"),
   vectorStops: document.querySelectorAll(".vector-stop"),
+  planBoard: document.querySelector("#plan-board-list"),
+  truthTargetCount: document.querySelector("#truth-target-count"),
+  docSyncStatus: document.querySelector("#doc-sync-status"),
 };
 
 const unavailableProjection = Object.freeze({
@@ -50,9 +53,12 @@ const unavailableProjection = Object.freeze({
   completed_count: 0,
   completed: [],
   current_task: null,
+  plan_board: [],
   proof_freshness: "UNAVAILABLE",
   blocker: "STATE_UNAVAILABLE",
   next_action: "NONE",
+  truth_target_count: 0,
+  document_sync_status: "UNAVAILABLE",
 });
 
 const RING_CIRCUMFERENCE = 2 * Math.PI * 148;
@@ -192,6 +198,34 @@ function renderRecent(model) {
     behavior.textContent = entry.expected_behavior;
     item.append(id, behavior);
     elements.recent.append(item);
+  }
+}
+
+function renderPlanBoard(model) {
+  if (!elements.planBoard) {
+    return;
+  }
+  elements.planBoard.replaceChildren();
+  const board = model.plan_board ?? [];
+  if (board.length === 0) {
+    const empty = document.createElement("li");
+    empty.className = "empty-ledger";
+    empty.textContent = "NO REVIEWED PLAN";
+    elements.planBoard.append(empty);
+    return;
+  }
+  for (const entry of board) {
+    const item = document.createElement("li");
+    item.className = `board-item phase-${String(entry.phase).toLowerCase()}`;
+    const phase = document.createElement("span");
+    phase.className = "board-phase";
+    phase.textContent = entry.phase;
+    const id = document.createElement("strong");
+    id.textContent = entry.id;
+    const title = document.createElement("span");
+    title.textContent = entry.title;
+    item.append(phase, id, title);
+    elements.planBoard.append(item);
   }
 }
 
@@ -342,7 +376,17 @@ function render(model) {
       + `Blocker ${model.blocker}.`,
   );
 
+  if (elements.truthTargetCount) {
+    elements.truthTargetCount.textContent = String(
+      model.truth_target_count ?? 0,
+    );
+  }
+  if (elements.docSyncStatus) {
+    elements.docSyncStatus.textContent = model.document_sync_status
+      ?? "UNAVAILABLE";
+  }
   renderRecent(model);
+  renderPlanBoard(model);
   renderRing(model);
   renderProofMeter(model);
   renderGuardrail(model);

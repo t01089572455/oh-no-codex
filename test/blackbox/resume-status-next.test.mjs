@@ -29,9 +29,12 @@ const canonicalKeys = [
   "completed_count",
   "completed",
   "current_task",
+  "plan_board",
   "proof_freshness",
   "blocker",
   "next_action",
+  "truth_target_count",
+  "document_sync_status",
 ];
 
 const goal = "Keep every resumed session aligned";
@@ -158,6 +161,7 @@ function assertHumanProjection(result, model) {
     new RegExp(`^PLAN: ${escapeRegExp(model.plan_revision ?? "NONE")}$`, "m"),
   );
   assert.match(result.stdout, new RegExp(`^CURSOR: ${model.cursor}/${model.task_count}$`, "m"));
+  assert.match(result.stdout, /^BOARD: /m);
   assert.match(result.stdout, new RegExp(`^COMPLETED: ${model.completed_count}$`, "m"));
   assert.match(
     result.stdout,
@@ -192,6 +196,14 @@ function assertHumanProjection(result, model) {
   );
   assert.match(result.stdout, new RegExp(`^PROOF: ${model.proof_freshness}$`, "m"));
   assert.match(result.stdout, new RegExp(`^BLOCKER: ${model.blocker}$`, "m"));
+  assert.match(
+    result.stdout,
+    new RegExp(`^DOC_SYNC: ${model.document_sync_status}$`, "m"),
+  );
+  assert.match(
+    result.stdout,
+    new RegExp(`^TRUTH_TARGETS: ${model.truth_target_count}$`, "m"),
+  );
   assert.match(
     result.stdout,
     new RegExp(`^NEXT: ${escapeRegExp(model.next_action)}$`, "m"),
@@ -285,9 +297,12 @@ test("idle status, resume, and next agree on the derived plan action", async (t)
     completed_count: 0,
     completed: [],
     current_task: null,
+    plan_board: [],
     proof_freshness: "NONE",
     blocker: "NONE",
     next_action: "PROPOSE_PLAN",
+    truth_target_count: 0,
+    document_sync_status: "CLEAN",
   });
   assertAllSurfacesAgree(projectPath, model);
 });
@@ -320,10 +335,15 @@ test("active read surfaces expose the exact contract without running its test", 
     completed_count: 0,
     completed: [],
     current_task: expectedCurrentTask({ command }),
+    plan_board: model.plan_board,
     proof_freshness: "NONE",
     blocker: "NONE",
     next_action: "NONE",
+    truth_target_count: model.truth_target_count,
+    document_sync_status: "CLEAN",
   });
+  assert.equal(model.plan_board[0]?.phase, "ACTIVE");
+  assert.equal(model.plan_board[1]?.phase, "QUEUED");
   assertAllSurfacesAgree(projectPath, model);
   await assert.rejects(
     access(sentinelPath),
@@ -597,10 +617,15 @@ test("a completed fresh PASS exposes only its plan-derived next action", async (
       expected_behavior: expectedBehavior,
     }],
     current_task: null,
+    plan_board: model.plan_board,
     proof_freshness: "FRESH",
     blocker: "NONE",
     next_action: nextAction,
+    truth_target_count: model.truth_target_count,
+    document_sync_status: "CLEAN",
   });
+  assert.equal(model.plan_board[0]?.phase, "DONE");
+  assert.equal(model.plan_board[1]?.phase, "READY");
   assertAllSurfacesAgree(projectPath, model);
 });
 
@@ -699,9 +724,12 @@ test("pending document sync has one authoritative next action", async (t) => {
     completed_count: 0,
     completed: [],
     current_task: null,
+    plan_board: [],
     proof_freshness: "NONE",
     blocker: "DOCUMENT_SYNC_PENDING",
     next_action: "SYNC_GOVERNING_DOCUMENTS",
+    truth_target_count: 0,
+    document_sync_status: "PENDING_REVIEW",
   });
   assertAllSurfacesAgree(projectPath, model);
 });
@@ -792,9 +820,12 @@ test("missing or corrupt state reports UNAVAILABLE and is never overwritten", as
     completed_count: 0,
     completed: [],
     current_task: null,
+    plan_board: [],
     proof_freshness: "UNAVAILABLE",
     blocker: "STATE_UNAVAILABLE",
     next_action: "NONE",
+    truth_target_count: 0,
+    document_sync_status: "UNAVAILABLE",
   });
   assert.match(unavailable.stderr, /\bUNAVAILABLE\b/);
   await assert.rejects(

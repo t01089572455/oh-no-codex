@@ -515,13 +515,34 @@ Owner authorized a Cockpit UI refresh against
 - Functional A13 equality with `status --json` remains enforced by the same
   black box. Design contract retitled **Glass Mission Pulse**.
 
+## Essence port A — plan board + generated projections (2026-07-31)
+
+Owner asked to port **only VibeTether essences that match real defects**, not
+the governance OS:
+
+| Port | Source essence | Explicit non-port |
+| --- | --- | --- |
+| `plan_board` on read model | Clear done / half / ready / outline board | Outcome DAG, Gate Matrix |
+| `.ohno/PROGRESS.md` | Generated PROGRESS projection | Treating PROGRESS as authority |
+| `AGENTS.md` managed block | Auto-inject live capsule for agents | Free rewrite of whole AGENTS |
+| Cockpit PLAN BOARD | Visual form of the same board | Second state store |
+
+Owning black boxes (2026-07-31):
+
+- `node --test test/blackbox/projectors.test.mjs` — pass
+- `node --test test/blackbox/resume-status-next.test.mjs` — pass after
+  additive read-model fields
+- `node --test test/blackbox/cockpit.test.mjs` — pass with PLAN BOARD shell
+
+Ledger status for this port: **LOCAL_PASS**.
+
 ## Exact current action
 
 There is exactly one. **Unique next:**
 
-> **Optional Owner browser pass** on the glass Cockpit (`ohno cockpit`) for
-> visual sign-off. V1 harness behavior remains `V1_TRIAL_ACCEPTED`. Do not
-> publish npm or create a release without new Owner authorization.
+> **Stop after Essence port A.** V1 remains accepted; projections are additive.
+> Do not reintroduce Gateway / adapter / multi-authority design. Do not publish
+> npm without new Owner authorization.
 
 ## Shared implementation rules
 
