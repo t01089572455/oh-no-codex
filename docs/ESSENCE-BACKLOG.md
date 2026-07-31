@@ -1,6 +1,6 @@
 # VibeTether → Oh No, Codex! essence backlog
 
-Status: **COMPLETE + REQUIREMENTS + PREFERENCES** (Owner 2026-07-31)
+Status: **COMPLETE + REQUIREMENTS + PREFERENCES + PROTOCOL** (Owner 2026-07-31)
 
 ## Reading honesty (must read)
 
@@ -48,6 +48,7 @@ ideas live.
 | E9 | Owner requirements aggregation file | “all asks in one file” pattern + VT intent | `.ohno/REQUIREMENTS.md` + `ohno requirements note/show` | **DONE** |
 | E10 | Doctor pressure on sprawl / fake tests | sins #2/#9/#13 | `scope_discipline` + `blackbox_discipline` WARN | **DONE** |
 | E11 | Configurable working method defaults | Owner craft: research / reuse OSS / frontend adapt | `.ohno/preferences.json` + `ohno preferences` | **DONE** |
+| E12 | Thin dual-track UX | Daily convenience without skill market | AGENTS conversation protocol + `skills/oh-no-control` | **DONE** |
 
 ## Explicitly not scheduled (non-essences)
 
@@ -67,7 +68,6 @@ ideas live.
 
 ## Exact next
 
-> **Stop.** Scheduled essences E1–E11 are implemented. Preferences and
-> REQUIREMENTS are Owner-configurable craft / notes projected into AGENTS —
-> never a second authority beside `.ohno/state.json`. Do not reintroduce
-> Gateway / skill-routing marketplaces.
+> **Stop.** Scheduled essences E1–E12 are implemented. Daily UX is thin dual-track
+> (hooks background + AGENTS protocol + editable prefs/notes). Do not grow a
+> skill-routing marketplace or silent plan-accept / fake-verify automation.

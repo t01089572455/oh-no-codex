@@ -5,6 +5,7 @@ import {
 } from "node:fs/promises";
 import { resolve } from "node:path";
 
+import { renderControlProtocolMarkdown } from "./control-protocol.js";
 import {
   ensurePreferences,
   renderWorkingMethodMarkdown,
@@ -135,6 +136,8 @@ export function renderAgentsManagedBlock(
     "### Plan board (done / half / ready / outline)",
     "",
     board,
+    "",
+    renderControlProtocolMarkdown().trimEnd(),
     "",
     renderWorkingMethodMarkdown(prefs).trimEnd(),
     "",

@@ -15,6 +15,7 @@
     "assets/cockpit/cockpit.js",
     "assets/cockpit/fonts",
     "templates",
+    "skills",
     "README.md",
     "README.zh-CN.md",
     "LICENSE"

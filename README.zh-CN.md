@@ -52,12 +52,12 @@
 </p>
 
 > [!IMPORTANT]
-> **V1 状态为 `V1_TRIAL_ACCEPTED`。** 在命名本地黑盒与可弃用项目副本证据上已
-> 具备：CLI 闭环（init / plan / task / verify / status·resume·next / change）、
-> 合作式 Hooks + Git pre-commit、只读玻璃驾驶舱与计划看板（轮询 `/api/state`）、
-> 投影（`.ohno/PROGRESS.md` + AGENTS 托管块）、`ohno doctor`、handoff 身份、
-> A14 浏览器矩阵与 P01–P06 试验收据。公开账本：Tasks 1–7、Corrections 1–2、
-> 精华 E1–E11。这**不是**敌对 Agent 防护、生产权威或普适速度声明。
+> **V1 状态为 `V1_TRIAL_ACCEPTED`。** 日常路径：**安装 + `init` + `install` hooks**，
+> 之后主要对 Codex 说话——hooks 注入 resume、协作拦写范围并刷新投影；`AGENTS.md`
+> 托管块（及可选 `skills/oh-no-control`）告诉 Agent 何时跑 `task start` /
+> `verify` / `change` / 记笔记。证据覆盖 CLI、hooks、驾驶舱、投影、preferences、
+> doctor、A14/P01–P06。账本：Tasks 1–7、Corrections 1–2、精华 E1–E12。
+> 这**不是**敌对 Agent 硬隔离，也**不会**静默 accept plan 或伪造 verify PASS。
 > 安装：`npm install -g oh-no-codex`。
 
 ## 为什么需要它
@@ -121,6 +121,8 @@ flowchart LR
 | 生成式进度/AGENTS 托管块 | `ohno projectors refresh` → `.ohno/PROGRESS.md` + `AGENTS.md` 托管段 | 已完成 |
 | Owner 需求汇总日志 | `ohno requirements note/show` → `.ohno/REQUIREMENTS.md` | 已完成 |
 | 工作方法偏好 | `ohno preferences show/set/reset` → `.ohno/preferences.json`（默认：先调研、复用开源、前端先抄再改） | 已完成 |
+| AGENTS 对话协议 | 托管块映射 开工/做完/改需求 → `task start` / `verify` / `change` | 已完成 |
+| 可选控制 skill 副本 | `skills/oh-no-control/SKILL.md`（静态；现场以 AGENTS 托管块为准） | 已完成 |
 | 健康检查 | `ohno doctor [--json]` | 已完成 |
 | Handoff 身份 | resume 中的 path/branch/head/dirty | 已完成 |
 | 原子状态权威 | `.ohno/state.json` 唯一运行时权威 | 已完成 |
@@ -138,6 +140,28 @@ flowchart LR
 ## 完整使用说明
 
 > 推荐从 npm 安装；也支持源码构建。
+
+### 日常路径（你真正要做的）
+
+多数时候**不必背完整 CLI**。
+
+```text
+1. 一次：npm i -g oh-no-codex
+2. 一次：cd 项目 && ohno init --goal "…" && ohno install
+3. 日常：用自然语言和 Codex 说话
+4. 可选：ohno cockpit | doctor | preferences | requirements note
+```
+
+| 层 | 谁 | 做什么 |
+| --- | --- | --- |
+| **后台** | `ohno install` 后的 hooks | 会话开始/压缩注入 resume；协作拦越权写；Stop 完成标记；刷新投影 |
+| **对话协议** | Codex（读 `AGENTS.md` 托管块） | 你表达「开工 / 做完 / 需求变了 / 记下来」时，由它跑对应 `ohno` 命令 |
+| **你可手改** | 你 | `.ohno/preferences.json`、REQUIREMENTS 笔记区、AGENTS 托管块外的规矩 |
+
+**永不静默自动：** 未审就 `plan accept`、伪造 verify PASS、把 `next` 当成新授权。
+
+可选协议副本（与托管块同规则）：  
+[`skills/oh-no-control/SKILL.md`](./skills/oh-no-control/SKILL.md) — 可复制到 Codex skills；**当前状态仍以项目 AGENTS 托管块为准**。
 
 ### 0. 前置条件
 
@@ -168,11 +192,12 @@ npm run build
 node dist/cli.js --help
 ```
 
-### 2. 初始化业务项目
+### 2. 初始化业务项目（并安装 hooks）
 
 ```bash
 cd /path/to/your-git-project
 ohno init --goal "让草稿保存可靠"
+ohno install
 ```
 
 会创建/更新：
@@ -181,12 +206,18 @@ ohno init --goal "让草稿保存可靠"
 | --- | --- |
 | `.ohno/state.json` | 唯一当前运行时权威 |
 | `.ohno/truth.json` | Owner 维护的规范文档清单 |
-| `AGENTS.md` | 带 Oh No 托管投影块的脚手架 |
+| `.ohno/preferences.json` | 工作方法默认（先调研 / 复用开源 / 前端先抄） |
+| `.ohno/REQUIREMENTS.md` | Owner 备注 + 实时投影 |
+| `AGENTS.md` | 现场胶囊 + **对话协议**（托管块） |
 | `.ohno/PROGRESS.md` | 生成式进度看板（init 时尽量写出） |
+| `.codex/hooks.json` | 合作式 SessionStart / PostCompact / PreToolUse / Stop |
 
 `init` 禁止静默重复初始化。目标变更走需求变更闭环，不要再 `init` 一次。
 
 ### 3. 提议并接受线性计划
+
+> Agent 可根据你的话准备 plan 文件；`plan accept` 前仍需你审。
+> 下面完整 CLI 给脚本和高级用户。
 
 编写评审文件（例如 `.ohno/review-plan.json`）：
 
@@ -481,7 +512,7 @@ Oh No, Codex! 把它们变成约束、测试或明确不做的事情，而不是
 
 | 能力 | 状态 | 证据边界 |
 | --- | --- | --- |
-| 公开产品状态 | `V1_TRIAL_ACCEPTED` | 账本 Tasks 1–7 + Corrections 1–2 + 精华 E1–E11 |
+| 公开产品状态 | `V1_TRIAL_ACCEPTED` | 账本 Tasks 1–7 + Corrections 1–2 + 精华 E1–E12 |
 | CLI 状态、计划、验证、恢复、变更、Hooks 与原子写行为 | `LOCAL_PASS` | 公共 Node 黑盒 A01–A12、A15、A16 |
 | 计划看板、投影、doctor、handoff 身份 | `LOCAL_PASS` | projectors / resume-status-next / hooks 黑盒 |
 | 只读驾驶舱投影 | `LOCAL_PASS` | A13 HTTP 输出与 `status --json` 相等 |
@@ -513,7 +544,7 @@ Oh No, Codex! 把它们变成约束、测试或明确不做的事情，而不是
 3. [验收合同](https://github.com/t01089572455/oh-no-codex/blob/main/docs/ACCEPTANCE.md)
 4. [实现账本](https://github.com/t01089572455/oh-no-codex/blob/main/docs/IMPLEMENTATION-PLAN.md)（当前状态：`V1_TRIAL_ACCEPTED`）
 5. [Codex 十八宗罪](https://github.com/t01089572455/oh-no-codex/blob/main/docs/CODEX-SINS.md)
-6. [精华迁移清单](https://github.com/t01089572455/oh-no-codex/blob/main/docs/ESSENCE-BACKLOG.md)（E1–E11 已完成）
+6. [精华迁移清单](https://github.com/t01089572455/oh-no-codex/blob/main/docs/ESSENCE-BACKLOG.md)（E1–E12 已完成）
 
 ## 开源许可
 

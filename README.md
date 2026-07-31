@@ -52,14 +52,14 @@
 </p>
 
 > [!IMPORTANT]
-> **V1 is `V1_TRIAL_ACCEPTED`.** On named local black-box and disposable-project
-> evidence: CLI loops (init / plan / task / verify / status·resume·next / change),
-> cooperative hooks + Git pre-commit, read-only glass Cockpit with plan board
-> (polls `/api/state`), projectors (`.ohno/PROGRESS.md` + AGENTS managed block),
-> `ohno doctor`, handoff identity, A14 browser matrix, and P01–P06 trial
-> receipts. Public ledger: Tasks 1–7, Corrections 1–2, essence ports E1–E11.
-> This is **not** a hostile-agent, production-authority, or universal speed
-> claim. Install: `npm install -g oh-no-codex`.
+> **V1 is `V1_TRIAL_ACCEPTED`.** Daily path: **install + `init` + `install`
+> hooks**, then talk to Codex — hooks inject resume, scope writes, and refresh
+> projections; the AGENTS managed block (and optional `skills/oh-no-control`)
+> tells the Agent when to run `task start` / `verify` / `change` / notes.
+> Evidence covers CLI loops, hooks, Cockpit, projectors, preferences, doctor,
+> A14/P01–P06. Ledger: Tasks 1–7, Corrections 1–2, essence ports E1–E12.
+> This is **not** hostile-agent containment or auto plan-accept / fake verify.
+> Install: `npm install -g oh-no-codex`.
 
 ## Why
 
@@ -124,6 +124,8 @@ hostile-agent security, or a universal speed guarantee.
 | Generated progress + AGENTS block | `ohno projectors refresh` → `.ohno/PROGRESS.md` + managed AGENTS section | Done |
 | Owner requirements log | `ohno requirements note/show` → `.ohno/REQUIREMENTS.md` | Done |
 | Working method preferences | `ohno preferences show/set/reset` → `.ohno/preferences.json` (defaults: research-first, reuse OSS, frontend adapt-not-invent) | Done |
+| Conversation protocol in AGENTS | Managed block maps 开工/做完/改需求 → `task start` / `verify` / `change` | Done |
+| Optional control skill copy | `skills/oh-no-control/SKILL.md` (static; AGENTS live capsule wins) | Done |
 | Doctor health surface | `ohno doctor [--json]` | Done |
 | Handoff identity | resume `HANDOFF_*` path/branch/head/dirty | Done |
 | Atomic state authority | `.ohno/state.json` sole runtime authority | Done |
@@ -141,6 +143,28 @@ hostile-agent security, or a universal speed guarantee.
 ## Complete usage guide
 
 > Preferred: install from npm. Source build remains supported.
+
+### Daily path (what you actually do)
+
+Most days you should **not** memorize the full CLI.
+
+```text
+1. Once:  npm i -g oh-no-codex
+2. Once:  cd project && ohno init --goal "…" && ohno install
+3. Daily: talk to Codex in ordinary language
+4. Optional: ohno cockpit | doctor | preferences | requirements note
+```
+
+| Layer | Who | What |
+| --- | --- | --- |
+| **Background** | Hooks after `ohno install` | Resume capsule on session start/compact; cooperative write scope; Stop completion marker; projector refresh |
+| **Conversation protocol** | Codex, via `AGENTS.md` managed block | Runs `task start` / `verify` / `change` / `requirements note` when you mean those intents |
+| **You edit anytime** | You | `.ohno/preferences.json`, REQUIREMENTS notes, prose outside the AGENTS managed block |
+
+**Never automated:** silent plan accept, inventing a verify PASS, treating `next` as new permission.
+
+Optional skill copy of the protocol (same rules as the managed block):  
+[`skills/oh-no-control/SKILL.md`](./skills/oh-no-control/SKILL.md) — copy into your Codex skills folder if you like; the project AGENTS live capsule still wins for current state.
 
 ### 0. Prerequisites
 
@@ -171,11 +195,12 @@ npm run build
 node dist/cli.js --help
 ```
 
-### 2. Initialize a project
+### 2. Initialize a project (and install hooks)
 
 ```bash
 cd /path/to/your-git-project
 ohno init --goal "Ship reliable draft persistence"
+ohno install
 ```
 
 Creates / updates:
@@ -184,13 +209,19 @@ Creates / updates:
 | --- | --- |
 | `.ohno/state.json` | Sole current runtime authority |
 | `.ohno/truth.json` | Owner-maintained governing-document list |
-| `AGENTS.md` | Scaffold with an Oh No managed projection block |
+| `.ohno/preferences.json` | Working-method defaults (research / reuse OSS / frontend adapt) |
+| `.ohno/REQUIREMENTS.md` | Owner notes + live projection |
+| `AGENTS.md` | Live capsule + **conversation protocol** (managed block) |
 | `.ohno/PROGRESS.md` | Generated progress board (best-effort on init) |
+| `.codex/hooks.json` | Cooperative SessionStart / PostCompact / PreToolUse / Stop |
 
 `init` refuses silent re-initialization. Goal changes go through the
 requirement-change loop, not another `init`.
 
 ### 3. Propose and accept a linear plan
+
+> The Agent can prepare the plan file from your words; you still review before
+> `plan accept`. Full CLI below is for scripts and power users.
 
 Write a review file (example: `.ohno/review-plan.json`):
 
@@ -491,7 +522,7 @@ Capability labels name the evidence actually held by this repository:
 
 | Capability | Status | Evidence boundary |
 | --- | --- | --- |
-| Public product status | `V1_TRIAL_ACCEPTED` | Ledger Tasks 1–7 + Corrections 1–2 + essence ports E1–E11 |
+| Public product status | `V1_TRIAL_ACCEPTED` | Ledger Tasks 1–7 + Corrections 1–2 + essence ports E1–E12 |
 | CLI state, plan, verify, resume, change, hooks, and atomic-write behavior | `LOCAL_PASS` | Public Node black boxes A01–A12, A15, and A16 |
 | Plan board, projectors, doctor, handoff identity | `LOCAL_PASS` | `projectors` / resume-status-next / hooks black boxes |
 | Read-only Cockpit projection | `LOCAL_PASS` | A13 HTTP equality with `status --json` |
@@ -524,7 +555,7 @@ Public product truth lives in a small set of documents:
 3. [Acceptance contract](https://github.com/t01089572455/oh-no-codex/blob/main/docs/ACCEPTANCE.md)
 4. [Implementation ledger](https://github.com/t01089572455/oh-no-codex/blob/main/docs/IMPLEMENTATION-PLAN.md) (current status: `V1_TRIAL_ACCEPTED`)
 5. [Codex eighteen sins](https://github.com/t01089572455/oh-no-codex/blob/main/docs/CODEX-SINS.md)
-6. [Essence backlog](https://github.com/t01089572455/oh-no-codex/blob/main/docs/ESSENCE-BACKLOG.md) (E1–E11 complete)
+6. [Essence backlog](https://github.com/t01089572455/oh-no-codex/blob/main/docs/ESSENCE-BACKLOG.md) (E1–E12 complete)
 
 ## License
 
