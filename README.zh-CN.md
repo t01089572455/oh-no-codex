@@ -48,10 +48,10 @@
 </p>
 
 > [!IMPORTANT]
-> **V1 在 Correction 2 后是试验验收候选。** CLI 闭环、合作式 Hooks、Git
-> 护栏、只读驾驶舱、A14 浏览器矩阵与 P01–P06 试验收据均已在命名本地证据上
-> 通过。只有在干净提交上记录 `docs/ACCEPTANCE.md` 最终 gate 之后，状态才
-> 可写为 `V1_TRIAL_ACCEPTED`。目前没有发布 npm 包或 Release。
+> **V1 状态为 `V1_TRIAL_ACCEPTED`。** CLI 闭环、合作式 Hooks、Git 护栏、只读
+> 驾驶舱、A14 浏览器矩阵与 P01–P06 试验收据均已在命名本地黑盒与可弃用项目
+> 副本证据上通过。这不是敌对 Agent 防护、生产权威、npm 发布或普适速度声明。
+> 目前没有发布 npm 包或 Release。
 
 ## 为什么需要它
 

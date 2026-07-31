@@ -48,12 +48,11 @@
 </p>
 
 > [!IMPORTANT]
-> **V1 is a trial-acceptance candidate after Correction 2.** The CLI loops,
-> cooperative hooks, Git guard, read-only Cockpit, A14 browser matrix, and
-> P01–P06 trial receipts pass on the named local evidence. Status becomes
-> `V1_TRIAL_ACCEPTED` only after the clean final gate in
-> `docs/ACCEPTANCE.md` is recorded on a clean commit. No npm package has been
-> published or released.
+> **V1 is `V1_TRIAL_ACCEPTED`.** The CLI loops, cooperative hooks, Git guard,
+> read-only Cockpit, A14 browser matrix, and P01–P06 trial receipts pass on the
+> named local black-box and disposable-project evidence. This is not a
+> hostile-agent, production-authority, package-publication, or universal speed
+> claim. No npm package has been published or released.
 
 ## Why
 

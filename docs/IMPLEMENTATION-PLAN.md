@@ -1,6 +1,6 @@
 # Codex-only V1 implementation plan
 
-Status: **V1_TRIAL_ACCEPTED_CANDIDATE — Correction 2 complete; final clean gate pending after commit**
+Status: **V1_TRIAL_ACCEPTED**
 
 Owner authorization: Tasks 1–7 below, including 6A–6C, were authorized as the
 complete V1 implementation scope on 2026-07-30. Correction 2 (audit F3/F4/F5/F8,
@@ -20,7 +20,7 @@ gate truth, external-browser A14/P06) was authorized by Owner handoff on
 | Task 6A — locked Cockpit design contract | LOCAL_PASS | design prerequisite for A13, A14 |
 | Task 6B — read-only Cockpit implementation | LOCAL_PASS | A13, part of P06 |
 | Task 6C — browser visual and functional acceptance | LOCAL_PASS | A14 (system Chrome/Edge after Owner external-browser authorization) |
-| Task 7 — cross-project trials and final gate | LOCAL_PASS pending clean commit gate | A12, A15, A16, P01–P06 |
+| Task 7 — cross-project trials and final gate | LOCAL_PASS | A12, A15, A16, P01–P06 |
 | Correction 2 — bounded scope, Truth shrink, pending summary, package subject, gate truth | LOCAL_PASS | F3–F5, F8; honest A14/P06 |
 
 ## Task 1 local evidence
@@ -476,17 +476,36 @@ widening into a governance OS:
 - A14: `node test/browser/a14-acceptance.mjs` → `A14_BROWSER_ACCEPTANCE_PASS`.
 - P06: `node test/browser/measure-p06.mjs` → `TRIAL_PASS` on Trials A–C.
 
-Pre-commit owning suite on this Correction 2 tree: `npm test` 116/116,
-`npm run test:performance` 2/2, `npm run typecheck` exit 0.
+Final clean gate was run once on commit
+`7ed06e528f0e298548516a1eb5bb6358e408b516` (Node.js v24.11.1):
+
+| Command | Result |
+| --- | --- |
+| `npm ci` | exit 0; 3 packages installed |
+| `npm run typecheck` | exit 0 |
+| `npm run build` | exit 0 |
+| `npm test` | exit 0; 116/116 passed |
+| `npm run test:acceptance` | exit 0; 116/116 passed |
+| `npm run test:performance` | exit 0; 2/2 passed (P01–P06) |
+| `npm pack --dry-run` | exit 0; private `oh-no-codex@0.0.0`, 39 intended runtime/package files |
+| `git diff --check` | exit 0; no output |
+| `git status --short` | exit 0; no output (`WORKTREE_CLEAN`) |
+
+No npm publish, tag, release, or network mutation is authorized or performed.
+
+Public status is therefore:
+
+> `V1_TRIAL_ACCEPTED` — Codex-only cooperative harness accepted on the named
+> local black-box and disposable-project trials; no hostile-agent, production
+> authority, package publication, or universal speed claim.
 
 ## Exact current action
 
 There is exactly one. **Unique next:**
 
-> **Commit Correction 2, then run the final clean ACCEPTANCE gate once**
-> (`npm ci` through `npm pack --dry-run`, `git diff --check`, clean status).
-> If every command exits 0, record public status to `V1_TRIAL_ACCEPTED` and stop.
-> No Task 8, no npm publish, no release.
+> **Stop.** V1 Tasks 1–7 and Correction 2 are complete on the recorded evidence.
+> Do not start Task 8, publish npm, create a release, or broaden product scope
+> without new Owner authorization.
 
 ## Shared implementation rules
 
