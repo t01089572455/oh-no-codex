@@ -85,7 +85,7 @@ const usageText = [
   "  ohno hook | ohno git pre-commit",
   "",
   "Hook classification: COOPERATIVE_GUARDRAIL.",
-  "Primary agent UX: Codex skill oh-no-control (ohno skill install).",
+  "Primary agent UX: Codex skill suite oh-no-* (ohno skill install).",
   "Codex hook feature and trust: UNVERIFIED until reviewed in Codex.",
   "Hosted and specialized mutation paths are outside complete hook coverage.",
   "",

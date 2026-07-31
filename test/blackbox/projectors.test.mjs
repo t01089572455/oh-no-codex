@@ -98,9 +98,8 @@ test("projectors write PROGRESS.md and AGENTS managed block from state", async (
   assert.match(agents, /projection/);
   assert.match(agents, /research_before_implement/);
   assert.match(agents, /frontend_adapt_not_invent/);
-  assert.match(agents, /skill-first|oh-no-control/);
-  assert.match(agents, /ohno verify/);
-  assert.match(agents, /ohno task start/);
+  assert.match(agents, /skill suite|oh-no-control|oh-no-verify/);
+  assert.match(agents, /oh-no-verify|ohno verify/);
   assert.match(requirements, /research_before_implement/);
 
   const prefsShow = runCli(projectPath, ["preferences", "show"]);

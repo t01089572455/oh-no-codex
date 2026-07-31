@@ -2,6 +2,7 @@ import {
   access,
   copyFile,
   mkdir,
+  readdir,
   readFile,
   writeFile,
 } from "node:fs/promises";
@@ -18,152 +19,187 @@ const packageRoot = resolve(
   "..",
 );
 
-export const skillPackageId = "oh-no-control";
-
-function skillSourcePath(): string {
-  return resolve(packageRoot, "skills", skillPackageId, "SKILL.md");
+function skillsBundleRoot(): string {
+  return resolve(packageRoot, "skills");
 }
 
-/** Primary Codex user skill dir on this machine. */
-export function codexSkillDir(home = homedir()): string {
-  return join(home, ".codex", "skills", skillPackageId);
+export async function listBundledSkillIds(): Promise<string[]> {
+  const root = skillsBundleRoot();
+  const entries = await readdir(root, { withFileTypes: true });
+  const ids: string[] = [];
+  for (const entry of entries) {
+    if (!entry.isDirectory()) {
+      continue;
+    }
+    try {
+      await access(join(root, entry.name, "SKILL.md"));
+      ids.push(entry.name);
+    } catch {
+      // skip
+    }
+  }
+  return ids.toSorted();
 }
 
-/** Optional OpenAgent / shared skills dir when present. */
-export function agentsSkillDir(home = homedir()): string {
-  return join(home, ".agents", "skills", skillPackageId);
+function skillSourcePath(skillId: string): string {
+  return resolve(skillsBundleRoot(), skillId, "SKILL.md");
 }
 
-export interface SkillInstallTarget {
-  id: "codex" | "agents";
-  dir: string;
-  skillMd: string;
+export function codexSkillsRoot(home = homedir()): string {
+  return join(home, ".codex", "skills");
+}
+
+export function agentsSkillsRoot(home = homedir()): string {
+  return join(home, ".agents", "skills");
+}
+
+export interface SkillSlotStatus {
+  skillId: string;
+  root: "codex" | "agents";
+  path: string;
   status: "MISSING" | "INSTALLED" | "DRIFT";
 }
 
-async function classifyTarget(
-  id: "codex" | "agents",
-  dir: string,
+async function classifySlot(
+  skillId: string,
+  root: "codex" | "agents",
+  destDir: string,
   sourceBody: string,
-): Promise<SkillInstallTarget> {
-  const skillMd = join(dir, "SKILL.md");
+): Promise<SkillSlotStatus> {
+  const path = join(destDir, "SKILL.md");
   try {
-    const existing = await readFile(skillMd, "utf8");
+    const existing = await readFile(path, "utf8");
     return {
-      id,
-      dir,
-      skillMd,
+      skillId,
+      root,
+      path,
       status: existing === sourceBody ? "INSTALLED" : "DRIFT",
     };
   } catch {
     return {
-      id,
-      dir,
-      skillMd,
+      skillId,
+      root,
+      path,
       status: "MISSING",
     };
   }
 }
 
+async function rootsToInstall(home: string): Promise<Array<{
+  id: "codex" | "agents";
+  root: string;
+}>> {
+  const roots: Array<{ id: "codex" | "agents"; root: string }> = [
+    { id: "codex", root: codexSkillsRoot(home) },
+  ];
+  try {
+    await access(agentsSkillsRoot(home));
+    roots.push({ id: "agents", root: agentsSkillsRoot(home) });
+  } catch {
+    // optional
+  }
+  return roots;
+}
+
 export async function skillInstallStatus(
   home = homedir(),
 ): Promise<{
-  source: string;
-  targets: SkillInstallTarget[];
+  bundle: string;
+  skills: string[];
+  slots: SkillSlotStatus[];
 }> {
-  const source = skillSourcePath();
-  let body = "";
-  try {
-    body = await readFile(source, "utf8");
-  } catch {
+  const skills = await listBundledSkillIds();
+  if (skills.length === 0) {
     throw new Error(
-      `bundled skill missing at ${source} — reinstall oh-no-codex package`,
+      `no bundled skills under ${skillsBundleRoot()} — reinstall oh-no-codex`,
     );
   }
-  const targets = [
-    await classifyTarget("codex", codexSkillDir(home), body),
-  ];
-  // Only report agents path if parent skills dir exists or skill already there.
-  const agentsParent = join(home, ".agents", "skills");
-  try {
-    await access(agentsParent);
-    targets.push(await classifyTarget("agents", agentsSkillDir(home), body));
-  } catch {
-    try {
-      await access(join(agentsSkillDir(home), "SKILL.md"));
-      targets.push(await classifyTarget("agents", agentsSkillDir(home), body));
-    } catch {
-      // optional
+  const roots = await rootsToInstall(home);
+  const slots: SkillSlotStatus[] = [];
+  for (const skillId of skills) {
+    const body = await readFile(skillSourcePath(skillId), "utf8");
+    for (const { id, root } of roots) {
+      slots.push(
+        await classifySlot(skillId, id, join(root, skillId), body),
+      );
     }
   }
-  return { source, targets };
+  return {
+    bundle: skillsBundleRoot(),
+    skills,
+    slots,
+  };
 }
 
 export async function installOhNoSkill(
   home = homedir(),
 ): Promise<{
-  source: string;
+  bundle: string;
+  skills: string[];
   installed: string[];
   updated: string[];
 }> {
-  const source = skillSourcePath();
-  const body = await readFile(source, "utf8");
-  const dirs = [codexSkillDir(home)];
-  const agentsParent = join(home, ".agents", "skills");
-  try {
-    await access(agentsParent);
-    dirs.push(agentsSkillDir(home));
-  } catch {
-    // codex-only is enough
+  const skills = await listBundledSkillIds();
+  if (skills.length === 0) {
+    throw new Error(
+      `no bundled skills under ${skillsBundleRoot()} — reinstall oh-no-codex`,
+    );
   }
-
+  const roots = await rootsToInstall(home);
   const installed: string[] = [];
   const updated: string[] = [];
-  for (const dir of dirs) {
-    const dest = join(dir, "SKILL.md");
-    await mkdir(dir, { recursive: true });
-    let prior: string | null = null;
-    try {
-      prior = await readFile(dest, "utf8");
-    } catch {
-      prior = null;
-    }
-    if (prior === body) {
-      continue;
-    }
-    await writeFile(dest, body, "utf8");
-    // Keep a copy of package path marker for support
-    await writeFile(
-      join(dir, "SOURCE.txt"),
-      `oh-no-codex skill\nsource=${source}\n`,
-      "utf8",
-    );
-    if (prior === null) {
-      installed.push(dest);
-    } else {
-      updated.push(dest);
+
+  for (const skillId of skills) {
+    const source = skillSourcePath(skillId);
+    const body = await readFile(source, "utf8");
+    for (const { root } of roots) {
+      const destDir = join(root, skillId);
+      const dest = join(destDir, "SKILL.md");
+      await mkdir(destDir, { recursive: true });
+      let prior: string | null = null;
+      try {
+        prior = await readFile(dest, "utf8");
+      } catch {
+        prior = null;
+      }
+      if (prior === body) {
+        continue;
+      }
+      await writeFile(dest, body, "utf8");
+      await writeFile(
+        join(destDir, "SOURCE.txt"),
+        `oh-no-codex skill bundle\nid=${skillId}\nsource=${source}\n`,
+        "utf8",
+      );
+      if (prior === null) {
+        installed.push(dest);
+      } else {
+        updated.push(dest);
+      }
     }
   }
 
-  // Always ensure file exists even if identical (touch classification)
-  if (installed.length === 0 && updated.length === 0) {
-    await access(join(codexSkillDir(home), "SKILL.md"));
-  }
-
-  return { source, installed, updated };
+  return {
+    bundle: skillsBundleRoot(),
+    skills,
+    installed,
+    updated,
+  };
 }
 
 export function serializeSkillStatus(
   report: Awaited<ReturnType<typeof skillInstallStatus>>,
 ): string {
   const lines = [
-    `SKILL_SOURCE: ${report.source}`,
-    ...report.targets.map(
-      (t) =>
-        `${t.status}: ${t.id} → ${t.skillMd}`,
-    ),
-    "",
+    `SKILL_BUNDLE: ${report.bundle}`,
+    `SKILLS: ${report.skills.join(", ")} (${report.skills.length})`,
   ];
+  for (const slot of report.slots) {
+    lines.push(
+      `${slot.status}: ${slot.root}/${slot.skillId} → ${slot.path}`,
+    );
+  }
+  lines.push("");
   return lines.join("\n");
 }
 
@@ -171,11 +207,12 @@ export function serializeSkillInstallResult(
   result: Awaited<ReturnType<typeof installOhNoSkill>>,
 ): string {
   const lines = [
-    "Installed Oh No control skill for Codex discovery.",
-    `  source: ${result.source}`,
+    "Installed Oh No skill suite for Codex discovery.",
+    `  bundle: ${result.bundle}`,
+    `  skills: ${result.skills.join(", ")}`,
   ];
   if (result.installed.length === 0 && result.updated.length === 0) {
-    lines.push("  already up to date under ~/.codex/skills/oh-no-control/");
+    lines.push("  already up to date under ~/.codex/skills/oh-no-*/");
   }
   for (const path of result.installed) {
     lines.push(`  created: ${path}`);
@@ -184,13 +221,12 @@ export function serializeSkillInstallResult(
     lines.push(`  updated: ${path}`);
   }
   lines.push(
-    "  Restart or open a new Codex session so skill discovery can pick it up.",
+    "  New Codex session recommended so skill discovery picks them up.",
     "",
   );
   return lines.join("\n");
 }
 
-/** Test helper: copy without reading package tree twice. */
 export async function copySkillFile(
   from: string,
   toDir: string,

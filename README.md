@@ -146,36 +146,38 @@ npm: [oh-no-codex](https://www.npmjs.com/package/oh-no-codex) (`0.1.1`).
 
 ---
 
-## Daily use (skill-first)
+## Daily use (every command is a skill)
 
-`ohno install` also copies a **Codex skill** to `~/.codex/skills/oh-no-control/`.
+`ohno install` / `ohno skill install` copies the **whole suite** into
+`~/.codex/skills/oh-no-*/` so Codex can **discover** them like normal skills:
 
-That is the main agent UX: Codex can **discover** the skill from its description
-(keywords: ohno, verify, 开工, 验收, anti-drift…). Long CLI recipes are **not**
-meant to live as chat paste — they dilute.
+| Skill | You say | Shell |
+| --- | --- | --- |
+| `oh-no-init` | 初始化 | `ohno init` |
+| `oh-no-install` | 装 hooks/skills | `ohno install` |
+| `oh-no-plan` | 排计划 / 接受计划 | `ohno plan …` |
+| `oh-no-task` | 开工 | `ohno task start` |
+| `oh-no-verify` | 做完了 / 验收 | `ohno verify` |
+| `oh-no-resume` | 卡在哪 | `ohno resume` |
+| `oh-no-status` | 状态 | `ohno status` |
+| `oh-no-next` | 下一步 | `ohno next` |
+| `oh-no-change` | 需求变了 | `ohno change …` |
+| `oh-no-requirements` | 记下来 | `ohno requirements …` |
+| `oh-no-preferences` | 改规矩 | `ohno preferences …` |
+| `oh-no-doctor` | 体检 | `ohno doctor` |
+| `oh-no-cockpit` | 驾驶舱 | `ohno cockpit` |
+| `oh-no-projectors` | 刷新投影 | `ohno projectors refresh` |
+| `oh-no-control` | 总览 / 不知道用哪个 | hub map |
 
-| Who | What |
-| --- | --- |
-| **You** | Once: `init` + `install`. Daily: ordinary language |
-| **Skill `oh-no-control`** | When to run which `ohno` command |
-| **Hooks** | Resume inject + write scope (background) |
-| **AGENTS managed block** | Live goal / board / next only (short) |
+You speak ordinary language (or name the skill). **Do not** paste long CLI into chat.
 
 ```bash
-ohno skill install    # refresh skill into ~/.codex/skills
+ohno skill install
 ohno skill status
-# then start a new Codex session so discovery picks it up
+# open a new Codex session
 ```
 
-| Intent | Codex runs (via skill) |
-| --- | --- |
-| Start the frozen slice | `ohno task start` |
-| Prove this slice | **`ohno verify` only** |
-| Requirements changed | `ohno change begin --summary "…"` |
-| Keep Owner words | `ohno requirements note --text "…"` |
-| Where are we? | `ohno resume` · `ohno doctor` · `ohno cockpit` |
-
-**Never automated:** silent plan accept · invented PASS · treating `next` as a blank cheque.
+**Never automated:** silent plan accept · invented PASS · `next` as blank cheque.
 
 ---
 

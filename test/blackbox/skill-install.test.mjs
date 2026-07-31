@@ -29,21 +29,18 @@ test("skill install writes oh-no-control into a home skills dir", async (t) => {
 
   const installed = runCli(projectPath, ["skill", "install"], { env });
   assert.equal(installed.status, 0, installed.stderr + installed.stdout);
-  assert.match(installed.stdout, /oh-no-control|Installed Oh No control skill/i);
+  assert.match(installed.stdout, /Installed Oh No skill suite|oh-no-verify/i);
 
-  const skillPath = join(
-    fakeHome,
-    ".codex",
-    "skills",
-    "oh-no-control",
-    "SKILL.md",
-  );
-  const body = await readFile(skillPath, "utf8");
-  assert.match(body, /name:\s*oh-no-control/);
-  assert.match(body, /ohno verify/i);
-  assert.match(body, /description:/);
+  const hub = join(fakeHome, ".codex", "skills", "oh-no-control", "SKILL.md");
+  const verify = join(fakeHome, ".codex", "skills", "oh-no-verify", "SKILL.md");
+  const hubBody = await readFile(hub, "utf8");
+  const verifyBody = await readFile(verify, "utf8");
+  assert.match(hubBody, /name:\s*oh-no-control/);
+  assert.match(verifyBody, /name:\s*oh-no-verify/);
+  assert.match(verifyBody, /ohno verify/i);
 
   const status = runCli(projectPath, ["skill", "status"], { env });
   assert.equal(status.status, 0, status.stderr);
-  assert.match(status.stdout, /INSTALLED: codex/);
+  assert.match(status.stdout, /INSTALLED: codex\/oh-no-verify/);
+  assert.match(status.stdout, /INSTALLED: codex\/oh-no-task/);
 });

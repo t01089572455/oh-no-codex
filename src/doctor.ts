@@ -202,16 +202,16 @@ export async function runDoctor(projectPath: string): Promise<DoctorReport> {
 
   try {
     const skills = await skillInstallStatus();
-    const codexSkill = skills.targets.find((t) => t.id === "codex");
-    const st = codexSkill?.status ?? "MISSING";
+    const codexSlots = skills.slots.filter((s) => s.root === "codex");
+    const missing = codexSlots.filter((s) => s.status === "MISSING").length;
+    const drift = codexSlots.filter((s) => s.status === "DRIFT").length;
+    const ok = codexSlots.filter((s) => s.status === "INSTALLED").length;
     checks.push({
       id: "control_skill",
-      status: st === "INSTALLED" ? "PASS" : "WARN",
-      detail: st === "INSTALLED"
-        ? `oh-no-control skill at ${codexSkill?.skillMd}`
-        : st === "DRIFT"
-        ? "oh-no-control skill drifted — run ohno skill install"
-        : "oh-no-control skill missing — run ohno skill install",
+      status: missing === 0 && drift === 0 ? "PASS" : "WARN",
+      detail: missing === 0 && drift === 0
+        ? `oh-no skill suite ${ok}/${codexSlots.length} installed under ~/.codex/skills`
+        : `oh-no skills: ${ok} ok, ${drift} drift, ${missing} missing — run ohno skill install`,
     });
   } catch (error) {
     checks.push({

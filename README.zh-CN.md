@@ -168,33 +168,36 @@ npm：[oh-no-codex](https://www.npmjs.com/package/oh-no-codex)（`0.1.1`）。
 
 ---
 
-## 日常怎么用（Skill 优先）
+## 日常怎么用（每条命令都是 skill）
 
-`ohno install` 会把 **Codex skill** 装到 `~/.codex/skills/oh-no-control/`。
+`ohno install` / `ohno skill install` 会把**整套** skill 装到
+`~/.codex/skills/oh-no-*/`，和普通 Codex skill 一样可被**发现/调用**：
 
-这才是给 Agent 的主入口：Codex 可按 skill 的 `description` **自己发现**
-（ohno、验收、开工、anti-drift…）。长 CLI 不要整段贴进聊天——会被上下文稀释。
+| Skill | 你说 | 实际执行 |
+| --- | --- | --- |
+| `oh-no-init` | 初始化 | `ohno init` |
+| `oh-no-install` | 装 hooks/skills | `ohno install` |
+| `oh-no-plan` | 排计划 / 接受计划 | `ohno plan …` |
+| `oh-no-task` | 开工 | `ohno task start` |
+| `oh-no-verify` | 做完了 / 验收 | `ohno verify` |
+| `oh-no-resume` | 卡在哪 | `ohno resume` |
+| `oh-no-status` | 状态 | `ohno status` |
+| `oh-no-next` | 下一步 | `ohno next` |
+| `oh-no-change` | 需求变了 | `ohno change …` |
+| `oh-no-requirements` | 记下来 | `ohno requirements …` |
+| `oh-no-preferences` | 改规矩 | `ohno preferences …` |
+| `oh-no-doctor` | 体检 | `ohno doctor` |
+| `oh-no-cockpit` | 驾驶舱 | `ohno cockpit` |
+| `oh-no-projectors` | 刷新投影 | `ohno projectors refresh` |
+| `oh-no-control` | 总览 / 不知道用哪个 | 路由表 |
 
-| 谁 | 做什么 |
-| --- | --- |
-| **你** | 每个项目一次 `init` + `install`；日常说人话 |
-| **Skill `oh-no-control`** | 何时跑哪条 `ohno` |
-| **Hooks** | 后台注入 resume、拦写范围 |
-| **AGENTS 托管块** | 只放现场目标/看板/下一步（短） |
+你说人话（或点名 skill 名）即可。**不要**把长 CLI 贴进聊天。
 
 ```bash
-ohno skill install    # 刷新 skill 到 ~/.codex/skills
+ohno skill install
 ohno skill status
-# 新开一个 Codex 会话，便于 skill 发现生效
+# 新开 Codex 会话
 ```
-
-| 意图 | Codex 应跑（由 skill 约定） |
-| --- | --- |
-| 开这一刀 | `ohno task start` |
-| 证明这一刀 | **只** `ohno verify` |
-| 需求变了 | `ohno change begin --summary "…"` |
-| 记下 Owner 原话 | `ohno requirements note --text "…"` |
-| 现在卡在哪 | `ohno resume` · `ohno doctor` · `ohno cockpit` |
 
 **永不静默：** 未审 accept · 伪造 PASS · 把 `next` 当空白支票。
 
