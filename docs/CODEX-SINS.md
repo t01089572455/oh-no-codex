@@ -7,9 +7,9 @@ Codex run fails in these ways. It is a product-design incident review: repeated
 failure patterns observed while using coding agents across long-running,
 multi-session work.
 
-The original shorthand was "Codex 十宗罪." The audit found eighteen distinct
-patterns. Keeping all eighteen is more honest than compressing evidence to fit
-a title.
+This document names **Codex’s eighteen sins**: eighteen distinct audited
+patterns. Keeping all eighteen is more honest than compressing them to fit a
+shorter title.
 
 ## Evidence boundary
 

@@ -435,9 +435,9 @@ Honesty rules for the UI:
 
 ## The eighteen sins
 
-The original shorthand was “Codex’s ten sins.” The audited patterns separated
-cleanly into eighteen. Oh No, Codex! turns them into constraints, tests, or
-explicit non-goals—not eighteen new subsystems.
+Codex’s **eighteen sins** are the audited anti-patterns this harness is built
+against. Oh No, Codex! turns them into constraints, tests, or explicit
+non-goals—not eighteen new subsystems.
 
 <details>
 <summary><strong>Open all 18</strong></summary>
