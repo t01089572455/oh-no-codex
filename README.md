@@ -18,114 +18,100 @@
 
 <p align="center">
   <strong>Codex can write great code and still make the project worse.</strong><br>
-  Oh No is a local harness that keeps vibe-coding <em>aligned</em>:<br>
-  one goal, one frozen task, one user-visible black-box test, fresh proof — and a clear stop for <em>that task</em>.
+  Oh No is a local harness for vibe coding: freeze one task, prove it with a<br>
+  user-visible black box, recover state without chat archaeology — and close<br>
+  <em>that slice</em> cleanly (it does not shut down the Codex app).
 </p>
 
 <p align="center">
-  <code>align</code>&nbsp;&nbsp;·&nbsp;&nbsp;<code>bound</code>&nbsp;&nbsp;·&nbsp;&nbsp;<code>prove</code>&nbsp;&nbsp;·&nbsp;&nbsp;<code>recover</code>
+  <code>bound</code>&nbsp;&nbsp;·&nbsp;&nbsp;<code>prove</code>&nbsp;&nbsp;·&nbsp;&nbsp;<code>recover</code>&nbsp;&nbsp;·&nbsp;&nbsp;<code>stop the slice</code>
 </p>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/oh-no-codex"><img alt="npm" src="https://img.shields.io/npm/v/oh-no-codex?style=flat-square&color=74D6B1&labelColor=202624&label=npm"></a>
   <img alt="status" src="https://img.shields.io/badge/status-V1_TRIAL_ACCEPTED-74D6B1?style=flat-square&labelColor=202624">
   <img alt="codex" src="https://img.shields.io/badge/for-Codex_CLI-FF4B35?style=flat-square&labelColor=202624">
-  <img alt="node" src="https://img.shields.io/badge/node-%E2%89%A522.20-74D6B1?style=flat-square&labelColor=202624">
+  <img alt="skills" src="https://img.shields.io/badge/UX-15_Codex_skills-74D6B1?style=flat-square&labelColor=202624">
   <a href="./LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-FFF1CE?style=flat-square&labelColor=202624"></a>
 </p>
 
 <p align="center">
-  <a href="#the-real-problem">Problem</a> ·
-  <a href="#the-eighteen-sins">18 sins</a> ·
-  <a href="#what-oh-no-is-for">What it is for</a> ·
+  <a href="#the-problem">Problem</a> ·
+  <a href="#eighteen-sins">18 sins</a> ·
+  <a href="#what-it-does">What it does</a> ·
   <a href="#install">Install</a> ·
-  <a href="#daily-use">Daily use</a> ·
+  <a href="#use-it-like-skills">Skills</a> ·
   <a href="#evidence">Evidence</a>
 </p>
 
 ---
 
-## The real problem
+## The problem
 
-The main failure is not “Codex is offline.”  
-It is **drift while coding**: the repo moves away from what you asked for, even when the model looks productive.
+Codex stays “busy” while the repo drifts:
 
-In practice that shows up as:
+| # | Failure | Example |
+| ---: | --- | --- |
+| 1 | **Scope & meaning** | “Foreign-trade system” quietly becomes a platform rewrite |
+| 2 | **Fake done** | Mocks are green; the user-visible path still breaks |
+| 3 | **Lost truth** | Chat / old plans beat project state next session |
+| 4 | **Slice won’t close** | After a real pass, “next” is treated as a blank cheque |
 
-| Rank | What goes wrong | Example |
-| --- | --- | --- |
-| **1 · Scope & meaning** | Your words are enlarged or replaced | “Draft save” becomes a provider platform |
-| **2 · Fake done** | Internal green ≠ user-visible success | Unit mocks pass; reload still loses the draft |
-| **3 · Lost truth** | Chat / old plans outrank the project | New session rebuilds reality from prose |
-| **4 · Won’t close the slice** | After a real pass, work keeps sprawling | “Next” is treated as a blank cheque for new work |
+Oh No optimises for answers from **project files**, not memory:
 
-Item 4 is real (sin #3) — but it is **one symptom** of drift, not the whole product.
+1. What is already done?  
+2. What is the **one** active bounded task?  
+3. What exact user-visible test proves it?  
+4. What is blocking?  
+5. What is the **one** next action (**locator**, not new permission)?
 
-What we optimise for is the question every new session should answer from **project files**, not from memory:
-
-1. What is the Owner trying to achieve?  
-2. What is already complete?  
-3. What is the **one** active bounded task?  
-4. What user-visible behaviour and **exact** test define success?  
-5. What is blocking?  
-6. What is the **one** next action (a locator — not new permission)?
-
-That is the product contract in plain language.
+An optional one-line product name (`--goal`) can sit on resume. It is **not required**. Real scope lives in **plan tasks** and **requirements notes**.
 
 ---
 
-## The eighteen sins
+## Eighteen sins
 
-Named anti-patterns from a long audit of agent sessions.  
-They are the **enemy list** behind the design — not eighteen new features.
+Enemy list from a long session audit — not eighteen features. Full text: [`docs/CODEX-SINS.md`](./docs/CODEX-SINS.md).
 
 | # | Sin | One line |
 | ---: | --- | --- |
 | 1 | Semantic usurpation | You asked for a door; it built a castle. |
 | 2 | Maximum interpretation | “Control” becomes a platform. |
-| 3 | Never stopping | Slice accepted; sprawl continues as if authorized. |
+| 3 | Never stopping | Slice accepted; sprawl continues anyway. |
 | 4 | Review as edit rights | “Inspect” becomes silent rewrite. |
 | 5 | Zombie authority | Old plan beats your latest decision. |
 | 6 | Summary as truth | Compaction hardens into false history. |
-| 7 | Local green = complete | One mock ships as “the product works.” |
+| 7 | Local green = complete | One mock ships as “done.” |
 | 8 | Self-certified closure | Same agent writes claim and applause. |
-| 9 | Test theatre | Internal green; user path still broken. |
-| 10 | Proxy goals | Coverage / neatness beats your outcome. |
-| 11 | Reviewer inflation | Review invents endless new acceptance. |
+| 9 | Test theatre | Internal green; user path broken. |
+| 10 | Proxy goals | Coverage beats your outcome. |
+| 11 | Reviewer inflation | Endless new acceptance criteria. |
 | 12 | Control-tax blindness | Tool costs more than the drift. |
-| 13 | Rebuilding the world | New machinery instead of Git and tests. |
-| 14 | Workspace confusion | Wrong tree, branch, or dirty checkout. |
-| 15 | Handoff tax | Next session reconstructs state from chat. |
+| 13 | Rebuilding the world | New machinery instead of Git/tests. |
+| 14 | Workspace confusion | Wrong tree / branch / dirty checkout. |
+| 15 | Handoff tax | Next session reconstructs from chat. |
 | 16 | UX last | Internals for weeks; UI untested. |
 | 17 | Agree + overclaim | Instant apology, unmeasured promise. |
 | 18 | Apology without constraint | Soft regret; same failure tomorrow. |
 
-Details: [`docs/CODEX-SINS.md`](./docs/CODEX-SINS.md).
-
 ---
 
-## What Oh No is for
-
-**Not:** shutting down the Codex app or “killing the service.”  
-**Yes:** keeping each slice of work **bounded, provable, and recoverable**.
+## What it does
 
 <p align="center">
-  <img
-    src="./assets/brand/oh-no-loop.png"
-    width="880"
-    alt="Goal → Task → Prove → Stop the task (not the Codex app)"
-  >
+  <img src="./assets/brand/oh-no-loop.png" width="880" alt="Task → Prove → Close the slice">
 </p>
 
 | Job | Meaning |
 | --- | --- |
-| **Freeze a task** | Before supported writes: expected user-visible behaviour, one black-box command, allowed files, time budget, stop condition |
-| **Prove with a black box** | `ohno verify` runs that **exact** command — not agent prose |
-| **Stop the task** | Fresh PASS closes **this** slice and advances the plan cursor. `next` only **points** at what comes after; it is **not** automatic permission to invent a new phase |
-| **Recover** | `ohno resume` / Cockpit read `.ohno/state.json` — the sole runtime authority |
+| **Freeze a task** | Behaviour, one black-box command, allowed files, budget, stop condition |
+| **Prove** | `ohno verify` runs that exact command |
+| **Close the slice** | Fresh PASS advances the plan cursor; `next` only **points** |
+| **Recover** | `ohno resume` / cockpit ← `.ohno/state.json` (sole authority) |
 
-Hooks and Git pre-commit are **cooperative guardrails** (inject capsule, scope writes).  
-They are not a hostile security boundary under your own credentials.
+**Cooperative** hooks (SessionStart / PreToolUse / Stop + Git pre-commit) inject the capsule and scope writes. Not a hostile security sandbox.
+
+**Skill suite:** every CLI surface is also a Codex skill under `~/.codex/skills/oh-no-*` so agents discover procedure without chat-paste CLI dumps.
 
 ---
 
@@ -134,64 +120,60 @@ They are not a hostile security boundary under your own credentials.
 ```bash
 npm install -g oh-no-codex
 cd your-git-repo
-ohno init              # enough — no slogan required
-ohno install           # hooks + Codex skill oh-no-control
+ohno init                 # no slogan required
+ohno install              # hooks + all 15 oh-no-* skills
 ```
 
-Optional: `ohno init --goal "…"` if you want a one-line product name in resume.
-Real scope lives in **plan tasks** and **requirements notes**, not a forced slogan.
+```bash
+ohno skill install        # refresh skills only
+ohno skill status
+# open a new Codex session so discovery picks them up
+```
 
-Node.js **≥ 22.20**, ordinary Git repo.  
-npm: [oh-no-codex](https://www.npmjs.com/package/oh-no-codex) (`0.1.1`).
+Node.js **≥ 22.20**. Package: [oh-no-codex](https://www.npmjs.com/package/oh-no-codex) (`0.1.1` on npm; git may be ahead).
 
 ---
 
-## Daily use (every command is a skill)
+## Use it like skills
 
-`ohno install` / `ohno skill install` copies the **whole suite** into
-`~/.codex/skills/oh-no-*/` so Codex can **discover** them like normal skills:
+Speak normally, or name a skill. Codex should run the matching shell command.
 
-| Skill | You say | Shell |
+| Skill | You mean | Shell |
 | --- | --- | --- |
-| `oh-no-init` | 初始化 | `ohno init` |
-| `oh-no-install` | 装 hooks/skills | `ohno install` |
-| `oh-no-plan` | 排计划 / 接受计划 | `ohno plan …` |
-| `oh-no-task` | 开工 | `ohno task start` |
-| `oh-no-verify` | 做完了 / 验收 | `ohno verify` |
-| `oh-no-resume` | 卡在哪 | `ohno resume` |
-| `oh-no-status` | 状态 | `ohno status` |
-| `oh-no-next` | 下一步 | `ohno next` |
-| `oh-no-change` | 需求变了 | `ohno change …` |
-| `oh-no-requirements` | 记下来 | `ohno requirements …` |
-| `oh-no-preferences` | 改规矩 | `ohno preferences …` |
-| `oh-no-doctor` | 体检 | `ohno doctor` |
-| `oh-no-cockpit` | 驾驶舱 | `ohno cockpit` |
-| `oh-no-projectors` | 刷新投影 | `ohno projectors refresh` |
-| `oh-no-control` | 总览 / 不知道用哪个 | hub map |
+| `oh-no-init` | bootstrap harness | `ohno init` |
+| `oh-no-install` | hooks + skills | `ohno install` |
+| `oh-no-plan` | propose / accept plan | `ohno plan …` |
+| `oh-no-task` | start this slice | `ohno task start` |
+| `oh-no-verify` | done / accept | **`ohno verify`** |
+| `oh-no-resume` | where are we | `ohno resume` |
+| `oh-no-status` | status | `ohno status` |
+| `oh-no-next` | next locator | `ohno next` |
+| `oh-no-change` | requirements changed | `ohno change …` |
+| `oh-no-requirements` | remember my words | `ohno requirements …` |
+| `oh-no-preferences` | craft rules | `ohno preferences …` |
+| `oh-no-doctor` | health check | `ohno doctor` |
+| `oh-no-cockpit` | glass board | `ohno cockpit` |
+| `oh-no-projectors` | refresh PROGRESS/AGENTS | `ohno projectors refresh` |
+| `oh-no-control` | hub / which skill? | routing table |
 
-You speak ordinary language (or name the skill). **Do not** paste long CLI into chat.
-
-```bash
-ohno skill install
-ohno skill status
-# open a new Codex session
-```
-
-**Never automated:** silent plan accept · invented PASS · `next` as blank cheque.
+**Do not** paste long CLI recipes into chat — that dilutes.  
+**Do not** claim done without a real `ohno verify` PASS.  
+**Do not** treat `next` as automatic permission for a new phase.
 
 ---
 
 ## What ships
 
-| Surface | Role |
+| Piece | Role |
 | --- | --- |
-| `plan` · `task` · `verify` | Bound → prove → close the slice |
-| `status` · `resume` · `next` · `doctor` | Recover without chat archaeology |
-| `change` | Requirement + governing-doc sync |
-| `projectors` · `preferences` · `requirements` | Progress, craft rules, owner log |
-| Hooks · pre-commit · `cockpit` | Guardrails + read-only board |
+| CLI | `init` · `plan` · `task` · `verify` · `change` · `resume` · … |
+| 15 Codex skills | Discoverable procedure for each surface |
+| Hooks + pre-commit | Capsule inject, scope guard |
+| Projectors | `PROGRESS.md`, REQUIREMENTS, short AGENTS capsule |
+| Preferences | Optional craft defaults (research / OSS / UI adapt) |
+| Cockpit | Read-only board = `status --json` |
 
-**Out of V1 on purpose:** database, daemon, skill marketplace, multi-agent OS, “absolute security.”
+**Not in V1:** database, daemon, skill marketplace product, multi-agent OS, absolute same-user security.
 
 ---
 
@@ -201,11 +183,11 @@ ohno skill status
 | --- | --- |
 | Product status | `V1_TRIAL_ACCEPTED` |
 | CLI / hooks / atomic state | `LOCAL_PASS` |
-| Cockpit = `status --json` | `LOCAL_PASS` |
+| Cockpit = status JSON | `LOCAL_PASS` |
 | Disposable real copies | `TRIAL_PASS` (P01–P06) |
-| npm | **`0.1.1`** |
+| npm | **`0.1.1`** published; skill suite on `main` |
 
-Contracts: [Product](./docs/PRODUCT-CONTRACT.md) · [Design](./docs/DESIGN.md) · [Acceptance](./docs/ACCEPTANCE.md) · [Ledger](./docs/IMPLEMENTATION-PLAN.md)
+Contracts: [Product](./docs/PRODUCT-CONTRACT.md) · [Design](./docs/DESIGN.md) · [Acceptance](./docs/ACCEPTANCE.md) · [Sins](./docs/CODEX-SINS.md)
 
 ---
 
@@ -214,7 +196,7 @@ Contracts: [Product](./docs/PRODUCT-CONTRACT.md) · [Design](./docs/DESIGN.md) �
 </p>
 
 <p align="center">
-  <strong>Keep the project aligned. Prove the slice. Close it cleanly.</strong>
+  <strong>Bound the slice. Prove it. Recover without archaeology.</strong>
 </p>
 
 <p align="center"><a href="#readme-top">↑ top</a></p>
