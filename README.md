@@ -532,7 +532,7 @@ Capability labels name the evidence actually held by this repository:
 | Three copied-project loops and P01–P05 | `TRIAL_PASS` | Bounded harness trials on anonymous TypeScript CLI, React/Vite Web, and Python OCR source copies |
 | Desktop/narrow visual and accessibility acceptance | `LOCAL_PASS` | A14 via system Chrome/Edge after Owner authorized external browser |
 | State-to-Cockpit browser reflection | `TRIAL_PASS` | P06 three-copy browser receipt; worst p95 73.690 ms |
-| npm package `oh-no-codex` | Published when release commits land | `npm install -g oh-no-codex` |
+| npm package `oh-no-codex` | `0.1.0` on [registry.npmjs.org](https://www.npmjs.com/package/oh-no-codex) | `npm install -g oh-no-codex` |
 
 The three-copy measurements use one untimed warm-up and 30 raw samples per
 command per copy. Worst observed p95 values were:
@@ -679,7 +679,7 @@ flowchart LR
 ## 已经实现了哪些功能
 
 **V1 Harness 范围已完成**，账本状态为 `V1_TRIAL_ACCEPTED`（基于命名本地黑盒与
-可弃用项目副本证据）。这**不等于**已发布 npm、不等于敌对 Agent 安全产品、
+可弃用项目副本证据）。npm 包 `oh-no-codex@0.1.0` 已公开；这**不等于**敌对 Agent 安全产品、
 也不等于普适速度保证。
 
 | 能力域 | 命令 / 表面 | 状态 |
@@ -1096,7 +1096,7 @@ Oh No, Codex! 把它们变成约束、测试或明确不做的事情，而不是
 | 三个项目副本的完整闭环与 P01–P05 | `TRIAL_PASS` | 匿名 TypeScript CLI、React/Vite Web 与 Python OCR 源码副本上的有界 harness 试验 |
 | 桌面/窄屏视觉与无障碍验收 | `LOCAL_PASS` | Owner 授权外置浏览器后，用系统 Chrome/Edge 完成 A14 |
 | 状态到驾驶舱的浏览器反映延迟 | `TRIAL_PASS` | P06 三副本浏览器收据；最差 p95 73.690 ms |
-| npm 包 `oh-no-codex` | 随发布提交上线 | `npm install -g oh-no-codex` |
+| npm 包 `oh-no-codex` | 已发布 `0.1.0`（[registry.npmjs.org](https://www.npmjs.com/package/oh-no-codex)） | `npm install -g oh-no-codex` |
 
 三个副本的测量均先做一次不计时 warm-up，再对每条命令保存 30 个原始样本。
 最差 p95 如下：
