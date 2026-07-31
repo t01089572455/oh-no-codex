@@ -1,27 +1,37 @@
 # Oh No, Codex! Cockpit design contract
 
-Status: **LOCKED FOR TASK 6B**
+Status: **LOCKED — GLASS MISSION DASHBOARD (Owner visual refresh 2026-07-31)**
 
-This is the Task 6A design artifact. It specifies a read-only local Cockpit;
-it is not implementation evidence. Task 6B must implement it without
-redesigning it, and Task 6C must accept it in a real browser before any visual
-completion claim.
+This contract specifies a read-only local Cockpit. Task 6A originally locked
+**Calibrated Plush Workshop**. On 2026-07-31 the Owner authorized a visual
+refresh: reproduce the glass mission-dashboard reference under
+`docs/ui设计参考图/` (Kimi-assisted HTML shell + product-honest data binding)
+while preserving GET-only projection of the canonical read model.
+
+Functional locks that still hold:
+
+- zero runtime dependencies; vanilla HTML/CSS/JS
+- no second current-state authority
+- no write routes, forms, or browser storage
+- same `/api/state` payload as `status --json`
+- no invented trust percentages or fake metrics
 
 ## Lock header
 
 | Field | Locked value |
 | --- | --- |
 | Register | Product |
-| Aesthetic direction | Industrial / signage |
-| Direction name | **Calibrated Plush Workshop** |
-| Color strategy | Restrained instrument neutrals with one calibrated amber accent |
+| Aesthetic direction | Glass mission dashboard / soft lavender instrument UI |
+| Direction name | **Glass Mission Pulse** |
+| Color strategy | Soft field `#F0EDF8`, purple-blue accents, teal success, amber drift, red stop |
 | Design system | Native semantic HTML plus WAI-ARIA Authoring Practices |
-| Icon family | None in V1; literal text and calibrated geometry carry meaning |
+| Icon family | Minimal geometry + brand plush aperture; no icon font CDN |
 | Design variance | 8/10 |
-| Motion intensity | 3/10 |
+| Motion intensity | 2/10 (progress/ring only; reduced-motion removes transitions) |
 | Visual density | 7/10 |
 | Implementation medium | Zero-runtime-dependency vanilla HTML, CSS, and JavaScript |
 | Brand media | `assets/brand/oh-no-codex-plush-hero.png`, unchanged |
+| Reference board | `docs/ui设计参考图/vibetether-cockpit-final-oh-no-codex-lockup.png` |
 
 Native HTML and WAI-ARIA patterns are the deliberate system choice. The frozen
 V1 contract requires a vanilla local web view and zero runtime dependencies.

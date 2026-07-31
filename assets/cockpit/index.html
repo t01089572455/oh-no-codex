@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="light">
-    <meta name="theme-color" content="#EEF1E5">
+    <meta name="theme-color" content="#F0EDF8">
     <title>Oh No, Codex! Cockpit</title>
     <link rel="stylesheet" href="/assets/cockpit.css">
     <script src="/assets/cockpit.js" defer></script>
@@ -12,24 +12,86 @@
   <body data-tone="neutral">
     <a class="skip-link" href="#now-heading">Skip to current state</a>
 
-    <div class="cockpit-shell">
-      <header class="masthead">
-        <figure class="brand-aperture" aria-hidden="true">
-          <img
-            src="/brand/oh-no-codex-plush-hero.png"
-            alt=""
-            width="112"
-            height="72"
-          >
-        </figure>
+    <div id="unavailable-gate" class="unavailable-gate" hidden role="alert">
+      <div class="gate-card glass">
+        <p class="eyebrow">STATE</p>
+        <h2>LOCAL STATE UNAVAILABLE</h2>
+        <p>
+          The local state is missing, corrupt, or unsupported. Repair
+          <code>.ohno/state.json</code>, then refresh.
+        </p>
+      </div>
+    </div>
 
-        <div class="brand-copy">
-          <h1>OH NO, CODEX!</h1>
-          <p class="goal" id="goal-value">Reading local state...</p>
+    <div class="app-shell" id="current-state" aria-busy="true">
+      <header class="top-nav glass" role="banner">
+        <div class="brand-cluster">
+          <figure class="brand-aperture" aria-hidden="true">
+            <img
+              src="/brand/oh-no-codex-plush-hero.png"
+              alt=""
+              width="48"
+              height="48"
+            >
+          </figure>
+          <div class="brand-copy">
+            <h1>OH NO, CODEX!</h1>
+            <p class="brand-sub">
+              Fast, cooperative vibe-coding harness
+              <span class="locality">LOCAL · READ ONLY</span>
+            </p>
+          </div>
         </div>
 
-        <div class="masthead-controls">
-          <span class="locality">LOCAL / READ ONLY</span>
+        <div class="stage-cluster" aria-label="Current stage">
+          <p class="eyebrow">CURRENT STAGE</p>
+          <div class="stage-chip">
+            <span id="stage-title">WAITING</span>
+            <span class="stage-badge" id="status-value">UNAVAILABLE</span>
+          </div>
+          <p class="goal" id="goal-value">Reading local state…</p>
+        </div>
+
+        <div class="progress-cluster" aria-label="Overall progress">
+          <div class="progress-head">
+            <p class="eyebrow">OVERALL PROGRESS</p>
+            <p class="progress-meta">
+              <span id="progress-label">0%</span>
+              ·
+              <span id="completed-count">0</span>
+              of
+              <span id="task-count-disp">0</span>
+              stages
+            </p>
+          </div>
+          <div
+            class="progress-track"
+            role="progressbar"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="0"
+            id="progress-aria"
+          >
+            <div id="progress-fill" class="progress-fill"></div>
+          </div>
+        </div>
+
+        <div class="nav-actions">
+          <div class="profile-chip" aria-hidden="true">
+            <img
+              src="/brand/oh-no-codex-plush-hero.png"
+              alt=""
+              width="36"
+              height="36"
+            >
+            <div>
+              <span class="profile-name">OH NO, CODEX</span>
+              <span class="profile-meta">
+                <span class="status-dot"></span>
+                Local · Read Only
+              </span>
+            </div>
+          </div>
           <button
             id="refresh-button"
             type="button"
@@ -38,109 +100,179 @@
         </div>
       </header>
 
-      <main id="current-state" aria-busy="true">
-        <section
-          class="unavailable-gate"
-          id="unavailable-gate"
-          role="alert"
-          hidden
-        >
-          <p class="instrument-label">STATE</p>
-          <h2>LOCAL STATE UNAVAILABLE</h2>
-          <p>
-            The local state is missing, corrupt, or unsupported. Repair
-            <code>.ohno/state.json</code>, then refresh.
-          </p>
+      <main class="dashboard" id="main-dashboard">
+        <section class="left-rail" aria-label="Mission actions">
+          <article class="card glass action-card now-card">
+            <div class="card-header">
+              <span class="tag tag-now">NOW</span>
+              <span class="action-id" id="now-heading">NO ACTIVE TASK</span>
+            </div>
+            <p class="action-body" id="behavior-value">
+              Waiting for the canonical read model.
+            </p>
+            <div class="test-well" id="test-well" hidden>
+              <p class="eyebrow">EXACT TEST</p>
+              <code id="test-value">NONE</code>
+            </div>
+          </article>
+
+          <article class="card glass action-card next-card">
+            <div class="card-header">
+              <span class="tag tag-next">NEXT</span>
+            </div>
+            <p class="next-value" id="next-value">NONE</p>
+          </article>
+
+          <article class="card glass action-card attention-card" id="attention-card">
+            <div class="card-header">
+              <span class="tag tag-attention">ATTENTION</span>
+              <span class="tag tag-drift">DRIFT</span>
+            </div>
+            <p class="signal-value" id="blocker-value">NONE</p>
+            <p class="action-hint">
+              Blockers and drift signals from the harness appear here.
+            </p>
+          </article>
+
+          <section class="card glass ledger-card" aria-labelledby="recent-heading">
+            <div class="ledger-header">
+              <div>
+                <p class="eyebrow" id="recent-heading">RECENT</p>
+                <p class="section-sub">Completed stages</p>
+              </div>
+            </div>
+            <ol class="recent-list" id="recent-list">
+              <li class="empty-ledger">NO COMPLETED TASKS</li>
+            </ol>
+          </section>
         </section>
 
-        <div class="measurement-layout">
-          <section
-            class="calibration-rail"
-            id="calibration-rail"
-            aria-labelledby="rail-heading"
-          >
-            <div class="rail-copy">
-              <p class="instrument-label" id="rail-heading">
-                CALIBRATION RAIL
-              </p>
-              <p class="rail-summary" id="rail-summary">
-                READING LOCAL STATE
-              </p>
-              <p class="revision">
-                PLAN <span id="plan-revision">NONE</span>
-              </p>
+        <section class="center-stage" aria-label="Mission pulse">
+          <div class="mission-card glass">
+            <div class="mission-header">
+              <span class="eyebrow">MISSION</span>
+              <span class="mission-lock" aria-hidden="true">READ ONLY</span>
             </div>
-            <div class="rail-track" aria-hidden="true">
-              <span class="rail-ticks"></span>
-              <span class="rail-jaw"></span>
-              <span class="rail-stop"></span>
-            </div>
-          </section>
 
-          <div class="instrument-frame">
-            <section
-              class="instrument now-instrument"
-              aria-labelledby="now-heading"
-            >
-              <p class="instrument-label">NOW</p>
-              <h2 id="now-heading" tabindex="-1">READING LOCAL STATE</h2>
-              <p class="status-line">
-                STATUS <strong id="status-value">UNAVAILABLE</strong>
-              </p>
-              <p class="behavior" id="behavior-value">
-                Waiting for the canonical read model.
-              </p>
-              <div class="test-well" id="test-well" hidden>
-                <p class="instrument-label">EXACT TEST</p>
-                <code id="test-value">NONE</code>
-              </div>
-            </section>
+            <div class="ring-wrap">
+              <svg class="mission-ring" viewBox="0 0 400 400" aria-hidden="true">
+                <defs>
+                  <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#a78bfa"></stop>
+                    <stop offset="50%" stop-color="#60a5fa"></stop>
+                    <stop offset="100%" stop-color="#2dd4bf"></stop>
+                  </linearGradient>
+                </defs>
+                <circle class="ring-track" cx="200" cy="200" r="148"></circle>
+                <circle
+                  class="ring-arc"
+                  id="ring-arc"
+                  cx="200"
+                  cy="200"
+                  r="148"
+                  transform="rotate(-90 200 200)"
+                ></circle>
+                <g id="ring-nodes"></g>
+              </svg>
 
-            <section
-              class="instrument signal-instrument proof-instrument"
-              aria-labelledby="proof-heading"
-            >
-              <p class="instrument-label" id="proof-heading">PROOF</p>
-              <p class="signal-value" id="proof-value">NONE</p>
-            </section>
-
-            <section
-              class="instrument signal-instrument drift-instrument"
-              aria-labelledby="drift-heading"
-            >
-              <p class="instrument-label" id="drift-heading">DRIFT</p>
-              <p class="signal-value" id="blocker-value">NONE</p>
-            </section>
-
-            <section
-              class="instrument next-instrument"
-              aria-labelledby="next-heading"
-            >
-              <p class="instrument-label" id="next-heading">NEXT</p>
-              <p class="next-value" id="next-value">NONE</p>
-            </section>
-
-            <section
-              class="instrument recent-instrument"
-              aria-labelledby="recent-heading"
-            >
-              <div class="recent-heading-row">
-                <p class="instrument-label" id="recent-heading">RECENT</p>
-                <p class="completed-total">
-                  COMPLETED <span id="completed-count">0</span>
+              <div class="mission-center">
+                <p class="pulse-label">PULSE</p>
+                <h2 id="mission-center-label">IDLE</h2>
+                <p id="mission-center-sub">Waiting for plan</p>
+                <p class="plan-line">
+                  PLAN
+                  <span id="plan-revision">NONE</span>
                 </p>
               </div>
-              <ol class="recent-list" id="recent-list">
-                <li class="empty-ledger">NO COMPLETED TASKS</li>
-              </ol>
-            </section>
+            </div>
+
+            <div
+              class="calibration-rail"
+              id="calibration-rail"
+              aria-labelledby="rail-heading"
+            >
+              <p class="eyebrow" id="rail-heading">CALIBRATION RAIL</p>
+              <p class="rail-summary" id="rail-summary">READING LOCAL STATE</p>
+            </div>
           </div>
-        </div>
+        </section>
+
+        <section class="right-rail" aria-label="Instruments">
+          <article class="card glass instrument-card proof-instrument">
+            <div class="instrument-header">
+              <div>
+                <p class="eyebrow" id="proof-heading">PROOF</p>
+                <p class="section-sub">Verification freshness</p>
+              </div>
+              <p class="signal-value" id="proof-value">NONE</p>
+            </div>
+            <div class="proof-meter" aria-hidden="true">
+              <span class="meter-seg" data-proof="NONE"></span>
+              <span class="meter-seg" data-proof="FAIL"></span>
+              <span class="meter-seg" data-proof="UNKNOWN"></span>
+              <span class="meter-seg" data-proof="STALE"></span>
+              <span class="meter-seg" data-proof="FRESH"></span>
+            </div>
+          </article>
+
+          <article class="card glass instrument-card drift-instrument">
+            <div class="instrument-header">
+              <div>
+                <p class="eyebrow">GUARDRAIL</p>
+                <p class="section-sub">Cooperative read-only surface</p>
+              </div>
+              <p class="signal-value" id="blocker-badge">CLEAR</p>
+            </div>
+            <div class="guardrail-bar" id="guardrail-bar" aria-hidden="true">
+              <span class="guardrail-segment ok"></span>
+              <span class="guardrail-segment warn"></span>
+              <span class="guardrail-segment fail"></span>
+            </div>
+            <div class="guardrail-labels" aria-hidden="true">
+              <span>Clear</span>
+              <span>Drift</span>
+              <span>Blocked</span>
+            </div>
+          </article>
+
+          <article class="card glass summary-card">
+            <p class="eyebrow">VECTOR SNAPSHOT</p>
+            <p class="section-sub">Honest counts from the same read model</p>
+            <div class="summary-grid">
+              <div class="summary-cell">
+                <span class="summary-label">Cursor</span>
+                <span class="summary-number" id="cursor-disp">0</span>
+              </div>
+              <div class="summary-cell">
+                <span class="summary-label">Tasks</span>
+                <span class="summary-number" id="tasks-disp">0</span>
+              </div>
+              <div class="summary-cell">
+                <span class="summary-label">Done</span>
+                <span class="summary-number" id="done-disp">0</span>
+              </div>
+            </div>
+          </article>
+        </section>
       </main>
 
-      <footer>
-        Cooperative local guardrail. This view cannot authorize work or stop a
-        same-user process.
+      <footer class="bottom-rail glass" role="contentinfo">
+        <div class="completion-header">
+          <p class="eyebrow">COMPLETION VECTOR</p>
+          <p class="section-sub">Plan progress from partial to complete</p>
+        </div>
+        <div class="vector-rail">
+          <div class="vector-track">
+            <div id="vector-progress" class="vector-progress"></div>
+            <span class="vector-stop" data-stop="partial">PARTIAL</span>
+            <span class="vector-stop" data-stop="review">REVIEW</span>
+            <span class="vector-stop" data-stop="ready">READY</span>
+          </div>
+        </div>
+        <p class="footer-copy">
+          Cooperative local guardrail. This view cannot authorize work or stop a
+          same-user process.
+        </p>
       </footer>
     </div>
 

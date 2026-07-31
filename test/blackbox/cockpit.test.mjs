@@ -142,14 +142,15 @@ test("cockpit serves the locked local shell and shuts down cleanly", async (t) =
   assert.match(html, />DRIFT</);
   assert.match(html, />NEXT</);
   assert.match(html, /CALIBRATION RAIL/);
+  assert.match(html, /top-nav|OVERALL PROGRESS|CURRENT STAGE/);
   assert.match(html, /oh-no-codex-plush-hero\.png/);
   assert.doesNotMatch(html, /<form\b/i);
 
   const css = await fetch(new URL("assets/cockpit.css", cockpit.url));
   assert.equal(css.status, 200);
   const cssBytes = await css.text();
-  assert.match(cssBytes, /--field:\s*#EEF1E5/i);
-  assert.match(cssBytes, /@font-face/);
+  assert.match(cssBytes, /--field:\s*#F0EDF8/i);
+  assert.match(cssBytes, /backdrop-filter/i);
   assert.match(cssBytes, /prefers-reduced-motion:\s*reduce/i);
   assert.match(cssBytes, /max-width:\s*719px/i);
   assert.doesNotMatch(cssBytes, /https?:\/\//i);

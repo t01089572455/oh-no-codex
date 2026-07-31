@@ -26,7 +26,7 @@
 
 <p align="center">
   <a href="https://github.com/t01089572455/oh-no-codex/blob/main/docs/IMPLEMENTATION-PLAN.md">
-    <img alt="状态：V1 尚需变更" src="https://img.shields.io/badge/status-V1_changes_required-FF4B35?style=for-the-badge&labelColor=202624">
+    <img alt="状态：V1 试验已接受" src="https://img.shields.io/badge/status-V1_TRIAL_ACCEPTED-74D6B1?style=for-the-badge&labelColor=202624">
   </a>
   <img alt="仅支持 Codex" src="https://img.shields.io/badge/harness-Codex_only-FF4B35?style=for-the-badge&labelColor=202624">
   <img alt="Node.js 22.20 或更高版本" src="https://img.shields.io/badge/Node.js-%E2%89%A522.20-74D6B1?style=for-the-badge&labelColor=202624">
@@ -37,6 +37,10 @@
 
 <p align="center">
   <a href="#为什么需要它">为什么</a>
+  ·
+  <a href="#已经实现了哪些功能">功能清单</a>
+  ·
+  <a href="#完整使用说明">使用说明</a>
   ·
   <a href="#四个闭环">四个闭环</a>
   ·
@@ -92,27 +96,231 @@ flowchart LR
 | **变更** | 需求与规范文档不同步 | 从 Owner 维护的 Truth 清单确定必改文档，展示精确 diff，确认前阻止编码。 |
 | **恢复** | 新 Session 从聊天里拼现场 | 从一个原子状态文件返回目标、当前任务、证据、阻塞和唯一下一步。 |
 
-## 30 秒合同预览
+## 已经实现了哪些功能
 
-> 下面的命令已经能从源码运行，但目前没有 npm Release。
+**V1 Harness 范围已完成**，账本状态为 `V1_TRIAL_ACCEPTED`（基于命名本地黑盒与
+可弃用项目副本证据）。这**不等于**已发布 npm、不等于敌对 Agent 安全产品、
+也不等于普适速度保证。
+
+| 能力域 | 命令 / 表面 | 状态 |
+| --- | --- | --- |
+| 项目初始化 | `ohno init --goal …` | 已完成 |
+| 线性计划评审 | `ohno plan propose` · `ohno plan accept` | 已完成 |
+| 有边界任务启动 | `ohno task start`（不能自填合同字段） | 已完成 |
+| 证据绑定完成 | `ohno verify` | 已完成 |
+| 秒级恢复现场 | `ohno status` · `ohno resume` · `ohno next` | 已完成 |
+| 需求变更同步 | `ohno change begin` · `diff` · `accept` | 已完成 |
+| Codex 合作式 Hooks | SessionStart / PostCompact / PreToolUse / Stop | 已完成 |
+| Git pre-commit 护栏 | `ohno install` · `ohno git pre-commit` | 已完成 |
+| Hook 状态查询 | `ohno hooks status --json` · `ohno hook` | 已完成 |
+| 只读驾驶舱 | `ohno cockpit`（玻璃态任务仪表盘） | 已完成 |
+| 原子状态权威 | `.ohno/state.json` 唯一运行时权威 | 已完成 |
+| Truth 适用清单 | `.ohno/truth.json` 由 Owner 维护 | 已完成 |
+
+**明确未做 / 未授权**
+
+| 项目 | 状态 |
+| --- | --- |
+| npm 发包 / GitHub Release | 未授权 |
+| Claude 或多 Agent 支持 | 超出 V1 |
+| 敌对同用户进程硬隔离 | 明确非目标 |
+| 数据库、守护进程、托管服务、插件平台 | 明确非目标 |
+
+## 完整使用说明
+
+> 请从本仓库源码构建使用。目前**没有**已发布的 npm 包。
+
+### 0. 前置条件
+
+- Node.js **≥ 22.20**
+- 目标项目是普通 **Git** 仓库
+- 可选：Codex CLI/TUI（用于安装并信任项目 Hooks）
+
+### 1. 构建 CLI（只需一次）
 
 ```bash
-# 固定一个项目目标
+git clone https://github.com/t01089572455/oh-no-codex.git
+cd oh-no-codex
+npm ci
+npm run build
+```
+
+不全局安装时：
+
+```bash
+node dist/cli.js --help
+# 在其他仓库里：
+node /path/to/oh-no-codex/dist/cli.js <command>
+```
+
+可选本地链接：
+
+```bash
+npm link
+# 然后在业务项目里：
+ohno --help
+```
+
+### 2. 初始化业务项目
+
+```bash
+cd /path/to/your-git-project
 ohno init --goal "让草稿保存可靠"
+```
 
-# 提议保存在 .ohno/review-plan.json 中的有序计划
+会创建/更新：
+
+| 路径 | 作用 |
+| --- | --- |
+| `.ohno/state.json` | 唯一当前运行时权威 |
+| `.ohno/truth.json` | Owner 维护的规范文档清单 |
+
+`init` 禁止静默重复初始化。目标变更走需求变更闭环，不要再 `init` 一次。
+
+### 3. 提议并接受线性计划
+
+编写评审文件（例如 `.ohno/review-plan.json`）：
+
+```json
+{
+  "cursor": 0,
+  "ordered_tasks": [
+    {
+      "id": "draft-persistence",
+      "title": "证明草稿刷新后仍在",
+      "goal": "用户刷新后仍能看到草稿",
+      "status": "FROZEN",
+      "expected_behavior": "保存后的草稿在刷新页面后仍然存在",
+      "test_command": "node --test test/draft-persistence.test.mjs",
+      "stop_condition": "黑盒通过后立即停止",
+      "allowed_files": ["src/draft/**", "test/draft-persistence.test.mjs"],
+      "time_budget_minutes": 45
+    },
+    {
+      "id": "polish-copy",
+      "title": "润色空状态文案",
+      "goal": "空状态说清楚",
+      "status": "OUTLINE"
+    }
+  ]
+}
+```
+
+规则：
+
+- **cursor** 任务必须是 `FROZEN`（预期行为、精确测试、文件范围、停止条件、预算）
+- 后续任务可以是 `OUTLINE`（只需 id + 标题 + 目标）
+- cursor 指向 `OUTLINE` 时不能启动，唯一下一步是 `FREEZE_TASK:<id>`
+
+```bash
 ohno plan propose --file .ohno/review-plan.json
-
-# 只接受 proposal 输出的精确值
+# 原样复制输出中的精确值：
 ohno plan accept --revision <PLAN_REVISION> --diff <DIFF_DIGEST>
+```
 
-# 只启动 ordered_tasks[cursor]，调用者不能覆盖任务合同
+接受只记录 `LOCAL_REVIEW_RECORDED`（本地评审证据），**不**声称 Owner 身份或
+生产授权。
+
+### 4. 启动 cursor 任务
+
+```bash
 ohno task start
+```
 
-# 让证据决定是否完成，并让任何新 Session 一条命令恢复现场
+- 不能传 `--test` / `--files` / 自由 next：只激活冻结合同
+- 已有活跃任务时二次启动会失败并保持原状态字节
+- 文档同步 pending 时也会阻止启动
+
+### 5. 实现后用精确黑盒验收
+
+在 `allowed_files` 范围内改代码，然后：
+
+```bash
+ohno verify
+```
+
+| 结果 | 含义 |
+| --- | --- |
+| 非零 / 超时 / 未知 | 任务仍为 **ACTIVE**，修好再验 |
+| 零退出 + 作用域内容未变 | **PASS** 收据，cursor 前进一格 |
+| 测试过程中 HEAD 变化 | **UNKNOWN**（不是 PASS） |
+| 之后普通 commit、作用域未变 | 证明仍为 **FRESH** |
+| 合同 / 计划 / 作用域文件变化 | 证明变为 **STALE** |
+
+Codex 可选完成标记（仅在真实 PASS 后）：
+
+```text
+OHNO_COMPLETE:<active-task-id>
+```
+
+### 6. 任意新 Session 恢复现场
+
+```bash
+ohno status          # 人类可读
+ohno status --json   # 机器可读 read model
+ohno resume          # 有界摘要，给新 Session / 压缩后使用
+ohno next            # 只输出计划推导的唯一下一步
+```
+
+常见 next：`START_TASK:<id>`、`FREEZE_TASK:<id>`、
+`SYNC_GOVERNING_DOCUMENTS`、`PROPOSE_PLAN`、`PROJECT_COMPLETE`。
+
+### 7. 需求变更（Truth + 精确 diff）
+
+Owner 改需求时：
+
+```bash
+ohno change begin --summary "Owner 修订了验收表述" --concerns docs
+# 按提示修改规范文档与替换计划
+ohno change diff
+ohno change accept --change <CHANGE_ID> --diff <DISPLAYED_DIGEST>
+```
+
+pending 期间唯一下一步是 `SYNC_GOVERNING_DOCUMENTS`；受支持的写 Hook 会阻止
+无关实现工作。
+
+### 8. 安装合作式 Hooks
+
+在业务项目中：
+
+```bash
+ohno install
+ohno hooks status --json
+```
+
+| Hook | 职责 |
+| --- | --- |
+| SessionStart / PostCompact | 注入目标、任务、证据、阻塞、下一步 |
+| PreToolUse | 无合同或超范围时拒绝受支持写操作 |
+| Stop | 要求精确 `OHNO_COMPLETE:<id>` + 新鲜 PASS |
+| Git pre-commit | 拒绝超范围或过期证明的提交 |
+
+然后在 Codex 里审查并信任项目 Hooks。Hooks 是**合作型护栏**，不是敌对安全
+边界；普通 Git 仍可用 `--no-verify` 绕过。
+
+### 9. 打开驾驶舱
+
+```bash
+ohno cockpit
+# 打印：Cockpit: http://127.0.0.1:<port>/
+```
+
+用浏览器打开该 loopback 地址。玻璃态仪表盘**只读**，并与 `status --json`
+使用同一 read model（没有第二套权威）。
+
+### 端到端速查
+
+```bash
+ohno init --goal "…"
+# 编辑 .ohno/review-plan.json
+ohno plan propose --file .ohno/review-plan.json
+ohno plan accept --revision … --diff …
+ohno task start
+# 在 allowed_files 内实现
 ohno verify
 ohno resume
 ohno next
+ohno cockpit
 ```
 
 ## CLI 内核，薄 Hooks
@@ -156,46 +364,41 @@ V1 不做数据库、后台守护进程、托管服务、策略语言、插件�
 
 ## Oh No 驾驶舱
 
-驾驶舱已经实现为本地、仅 GET 的只读界面，和 `ohno status --json`
-读取同一个 read model；它没有自己的状态、缓存、数据库或写接口。最大的
-视觉区域只回答两个问题：
+驾驶舱是本地、仅 GET 的**玻璃态任务仪表盘**，与 `ohno status --json` 共用
+同一 read model；没有自有状态、缓存、数据库或写接口。顶栏导航包含品牌、
+当前阶段、总进度与刷新。面板回答：
 
-1. **现在在做什么？**
-2. **唯一下一步是什么？**
-
-> [!NOTE]
-> **功能为 `LOCAL_PASS`，浏览器验收不可用。** 运行中的 HTTP 界面已经通过
-> A13，但必需的应用内 Browser 拒绝了已授权的 loopback 地址。所以下面的
-> 概念面板不冒充 A14 截图，P06 仍是 `NOT_MEASURED`。
+1. **现在在做什么？**（NOW、任务环、校准轨）
+2. **唯一下一步是什么？**（NEXT）
+3. **证明是否新鲜、有没有阻塞？**（PROOF、DRIFT / ATTENTION）
 
 ```bash
 ohno cockpit
 ```
 
 ```text
-+-- OH NO 驾驶舱 ------------------------------ 本地 / 只读 --+
-| 当前                                                             |
-| draft-persistence                                  进行中  42m   |
-| 保存后的草稿在刷新页面后仍然存在                               |
-|                                                                  |
-| 证据                          | 漂移状态                          |
-| UNKNOWN                       | CLEAN                             |
-| npm test -- draft-persistence | 规范文档已对齐                    |
-|                                                                  |
-| 唯一下一步                                                       |
-| 运行指定的黑盒测试                                               |
-+------------------------------------------------------------------+
++-- OH NO, CODEX! ---- 当前阶段 ---- 总进度 ---- REFRESH --+
+| NOW: 当前任务         |   任务环 PULSE        | PROOF     |
+| 预期用户行为          |   cursor / 任务数     | GUARDRAIL |
+| NEXT: 唯一下一步      |   CALIBRATION RAIL    | 真实计数  |
+| ATTENTION / DRIFT     |                       |           |
+| RECENT 已完成清单     |                       |           |
++-- COMPLETION VECTOR -------------------------------------+
 ```
 
-冻结配色严格跟随产品语义：
+UI 诚实规则：
+
+- 进度只等于 `cursor / task_count`
+- 不发明“信任天气”百分比或假指标
+- 状态不可用/损坏时显示明确离线门
 
 | 颜色 | 用途 |
 | --- | --- |
-| 暖奶油色 `#FFF1CE` | 仪表表面 |
-| 炭黑色 `#202624` | 结构与文字 |
-| 珊瑚红 `#FF4B35` | 阻塞或过期 |
-| 琥珀色 `#F4AA2A` | 当前进行中 |
-| 薄荷绿 `#74D6B1` | 只表示新鲜 PASS |
+| 淡紫字段 `#F0EDF8` | 玻璃仪表盘底色 |
+| 紫 / 蓝强调色 | 导航与进行中脉冲 |
+| 青绿 / 薄荷 | 新鲜 / 通畅 |
+| 琥珀 | 漂移 / 注意 |
+| 红色 | 阻塞 / 失败 |
 
 ## Codex 十八宗罪
 

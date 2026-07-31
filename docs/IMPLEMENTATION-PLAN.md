@@ -499,13 +499,29 @@ Public status is therefore:
 > local black-box and disposable-project trials; no hostile-agent, production
 > authority, package publication, or universal speed claim.
 
+## Cockpit glass visual refresh (2026-07-31)
+
+Owner authorized a Cockpit UI refresh against
+`docs/ui设计参考图/vibetether-cockpit-final-oh-no-codex-lockup.png`:
+
+- Kimi (`kimi-code/kimi-for-coding`) reproduced the glass dashboard HTML shell
+  in an isolated workspace (`C:\tmp\ohno-kimi-glass-cockpit-20260731`); CSS/JS
+  completion and product-honest data binding were finished in-repo.
+- Top navigation now carries brand, current stage, overall progress, profile
+  chip, and Refresh.
+- Panels map to real `/api/state` fields only (NOW/NEXT/ATTENTION+DRIFT/PROOF/
+  RECENT/MISSION ring/CALIBRATION RAIL). No invented trust percentages.
+- Owning check: `node --test test/blackbox/cockpit.test.mjs` exited 0 (5/5).
+- Functional A13 equality with `status --json` remains enforced by the same
+  black box. Design contract retitled **Glass Mission Pulse**.
+
 ## Exact current action
 
 There is exactly one. **Unique next:**
 
-> **Stop.** V1 Tasks 1–7 and Correction 2 are complete on the recorded evidence.
-> Do not start Task 8, publish npm, create a release, or broaden product scope
-> without new Owner authorization.
+> **Optional Owner browser pass** on the glass Cockpit (`ohno cockpit`) for
+> visual sign-off. V1 harness behavior remains `V1_TRIAL_ACCEPTED`. Do not
+> publish npm or create a release without new Owner authorization.
 
 ## Shared implementation rules
 

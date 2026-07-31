@@ -26,7 +26,7 @@
 
 <p align="center">
   <a href="https://github.com/t01089572455/oh-no-codex/blob/main/docs/IMPLEMENTATION-PLAN.md">
-    <img alt="Status: V1 changes required" src="https://img.shields.io/badge/status-V1_changes_required-FF4B35?style=for-the-badge&labelColor=202624">
+    <img alt="Status: V1 trial accepted" src="https://img.shields.io/badge/status-V1_TRIAL_ACCEPTED-74D6B1?style=for-the-badge&labelColor=202624">
   </a>
   <img alt="Codex only" src="https://img.shields.io/badge/harness-Codex_only-FF4B35?style=for-the-badge&labelColor=202624">
   <img alt="Node.js 22.20 or newer" src="https://img.shields.io/badge/Node.js-%E2%89%A522.20-74D6B1?style=for-the-badge&labelColor=202624">
@@ -37,6 +37,10 @@
 
 <p align="center">
   <a href="#why">Why</a>
+  ·
+  <a href="#what-is-implemented">Features</a>
+  ·
+  <a href="#complete-usage-guide">Usage</a>
   ·
   <a href="#the-four-loops">Four loops</a>
   ·
@@ -95,27 +99,233 @@ The next action is a locator, not fresh authorization.
 | **Change** | Requirements and governing documents diverging | Select required documents from Owner-maintained Truth, show the exact diff, and block coding until review. |
 | **Resume** | New sessions rebuilding state from prose | Return the goal, current task, proof, blocker, and one next action from one atomic state file. |
 
-## Thirty-second contract preview
+## What is implemented
 
-> These commands are implemented from source. No npm release exists.
+**V1 harness scope is complete** as `V1_TRIAL_ACCEPTED` on named local black-box
+and disposable-project evidence. That does **not** mean npm publication,
+hostile-agent security, or a universal speed guarantee.
+
+| Area | Commands / surfaces | Status |
+| --- | --- | --- |
+| Project bootstrap | `ohno init --goal …` | Done |
+| Linear plan review | `ohno plan propose` · `ohno plan accept` | Done |
+| Bounded task start | `ohno task start` (no free-form contract args) | Done |
+| Evidence-bound finish | `ohno verify` | Done |
+| Instant recovery | `ohno status` · `ohno resume` · `ohno next` | Done |
+| Requirement change | `ohno change begin` · `diff` · `accept` | Done |
+| Codex cooperative hooks | SessionStart / PostCompact / PreToolUse / Stop | Done |
+| Git pre-commit guard | `ohno install` · `ohno git pre-commit` | Done |
+| Hook introspection | `ohno hooks status --json` · `ohno hook` | Done |
+| Read-only Cockpit | `ohno cockpit` (glass mission dashboard) | Done |
+| Atomic state authority | `.ohno/state.json` sole runtime authority | Done |
+| Truth applicability | `.ohno/truth.json` Owner list | Done |
+
+**Explicitly not done / not authorized**
+
+| Item | Status |
+| --- | --- |
+| npm package publish / GitHub Release | Not authorized |
+| Claude or multi-agent support | Out of V1 scope |
+| Hostile same-user containment | Explicit non-goal |
+| Database, daemon, hosted service, plugin platform | Explicit non-goals |
+
+## Complete usage guide
+
+> Install from this repository source. No published npm release exists yet.
+
+### 0. Prerequisites
+
+- Node.js **≥ 22.20**
+- An ordinary **Git** repository (the project you want to harness)
+- Optional: Codex CLI/TUI for hook integration
+
+### 1. Build the CLI (once)
 
 ```bash
-# Anchor one project goal
+git clone https://github.com/t01089572455/oh-no-codex.git
+cd oh-no-codex
+npm ci
+npm run build
+```
+
+Run it without a global install:
+
+```bash
+node dist/cli.js --help
+# or, from another repo:
+node /path/to/oh-no-codex/dist/cli.js <command>
+```
+
+Optional local bin link:
+
+```bash
+npm link
+# then, inside your project:
+ohno --help
+```
+
+### 2. Initialize a project
+
+```bash
+cd /path/to/your-git-project
 ohno init --goal "Ship reliable draft persistence"
+```
 
-# Propose a reviewed ordered plan stored in .ohno/review-plan.json
+Creates / updates:
+
+| Path | Role |
+| --- | --- |
+| `.ohno/state.json` | Sole current runtime authority |
+| `.ohno/truth.json` | Owner-maintained governing-document list |
+
+`init` refuses silent re-initialization. Goal changes go through the
+requirement-change loop, not another `init`.
+
+### 3. Propose and accept a linear plan
+
+Write a review file (example: `.ohno/review-plan.json`):
+
+```json
+{
+  "cursor": 0,
+  "ordered_tasks": [
+    {
+      "id": "draft-persistence",
+      "title": "Prove draft survives reload",
+      "goal": "Users keep their draft after refresh",
+      "status": "FROZEN",
+      "expected_behavior": "A saved draft survives page reload",
+      "test_command": "node --test test/draft-persistence.test.mjs",
+      "stop_condition": "Stop after the draft black box passes",
+      "allowed_files": ["src/draft/**", "test/draft-persistence.test.mjs"],
+      "time_budget_minutes": 45
+    },
+    {
+      "id": "polish-copy",
+      "title": "Polish empty-state copy",
+      "goal": "Empty state is clear",
+      "status": "OUTLINE"
+    }
+  ]
+}
+```
+
+Rules:
+
+- The **cursor** task must be `FROZEN` (behavior, exact test, files, stop, budget).
+- Later tasks may be `OUTLINE` (id + title + goal only).
+- An `OUTLINE` at the cursor cannot start; next action is `FREEZE_TASK:<id>`.
+
+```bash
 ohno plan propose --file .ohno/review-plan.json
-
-# Accept only the exact values printed by the proposal
+# copy the exact printed values:
 ohno plan accept --revision <PLAN_REVISION> --diff <DIFF_DIGEST>
+```
 
-# Start only ordered_tasks[cursor]; callers cannot override its contract
+Acceptance records only `LOCAL_REVIEW_RECORDED` (local evidence), **not**
+Owner identity or production authorization.
+
+### 4. Start the cursor task
+
+```bash
 ohno task start
+```
 
-# Let evidence decide, then recover state in any new session
+- No `--test` / `--files` / free-form next args: only the frozen cursor contract activates.
+- Second start while active fails closed and preserves state bytes.
+- Pending document sync also blocks start.
+
+### 5. Implement, then verify with the exact black box
+
+Do the work inside `allowed_files`. When ready:
+
+```bash
+ohno verify
+```
+
+| Result | Meaning |
+| --- | --- |
+| non-zero / timeout / unknown | Task stays **ACTIVE**; fix and re-verify |
+| zero + stable subject | **PASS** receipt; cursor advances once |
+| HEAD changes during the test | **UNKNOWN** (not PASS) |
+| Later ordinary commit, subject unchanged | Proof stays **FRESH** |
+| Contract / plan / scoped files change | Proof becomes **STALE** |
+
+Optional cooperative Stop marker for Codex (only after a real PASS):
+
+```text
+OHNO_COMPLETE:<active-task-id>
+```
+
+### 6. Recover state in any new session
+
+```bash
+ohno status          # human-readable
+ohno status --json   # machine-readable read model
+ohno resume          # bounded capsule for a new session / post-compact
+ohno next            # one plan-derived next action only
+```
+
+Typical next actions: `START_TASK:<id>`, `FREEZE_TASK:<id>`,
+`SYNC_GOVERNING_DOCUMENTS`, `PROPOSE_PLAN`, `PROJECT_COMPLETE`.
+
+### 7. Requirement change (Truth + exact diff)
+
+When the Owner changes requirements:
+
+```bash
+ohno change begin --summary "Owner revised acceptance wording" --concerns docs
+# edit governing docs + replacement plan as shown
+ohno change diff
+ohno change accept --change <CHANGE_ID> --diff <DISPLAYED_DIGEST>
+```
+
+While pending, the only safe next action is `SYNC_GOVERNING_DOCUMENTS`.
+Supported mutation hooks deny unrelated implementation work.
+
+### 8. Install cooperative hooks
+
+Inside the project:
+
+```bash
+ohno install
+ohno hooks status --json
+```
+
+| Hook | Job |
+| --- | --- |
+| SessionStart / PostCompact | Inject goal, task, proof, blocker, next |
+| PreToolUse | Deny supported writes without contract / out of scope |
+| Stop | Require exact `OHNO_COMPLETE:<id>` + fresh proof |
+| Git pre-commit | Reject out-of-scope or stale proof commits |
+
+Then review and trust the project hooks inside Codex. Hooks are
+**cooperative guardrails**, not hostile-agent containment. Ordinary Git can
+still use `--no-verify`.
+
+### 9. Open the Cockpit
+
+```bash
+ohno cockpit
+# prints: Cockpit: http://127.0.0.1:<port>/
+```
+
+Open that loopback URL in a browser. The glass dashboard is **read-only** and
+always projects the same model as `status --json` (no second authority).
+
+### End-to-end cheat sheet
+
+```bash
+ohno init --goal "…"
+# edit .ohno/review-plan.json
+ohno plan propose --file .ohno/review-plan.json
+ohno plan accept --revision … --diff …
+ohno task start
+# implement within allowed_files
 ohno verify
 ohno resume
 ohno next
+ohno cockpit
 ```
 
 ## CLI core, thin hooks
@@ -163,47 +373,42 @@ abstraction earns its place only when a failing public black-box test needs it.
 
 ## Oh No Cockpit
 
-The Cockpit is implemented as a local, GET-only projection of the same read
-model as `ohno status --json`; it owns no state, cache, database, or write
-route. Its largest area answers two questions:
+The Cockpit is a local, GET-only **glass mission dashboard** that projects the
+same read model as `ohno status --json`. It owns no state, cache, database, or
+write route. Top navigation carries brand, current stage, overall progress,
+and refresh. Instruments answer:
 
-1. **What is happening now?**
-2. **What is the one next action?**
-
-> [!NOTE]
-> **Functional `LOCAL_PASS`, browser acceptance unavailable.** The running
-> HTTP surface passes A13, but the required in-app Browser rejected the
-> authorized loopback URL. This conceptual panel is therefore not presented as
-> an A14 screenshot, and P06 remains `NOT_MEASURED`.
+1. **What is happening now?** (`NOW`, mission pulse, calibration rail)
+2. **What is the one next action?** (`NEXT`)
+3. **Is proof fresh, and is anything blocking?** (`PROOF`, `DRIFT` / ATTENTION)
 
 ```bash
 ohno cockpit
 ```
 
 ```text
-+-- OH NO COCKPIT -------------------------- LOCAL / READ ONLY --+
-| NOW                                                             |
-| draft-persistence                                  ACTIVE  42m   |
-| A saved draft survives page reload                              |
-|                                                                  |
-| PROOF                         | DRIFT                             |
-| UNKNOWN                       | CLEAN                             |
-| npm test -- draft-persistence | governing documents aligned      |
-|                                                                  |
-| NEXT                                                             |
-| Run the exact black-box test                                     |
-+------------------------------------------------------------------+
++-- OH NO, CODEX! ------ CURRENT STAGE ------ PROGRESS ------ REFRESH --+
+| NOW: draft-persistence     |   MISSION PULSE (ring)   | PROOF: FRESH  |
+| expected user behavior     |   cursor / task count    | GUARDRAIL     |
+| NEXT: START_TASK:…         |   CALIBRATION RAIL       | counts only   |
+| ATTENTION / DRIFT          |                          | from state    |
+| RECENT completed ledger    |                          |               |
++-- COMPLETION VECTOR --------------------------------------------------+
 ```
 
-The locked palette follows product meaning:
+Honesty rules for the UI:
+
+- progress = `cursor / task_count` only
+- no invented “trust weather” percentages or fake metrics
+- unavailable / corrupt state shows an explicit offline gate
 
 | Color | Role |
 | --- | --- |
-| Warm cream `#FFF1CE` | instrument surface |
-| Charcoal `#202624` | structure and type |
-| Coral red `#FF4B35` | blocked or stale |
-| Amber `#F4AA2A` | active work |
-| Mint `#74D6B1` | fresh PASS only |
+| Soft lavender field `#F0EDF8` | glass dashboard surface |
+| Purple / blue accents | navigation and active pulse |
+| Teal / mint | fresh / clear |
+| Amber | drift / attention |
+| Red | blocked / fail |
 
 ## The eighteen sins
 
