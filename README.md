@@ -6,558 +6,252 @@
 
 </div>
 
-
 <p align="center">
   <img
     src="./assets/brand/oh-no-codex-lockup.png"
-    width="900"
-    alt="Oh No, Codex! — a mischievous blue coding plush is stopped from continuing by a clear red cross"
+    width="920"
+    alt="Oh No, Codex! — a mischievous blue coding plush stopped mid-run by a clear red cross"
   >
 </p>
 
 <h1 align="center">Oh No, Codex!</h1>
 
 <p align="center">
-  <strong>A fast, local anti-drift harness for Codex vibe coding.</strong>
+  <strong>Codex can write brilliant code and still wreck the project.</strong><br>
+  This harness makes it finish the <em>right</em> thing — then stop.
 </p>
 
 <p align="center">
-  One goal. One bounded task. One black-box test. Then stop.
+  <code>one goal</code> · <code>one bounded task</code> · <code>one black-box test</code> · <code>then stop</code>
 </p>
 
 <p align="center">
-  <a href="https://github.com/t01089572455/oh-no-codex/blob/main/docs/IMPLEMENTATION-PLAN.md">
-    <img alt="Status: V1 trial accepted" src="https://img.shields.io/badge/status-V1_TRIAL_ACCEPTED-74D6B1?style=for-the-badge&labelColor=202624">
-  </a>
+  <a href="https://www.npmjs.com/package/oh-no-codex"><img alt="npm" src="https://img.shields.io/npm/v/oh-no-codex?style=for-the-badge&color=74D6B1&labelColor=202624"></a>
+  <img alt="Status" src="https://img.shields.io/badge/status-V1_TRIAL_ACCEPTED-74D6B1?style=for-the-badge&labelColor=202624">
   <img alt="Codex only" src="https://img.shields.io/badge/harness-Codex_only-FF4B35?style=for-the-badge&labelColor=202624">
-  <img alt="Node.js 22.20 or newer" src="https://img.shields.io/badge/Node.js-%E2%89%A522.20-74D6B1?style=for-the-badge&labelColor=202624">
-  <a href="./LICENSE">
-    <img alt="MIT License" src="https://img.shields.io/badge/license-MIT-FFF1CE?style=for-the-badge&labelColor=202624">
-  </a>
+  <a href="./LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-FFF1CE?style=for-the-badge&labelColor=202624"></a>
 </p>
 
 <p align="center">
-  <a href="#why">Why</a>
-  ·
-  <a href="#what-is-implemented">Features</a>
-  ·
-  <a href="#complete-usage-guide">Usage</a>
-  ·
-  <a href="#the-four-loops">Four loops</a>
-  ·
-  <a href="#oh-no-cockpit">Cockpit</a>
-  ·
-  <a href="#the-eighteen-sins">18 sins</a>
-  ·
-  <a href="#project-contracts">Docs</a>
+  <a href="#the-story">Story</a> ·
+  <a href="#the-eighteen-sins">18 sins</a> ·
+  <a href="#what-oh-no-actually-does">What it does</a> ·
+  <a href="#60-second-start">Start</a> ·
+  <a href="#daily-path">Daily path</a> ·
+  <a href="#cockpit">Cockpit</a> ·
+  <a href="#evidence-not-vibes">Evidence</a>
 </p>
 
-> [!IMPORTANT]
-> **V1 is `V1_TRIAL_ACCEPTED`.** Daily path: **install + `init` + `install`
-> hooks**, then talk to Codex — hooks inject resume, scope writes, and refresh
-> projections; the AGENTS managed block (and optional `skills/oh-no-control`)
-> tells the Agent when to run `task start` / `verify` / `change` / notes.
-> Evidence covers CLI loops, hooks, Cockpit, projectors, preferences, doctor,
-> A14/P01–P06. Ledger: Tasks 1–7, Corrections 1–2, essence ports E1–E12.
-> This is **not** hostile-agent containment or auto plan-accept / fake verify.
-> Install: `npm install -g oh-no-codex`.
+---
 
-## Why
+## The story
 
-Codex can write good code and still let a project drift:
+You open Codex on a real product. You say something small:
 
-- a small request quietly becomes a new architecture;
-- coding starts before the expected user behavior is clear;
-- internal tests pass while the user-visible behavior remains broken;
-- a requirement changes, but the governing documents do not;
-- “next” is mistaken for permission to keep working;
-- the next session spends an hour reconstructing the truth from chat.
+> “Ship reliable draft save.”
 
-Oh No, Codex! puts a lightweight harness around each task boundary. Before a
-supported write, it asks for one bounded task and one minimal, user-visible
-black-box test. At the finish line, fresh evidence—not agent prose—decides
-whether the task stops.
+Three hours later you have a provider abstraction, a plugin slot, a second
+state file, and a cheerful summary that claims *done* — while the draft still
+dies on refresh.
 
-It is a **cooperative project harness** for local Codex work. It is not an AI
-security sandbox, an enterprise governance platform, or a promise that a
-hostile process cannot bypass its owner.
+That is not “the model is dumb.”  
+**Strong agents drift on long work.** They reinterpret you, enlarge the job,
+keep going after acceptance, treat chat summaries as truth, and green-light
+themselves with tests that never touch what the user sees.
 
-## The four loops
+We audited that failure mode until it had a name — **Codex’s eighteen sins** —
+and built the smallest harness that fights them without becoming a second
+governance OS.
 
-```mermaid
-flowchart LR
-    A["Owner goal"] --> B["One bounded task"]
-    B --> C["One user-visible black box"]
-    C --> D{"Fresh PASS?"}
-    D -- "FAIL / UNKNOWN" --> B
-    D -- "Yes" --> E["Stop"]
-    E --> F["One plan-derived next action"]
-```
+> **Oh No, Codex!** is the moment the plush reaches for “just one more refactor”
+> and a red cross says: **prove it, or stop.**
 
-The next action is a locator, not fresh authorization.
+<p align="center">
+  <img
+    src="./assets/brand/oh-no-loop.png"
+    width="920"
+    alt="One goal → one bounded task → one black box → then stop"
+  >
+</p>
 
-| Loop | Drift it prevents | Smallest useful behavior |
-| --- | --- | --- |
-| **Start** | Coding before the task is understood | Activate only the frozen cursor task: expected behavior, one test, allowed files, time budget, and stop condition. |
-| **Finish** | “Looks done” completion claims | Run the exact black box and bind PASS to the current task and Git subject. |
-| **Change** | Requirements and governing documents diverging | Select required documents from Owner-maintained Truth, show the exact diff, and block coding until review. |
-| **Resume** | New sessions rebuilding state from prose | Return the goal, current task, proof, blocker, and one next action from one atomic state file. |
-
-## What is implemented
-
-**V1 harness scope is complete** as `V1_TRIAL_ACCEPTED` on named local black-box
-and disposable-project evidence. npm package `oh-no-codex@0.1.1` is public on
-registry.npmjs.org. That still does **not** mean hostile-agent security or a
-universal speed guarantee.
-
-| Area | Commands / surfaces | Status |
-| --- | --- | --- |
-| Project bootstrap | `ohno init --goal …` | Done |
-| Linear plan review | `ohno plan propose` · `ohno plan accept` | Done |
-| Bounded task start | `ohno task start` (no free-form contract args) | Done |
-| Evidence-bound finish | `ohno verify` | Done |
-| Instant recovery | `ohno status` · `ohno resume` · `ohno next` | Done |
-| Requirement change | `ohno change begin` · `diff` · `accept` | Done |
-| Codex cooperative hooks | SessionStart / PostCompact / PreToolUse / Stop | Done |
-| Git pre-commit guard | `ohno install` · `ohno git pre-commit` | Done |
-| Hook introspection | `ohno hooks status --json` · `ohno hook` | Done |
-| Read-only Cockpit | `ohno cockpit` (glass mission dashboard + plan board) | Done |
-| Plan board projection | `status --json` field `plan_board` (DONE/HALF/READY/OUTLINE…) | Done |
-| Generated progress + AGENTS block | `ohno projectors refresh` → `.ohno/PROGRESS.md` + managed AGENTS section | Done |
-| Owner requirements log | `ohno requirements note/show` → `.ohno/REQUIREMENTS.md` | Done |
-| Working method preferences | `ohno preferences show/set/reset` → `.ohno/preferences.json` (defaults: research-first, reuse OSS, frontend adapt-not-invent) | Done |
-| Conversation protocol in AGENTS | Managed block maps 开工/做完/改需求 → `task start` / `verify` / `change` | Done |
-| Optional control skill copy | `skills/oh-no-control/SKILL.md` (static; AGENTS live capsule wins) | Done |
-| Doctor health surface | `ohno doctor [--json]` | Done |
-| Handoff identity | resume `HANDOFF_*` path/branch/head/dirty | Done |
-| Atomic state authority | `.ohno/state.json` sole runtime authority | Done |
-| Truth applicability | `.ohno/truth.json` Owner list | Done |
-
-**Explicitly not done / not authorized**
-
-| Item | Status |
-| --- | --- |
-| Hostile multi-tenant SaaS hosting | Out of scope |
-| Claude or multi-agent support | Out of V1 scope |
-| Hostile same-user containment | Explicit non-goal |
-| Database, daemon, hosted service, plugin platform | Explicit non-goals |
-
-## Complete usage guide
-
-> Preferred: install from npm. Source build remains supported.
-
-### Daily path (what you actually do)
-
-Most days you should **not** memorize the full CLI.
-
-```text
-1. Once:  npm i -g oh-no-codex
-2. Once:  cd project && ohno init --goal "…" && ohno install
-3. Daily: talk to Codex in ordinary language
-4. Optional: ohno cockpit | doctor | preferences | requirements note
-```
-
-| Layer | Who | What |
-| --- | --- | --- |
-| **Background** | Hooks after `ohno install` | Resume capsule on session start/compact; cooperative write scope; Stop completion marker; projector refresh |
-| **Conversation protocol** | Codex, via `AGENTS.md` managed block | Runs `task start` / `verify` / `change` / `requirements note` when you mean those intents |
-| **You edit anytime** | You | `.ohno/preferences.json`, REQUIREMENTS notes, prose outside the AGENTS managed block |
-
-**Never automated:** silent plan accept, inventing a verify PASS, treating `next` as new permission.
-
-Optional skill copy of the protocol (same rules as the managed block):  
-[`skills/oh-no-control/SKILL.md`](./skills/oh-no-control/SKILL.md) — copy into your Codex skills folder if you like; the project AGENTS live capsule still wins for current state.
-
-### 0. Prerequisites
-
-- Node.js **≥ 22.20**
-- An ordinary **Git** repository (the project you want to harness)
-- Optional: Codex CLI/TUI for hook integration
-
-### 1. Install the CLI
-
-```bash
-npm install -g oh-no-codex
-ohno --help
-```
-
-Or without a global install:
-
-```bash
-npx oh-no-codex --help
-```
-
-From source (development):
-
-```bash
-git clone https://github.com/t01089572455/oh-no-codex.git
-cd oh-no-codex
-npm ci
-npm run build
-node dist/cli.js --help
-```
-
-### 2. Initialize a project (and install hooks)
-
-```bash
-cd /path/to/your-git-project
-ohno init --goal "Ship reliable draft persistence"
-ohno install
-```
-
-Creates / updates:
-
-| Path | Role |
-| --- | --- |
-| `.ohno/state.json` | Sole current runtime authority |
-| `.ohno/truth.json` | Owner-maintained governing-document list |
-| `.ohno/preferences.json` | Working-method defaults (research / reuse OSS / frontend adapt) |
-| `.ohno/REQUIREMENTS.md` | Owner notes + live projection |
-| `AGENTS.md` | Live capsule + **conversation protocol** (managed block) |
-| `.ohno/PROGRESS.md` | Generated progress board (best-effort on init) |
-| `.codex/hooks.json` | Cooperative SessionStart / PostCompact / PreToolUse / Stop |
-
-`init` refuses silent re-initialization. Goal changes go through the
-requirement-change loop, not another `init`.
-
-### 3. Propose and accept a linear plan
-
-> The Agent can prepare the plan file from your words; you still review before
-> `plan accept`. Full CLI below is for scripts and power users.
-
-Write a review file (example: `.ohno/review-plan.json`):
-
-```json
-{
-  "cursor": 0,
-  "ordered_tasks": [
-    {
-      "id": "draft-persistence",
-      "title": "Prove draft survives reload",
-      "goal": "Users keep their draft after refresh",
-      "status": "FROZEN",
-      "expected_behavior": "A saved draft survives page reload",
-      "test_command": "node --test test/draft-persistence.test.mjs",
-      "stop_condition": "Stop after the draft black box passes",
-      "allowed_files": ["src/draft/**", "test/draft-persistence.test.mjs"],
-      "time_budget_minutes": 45
-    },
-    {
-      "id": "polish-copy",
-      "title": "Polish empty-state copy",
-      "goal": "Empty state is clear",
-      "status": "OUTLINE"
-    }
-  ]
-}
-```
-
-Rules:
-
-- The **cursor** task must be `FROZEN` (behavior, exact test, files, stop, budget).
-- Later tasks may be `OUTLINE` (id + title + goal only).
-- An `OUTLINE` at the cursor cannot start; next action is `FREEZE_TASK:<id>`.
-
-```bash
-ohno plan propose --file .ohno/review-plan.json
-# copy the exact printed values:
-ohno plan accept --revision <PLAN_REVISION> --diff <DIFF_DIGEST>
-```
-
-Acceptance records only `LOCAL_REVIEW_RECORDED` (local evidence), **not**
-Owner identity or production authorization.
-
-### 4. Start the cursor task
-
-```bash
-ohno task start
-```
-
-- No `--test` / `--files` / free-form next args: only the frozen cursor contract activates.
-- Second start while active fails closed and preserves state bytes.
-- Pending document sync also blocks start.
-
-### 5. Implement, then verify with the exact black box
-
-Do the work inside `allowed_files`. When ready:
-
-```bash
-ohno verify
-```
-
-| Result | Meaning |
-| --- | --- |
-| non-zero / timeout / unknown | Task stays **ACTIVE**; fix and re-verify |
-| zero + stable subject | **PASS** receipt; cursor advances once |
-| HEAD changes during the test | **UNKNOWN** (not PASS) |
-| Later ordinary commit, subject unchanged | Proof stays **FRESH** |
-| Contract / plan / scoped files change | Proof becomes **STALE** |
-
-Optional cooperative Stop marker for Codex (only after a real PASS):
-
-```text
-OHNO_COMPLETE:<active-task-id>
-```
-
-### 6. Recover state in any new session
-
-```bash
-ohno status          # human-readable
-ohno status --json   # machine-readable read model
-ohno resume          # bounded capsule for a new session / post-compact
-ohno next            # one plan-derived next action only
-```
-
-Typical next actions: `START_TASK:<id>`, `FREEZE_TASK:<id>`,
-`SYNC_GOVERNING_DOCUMENTS`, `PROPOSE_PLAN`, `PROJECT_COMPLETE`.
-
-### 7. Requirement change (Truth + exact diff)
-
-When the Owner changes requirements:
-
-```bash
-ohno change begin --summary "Owner revised acceptance wording" --concerns docs
-# edit governing docs + replacement plan as shown
-ohno change diff
-ohno change accept --change <CHANGE_ID> --diff <DISPLAYED_DIGEST>
-```
-
-While pending, the only safe next action is `SYNC_GOVERNING_DOCUMENTS`.
-Supported mutation hooks deny unrelated implementation work.
-
-### 8. Install cooperative hooks
-
-Inside the project:
-
-```bash
-ohno install
-ohno hooks status --json
-```
-
-| Hook | Job |
-| --- | --- |
-| SessionStart / PostCompact | Inject goal, task, proof, blocker, next |
-| PreToolUse | Deny supported writes without contract / out of scope |
-| Stop | Require exact `OHNO_COMPLETE:<id>` + fresh proof |
-| Git pre-commit | Reject out-of-scope or stale proof commits |
-
-Then review and trust the project hooks inside Codex. Hooks are
-**cooperative guardrails**, not hostile-agent containment. Ordinary Git can
-still use `--no-verify`.
-
-### 9. Refresh projections (progress table + AGENTS managed block)
-
-```bash
-ohno projectors refresh
-# or skip AGENTS.md:
-ohno projectors refresh --no-agents
-```
-
-Writes:
-
-| File | Meaning |
-| --- | --- |
-| `.ohno/PROGRESS.md` | Generated board/progress table (**not** authority) |
-| `.ohno/REQUIREMENTS.md` | Owner notes + live projection of goal/board/truth |
-| `.ohno/preferences.json` | Owner working-method rules (default ON: research / reuse OSS / frontend adapt) |
-| `AGENTS.md` between `<!-- ohno:managed-begin/end -->` | Live capsule for agents; owner prose outside the block is preserved |
-
-`task start`, `verify`, `plan accept`, and `change accept` also refresh
-projections best-effort.
-
-### 10. Open the Cockpit
-
-```bash
-ohno cockpit
-# prints: Cockpit: http://127.0.0.1:<port>/
-```
-
-Open that loopback URL in a browser. The glass dashboard is **read-only** and
-always projects the same model as `status --json` (no second authority). The
-**PLAN BOARD** panel lists DONE / HALF / READY / OUTLINE rows from that model.
-
-### End-to-end cheat sheet
-
-```bash
-ohno init --goal "…"
-# edit .ohno/review-plan.json
-ohno plan propose --file .ohno/review-plan.json
-ohno plan accept --revision … --diff …
-ohno task start
-# implement within allowed_files
-ohno verify
-ohno install                 # optional cooperative hooks
-ohno doctor                  # health surface
-ohno projectors refresh      # PROGRESS + REQUIREMENTS + AGENTS block
-ohno requirements note --text "Owner: ship user-visible save first"
-ohno preferences show
-ohno preferences set --id frontend_adapt_not_invent --enabled false
-ohno preferences reset
-ohno resume
-ohno next
-ohno cockpit                 # GET /api/state, ~2.5s poll
-```
-
-## CLI core, thin hooks
-
-The CLI owns the state and decisions. Hooks only bring those decisions to the
-moment Codex is about to act:
-
-| Surface | V1 job |
-| --- | --- |
-| `SessionStart` / `PostCompact` | Best-effort projector refresh, then inject the bounded resume capsule (goal, board, proof, blocker, next, handoff). |
-| `PreToolUse` | Block supported writes when the task contract is missing or the path is outside the declared scope. |
-| `Stop` | On the exact `OHNO_COMPLETE:<task-id>` marker, keep the task open unless proof is fresh and document sync is clean. Missing or paraphrased markers are not completion signals. |
-| Git `pre-commit` | Reject an out-of-scope or unverified commit. |
-
-Hooks are guardrails around cooperative Codex use—not an unbreakable security
-boundary.
-
-## One authority, several views
-
-```text
-ohno CLI -- atomic replace --> .ohno/state.json   (sole runtime authority)
-                                  |-- status / resume / next / doctor
-                                  |-- thin Codex hooks (capsule inject)
-                                  |-- Git pre-commit guard
-                                  |-- projectors → .ohno/PROGRESS.md
-                                  |               → AGENTS.md managed block
-                                  `-- read-only Cockpit ← GET /api/state (poll)
-
-.ohno/truth.json -------------> named governing documents
-```
-
-- `.ohno/state.json` is the sole current runtime authority.
-- `.ohno/truth.json` is the Owner-maintained document applicability list.
-- Hooks, receipts, terminal output, PROGRESS, AGENTS managed blocks, and
-  Cockpit are projections—not competing sources of truth.
-- Normal read paths stay bounded: no whole-repository document scan and no
-  full test suite.
-
-## Small by design
-
-V1 has one Node.js package, one `ohno` executable, one atomic state file, one
-Truth list, thin project hooks, one Git hook, and one local read-only Cockpit.
-
-It deliberately has no database, daemon, hosted service, policy language,
-plugin platform, provider framework, or multi-agent scheduler. A new
-abstraction earns its place only when a failing public black-box test needs it.
-
-## Oh No Cockpit
-
-The Cockpit is a local, GET-only **glass mission dashboard** that projects the
-same read model as `ohno status --json`. It owns no state, cache, database, or
-write route. Top navigation carries brand, current stage, overall progress,
-and refresh. Instruments answer:
-
-1. **What is happening now?** (`NOW`, mission pulse, calibration rail)
-2. **What is the one next action?** (`NEXT`)
-3. **Is proof fresh, and is anything blocking?** (`PROOF`, `DRIFT` / ATTENTION)
-
-```bash
-ohno cockpit
-```
-
-```text
-+-- OH NO, CODEX! ------ CURRENT STAGE ------ PROGRESS ------ REFRESH --+
-| NOW / NEXT / ATTENTION |  MISSION PULSE + CALIBRATION  | PROOF        |
-| RECENT completed       |  cursor / task count          | PLAN BOARD   |
-|                        |                               | Truth paths  |
-|                        |                               | Handoff id   |
-+-- COMPLETION VECTOR (poll ~2.5s from /api/state) --------------------+
-```
-
-Honesty rules for the UI:
-
-- all panels bind the same `/api/state` model as `status --json`
-- progress = `cursor / task_count` only
-- no invented “trust weather” percentages or fake metrics
-- unavailable / corrupt state shows an explicit offline gate
-- read-only: the UI never writes authority
-
-| Color | Role |
-| --- | --- |
-| Soft lavender field `#F0EDF8` | glass dashboard surface |
-| Purple / blue accents | navigation and active pulse |
-| Teal / mint | fresh / clear |
-| Amber | drift / attention |
-| Red | blocked / fail |
+---
 
 ## The eighteen sins
 
-Codex’s **eighteen sins** are the audited anti-patterns this harness is built
-against. Oh No, Codex! turns them into constraints, tests, or explicit
-non-goals—not eighteen new subsystems.
+These are the product’s enemy list. Not a joke appendix. Not buried under a
+`<details>` fold. Full audit notes live in
+[`docs/CODEX-SINS.md`](./docs/CODEX-SINS.md).
 
-<details>
-<summary><strong>Open all 18</strong></summary>
-
-| # | Sin | Product correction |
+| # | Sin | What it looks like |
 | ---: | --- | --- |
-| 1 | **Semantic usurpation** | Preserve the Owner’s words; ambiguity selects the smallest satisfying behavior. |
-| 2 | **Maximum interpretation** | No subsystem or abstraction without a current public RED. |
-| 3 | **Never stopping** | Acceptance ends the task; `next` is not permission. |
-| 4 | **Review becomes edit authority** | Review is read-only unless fixes are explicitly authorized. |
-| 5 | **Zombie authority** | Current canonical state outranks old plans and summaries. |
-| 6 | **Summary replaces truth** | Resume is a bounded projection, never a new authority. |
-| 7 | **Local green equals complete** | Every claim names its exact evidence scope. |
-| 8 | **Self-certified closure** | Exact commands and subject-bound receipts outrank agent prose. |
-| 9 | **Test theatre** | Every task owns one minimal user-visible black box. |
-| 10 | **Proxy goals take over** | Keep one Owner goal and one active bounded task visible. |
-| 11 | **Reviewer denominator inflation** | Review against frozen acceptance; extra ideas remain proposals. |
-| 12 | **Control-tax blindness** | Latency, capsule size, and no-full-scan paths are acceptance rows. |
-| 13 | **Rebuilding the world** | Prefer Git, files, and ordinary tests before new machinery. |
-| 14 | **Workspace identity confusion** | Handoffs name path, branch, commit, tree, and dirty state. |
-| 15 | **Handoff tax on the user** | One `resume` command returns the operational capsule. |
-| 16 | **UX debt last** | Freeze the Cockpit design before code; accept it in the browser. |
-| 17 | **Agreement plus overconfidence** | Use honest capability labels and measured evidence. |
-| 18 | **Apology without constraint** | Every confirmed incident becomes a rule, regression, or non-goal. |
+| 1 | **Semantic usurpation** | You asked for a door; it builds a castle and calls it “alignment.” |
+| 2 | **Maximum interpretation** | “Control” becomes a platform. “Complete” becomes forever. |
+| 3 | **Never stopping** | Acceptance passed; “next” is treated as new permission. |
+| 4 | **Review becomes edit authority** | “Look at this” quietly becomes “I already fixed it.” |
+| 5 | **Zombie authority** | An old plan, branch name, or chat summary outranks your last decision. |
+| 6 | **Summary replaces truth** | Compaction text hardens into false history. |
+| 7 | **Local green equals complete** | One unit test, one mock — shipped as “the product works.” |
+| 8 | **Self-certified closure** | Same agent writes the claim, the proof, and the applause. |
+| 9 | **Test theatre** | Internal branches are green; the user-visible path is still broken. |
+| 10 | **Proxy goals take over** | Coverage, architecture neatness, reviewer vibes beat your outcome. |
+| 11 | **Reviewer denominator inflation** | Review invents new acceptance criteria and nothing can finish. |
+| 12 | **Control-tax blindness** | Anti-drift tool costs more than the drift it prevents. |
+| 13 | **Rebuilding the world** | Git, files, and ordinary tests are replaced by new machinery. |
+| 14 | **Workspace identity confusion** | Work lands in the wrong tree, branch, or dirty checkout. |
+| 15 | **Handoff tax on the user** | Next session burns an hour reconstructing state from prose. |
+| 16 | **UX debt last** | Internals grow for weeks; the UI is generic and untested. |
+| 17 | **Agreement plus overconfidence** | Instant “you’re right” + another unmeasured promise. |
+| 18 | **Apology without constraint** | Soft regret, same failure next session. |
 
-Read the privacy-scrubbed audit and evidence boundary in
-[`docs/CODEX-SINS.md`](https://github.com/t01089572455/oh-no-codex/blob/main/docs/CODEX-SINS.md).
+Oh No does **not** spawn eighteen bureaucracies.  
+It maps the sins into a few hard edges: **owner words, one task, black-box
+verify, single state file, stop means stop.**
 
-</details>
+---
 
-## Evidence, not promises
+## What Oh No actually does
 
-Capability labels name the evidence actually held by this repository:
-
-| Capability | Status | Evidence boundary |
+| Moment | Without Oh No | With Oh No |
 | --- | --- | --- |
-| Public product status | `V1_TRIAL_ACCEPTED` | Ledger Tasks 1–7 + Corrections 1–2 + essence ports E1–E12 |
-| CLI state, plan, verify, resume, change, hooks, and atomic-write behavior | `LOCAL_PASS` | Public Node black boxes A01–A12, A15, and A16 |
-| Plan board, projectors, doctor, handoff identity | `LOCAL_PASS` | `projectors` / resume-status-next / hooks black boxes |
-| Read-only Cockpit projection | `LOCAL_PASS` | A13 HTTP equality with `status --json` |
-| Three copied-project loops and P01–P05 | `TRIAL_PASS` | Bounded harness trials on anonymous TypeScript CLI, React/Vite Web, and Python OCR source copies |
-| Desktop/narrow visual and accessibility acceptance | `LOCAL_PASS` | A14 via system Chrome/Edge after Owner authorized external browser |
-| State-to-Cockpit browser reflection | `TRIAL_PASS` | P06 three-copy browser receipt; worst p95 73.690 ms |
-| npm package `oh-no-codex` | `0.1.1` on [registry.npmjs.org](https://www.npmjs.com/package/oh-no-codex) | `npm install -g oh-no-codex` |
+| **Start** | Coding before the job is frozen | Only the cursor task starts — behavior, one test, files, budget, stop |
+| **Finish** | “Looks good” / agent prose | `ohno verify` runs the **exact** black box and binds PASS to Git subject |
+| **Change** | Specs drift while code races ahead | `change` shows governing-doc diffs and blocks coding until plan replacement |
+| **Resume** | Chat archaeology | `ohno resume` — goal, board, proof, blocker, one next action |
 
-The three-copy measurements use one untimed warm-up and 30 raw samples per
-command per copy. Worst observed p95 values were:
+**Sole runtime authority:** `.ohno/state.json`  
+Everything else — resume text, PROGRESS, AGENTS managed block, Cockpit — is a
+**projection**, not a second truth.
 
-| Surface | Frozen budget | Worst observed | Result |
-| --- | ---: | ---: | --- |
-| `ohno status` | `<250 ms` | `92.249 ms` | `TRIAL_PASS` |
-| `ohno next` | `<250 ms` | `84.213 ms` | `TRIAL_PASS` |
-| `ohno resume` | `<500 ms` | `85.938 ms` | `TRIAL_PASS` |
-| Largest accepted resume capsule | `<4096 bytes` | `3194 bytes` | `TRIAL_PASS` |
-| Task-start harness overhead | `<2000 ms` | `97.667 ms` | `TRIAL_PASS` |
-| State-to-Cockpit browser reflection | `<250 ms` | `73.690 ms` | `TRIAL_PASS` |
+**Cooperative, not hostile.** Hooks and Git pre-commit are guardrails for a
+same-user vibe loop. They are not a security sandbox against a malicious owner
+process. We say that out loud on purpose (sin #17).
 
-These are local trial results for the named anonymous copies and machine, not
-a universal speed or production-readiness guarantee.
+---
 
-## Project contracts
+## 60-second start
 
-Public product truth lives in a small set of documents:
+```bash
+npm install -g oh-no-codex
+cd your-git-project
+ohno init --goal "Ship reliable draft save"
+ohno install
+```
 
-1. [Product contract](https://github.com/t01089572455/oh-no-codex/blob/main/docs/PRODUCT-CONTRACT.md)
-2. [V1 design](https://github.com/t01089572455/oh-no-codex/blob/main/docs/DESIGN.md)
-3. [Acceptance contract](https://github.com/t01089572455/oh-no-codex/blob/main/docs/ACCEPTANCE.md)
-4. [Implementation ledger](https://github.com/t01089572455/oh-no-codex/blob/main/docs/IMPLEMENTATION-PLAN.md) (current status: `V1_TRIAL_ACCEPTED`)
-5. [Codex eighteen sins](https://github.com/t01089572455/oh-no-codex/blob/main/docs/CODEX-SINS.md)
-6. [Essence backlog](https://github.com/t01089572455/oh-no-codex/blob/main/docs/ESSENCE-BACKLOG.md) (E1–E12 complete)
+Then open Codex and talk like a human. After install, most of the day is
+**conversation** — not memorizing CLI.
+
+| You say | Codex should run |
+| --- | --- |
+| Start this slice / 开工 | `ohno task start` (or plan first) |
+| This is done / 做完了 | **only** `ohno verify` |
+| Requirements changed / 需求变了 | `ohno change begin --summary "…"` |
+| Remember this / 记下来 | `ohno requirements note --text "…"` |
+| Where are we / 卡在哪 | `ohno resume` or `ohno doctor` |
+
+That map is injected into the project `AGENTS.md` managed block. Optional copy:
+[`skills/oh-no-control/SKILL.md`](./skills/oh-no-control/SKILL.md).
+
+**Never automated:** silent plan accept, inventing PASS, treating `next` as a
+blank check.
+
+---
+
+## Daily path
+
+```text
+once     →  npm i -g  ·  ohno init  ·  ohno install
+daily    →  talk to Codex  (hooks inject resume, scope writes, refresh projections)
+optional →  ohno cockpit  ·  doctor  ·  preferences  ·  requirements note
+```
+
+### Working method defaults (yours to flip)
+
+On init, `.ohno/preferences.json` defaults **on**:
+
+- research open source before consequential implementation  
+- prefer existing packages / templates over greenfield rewrites  
+- for UI: adapt a real reference — don’t invent a whole UI language from scratch  
+
+```bash
+ohno preferences show
+ohno preferences set --id frontend_adapt_not_invent --enabled false
+```
+
+### Owner requirements log
+
+All the “please don’t do X” lines that used to die in chat:
+
+```bash
+ohno requirements note --text "Owner: ship user-visible save first — no platform rewrite"
+ohno requirements show   # → .ohno/REQUIREMENTS.md
+```
+
+---
+
+## Cockpit
+
+Local, **read-only** glass dashboard. Same model as `ohno status --json`.
+Polls `/api/state` ~2.5s. No writes. No second authority.
+
+```bash
+ohno cockpit
+```
+
+Answers three questions on one screen:
+
+1. What is happening **now**?  
+2. What is the **one** next action?  
+3. Is proof **fresh**, or is something blocking?
+
+---
+
+## What’s in the box
+
+| Surface | Role |
+| --- | --- |
+| `ohno init / plan / task / verify` | Bounded start → evidence-bound finish |
+| `ohno status · resume · next · doctor` | Instant recovery |
+| `ohno change` | Honest requirement + document sync |
+| `ohno projectors refresh` | `.ohno/PROGRESS.md` + AGENTS managed capsule |
+| `ohno preferences` · `requirements` | Craft rules + owner word log |
+| Codex hooks + Git pre-commit | Cooperative guardrails |
+| `ohno cockpit` | Read-only mission board |
+
+**Deliberately not in V1:** database, daemon, skill marketplace, multi-agent
+scheduler, hostile same-user containment, Claude dual-stack.
+
+---
+
+## Evidence, not vibes
+
+| Claim | Label | Boundary |
+| --- | --- | --- |
+| Product status | `V1_TRIAL_ACCEPTED` | Tasks 1–7, Corrections 1–2, essence E1–E12 |
+| CLI / hooks / atomic state | `LOCAL_PASS` | Public Node black boxes |
+| Cockpit = status JSON | `LOCAL_PASS` | A13 |
+| Real disposable copies | `TRIAL_PASS` | P01–P06 on named anonymous projects |
+| npm | **`0.1.1`** | [oh-no-codex](https://www.npmjs.com/package/oh-no-codex) |
+
+Worst observed trial p95 (local machine, named copies — not a universal SLA):
+
+| Surface | Budget | Observed |
+| --- | ---: | ---: |
+| `status` / `next` | &lt;250 ms | ~92 / ~84 ms |
+| `resume` | &lt;500 ms | ~86 ms |
+| Cockpit reflection | &lt;250 ms | ~74 ms |
+
+---
+
+## Contracts
+
+1. [`docs/PRODUCT-CONTRACT.md`](./docs/PRODUCT-CONTRACT.md)  
+2. [`docs/DESIGN.md`](./docs/DESIGN.md)  
+3. [`docs/ACCEPTANCE.md`](./docs/ACCEPTANCE.md)  
+4. [`docs/IMPLEMENTATION-PLAN.md`](./docs/IMPLEMENTATION-PLAN.md)  
+5. [`docs/CODEX-SINS.md`](./docs/CODEX-SINS.md)  
+6. [`docs/ESSENCE-BACKLOG.md`](./docs/ESSENCE-BACKLOG.md)  
+
+---
 
 ## License
 

@@ -9,7 +9,9 @@
   },
   "files": [
     "dist",
+    "assets/brand/oh-no-codex-lockup.png",
     "assets/brand/oh-no-codex-plush-hero.png",
+    "assets/brand/oh-no-loop.png",
     "assets/cockpit/index.html",
     "assets/cockpit/cockpit.css",
     "assets/cockpit/cockpit.js",
