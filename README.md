@@ -177,31 +177,81 @@ The cockpit **never** advances work. CLI/skills mutate state; the UI only reads.
 
 ---
 
-## Use it like skills
+## How you actually use it (autonomy vs manual)
 
-Speak normally, or name a skill. Codex should run the matching shell command.
+**You usually do not pick skills by hand.**  
+After `init` + `install`, you talk in ordinary language. Codex is expected to
+load the matching `oh-no-*` skill and run the shell command.  
+Oh No is **cooperative**, not fully autonomous: hooks help in the background;
+acceptance still requires a real `ohno verify`.
+
+| Who | What happens |
+| --- | --- |
+| **Automatic (hooks)** | Session start / compact → inject resume capsule; scoped writes may be denied |
+| **You speak → Codex uses skill** | “start / done / where are we / open cockpit…” → model runs `ohno …` |
+| **You run CLI yourself** | Setup once; or when the model forgets verify / you want certainty |
+
+### Setup once (you, terminal)
+
+```bash
+npm install -g oh-no-codex
+cd your-git-repo
+ohno init
+ohno install
+# new Codex session
+```
+
+### Everyday examples (you → expected Codex behavior)
+
+**Example A — first slice**
+
+| You say | Codex should |
+| --- | --- |
+| “This is a foreign-trade app. Draft a linear plan; first slice = customer CRUD.” | Use **`oh-no-plan`**: write plan JSON, `ohno plan propose`, wait for your review, then `accept` |
+| “Start work.” | **`oh-no-task`** → `ohno task start`, then edit only allowed files |
+| “Done, verify.” | **`oh-no-verify`** → `ohno verify`; report PASS/FAIL honestly |
+
+**Example B — mid project**
+
+| You say | Codex should |
+| --- | --- |
+| “Where are we?” | **`oh-no-resume`** (or status) |
+| “Remember: no multi-tenant yet.” | **`oh-no-requirements`** → `ohno requirements note --text "…"` |
+| “Requirements changed: export PDF first.” | **`oh-no-change`** then a replacement plan |
+| “Open the board.” | **`oh-no-cockpit`** → `ohno cockpit`, tell you the `http://127.0.0.1:…/` URL |
+
+**Example C — when you should act yourself**
+
+| Situation | You do |
+| --- | --- |
+| First time in a repo | Terminal: `ohno init` + `ohno install` |
+| Model says “done” without running verify | Say “run ohno verify” **or** run `ohno verify` in the terminal |
+| Want a dashboard | Terminal or chat: `ohno cockpit` / “open cockpit” |
+| Skill missing after upgrade | `ohno skill install`, new Codex session |
+
+### Skill map (reference — not a daily checklist)
 
 | Skill | You mean | Shell |
 | --- | --- | --- |
-| `oh-no-init` | bootstrap harness | `ohno init` |
+| `oh-no-init` | bootstrap | `ohno init` |
 | `oh-no-install` | hooks + skills | `ohno install` |
-| `oh-no-plan` | propose / accept plan | `ohno plan …` |
-| `oh-no-task` | start this slice | `ohno task start` |
-| `oh-no-verify` | done / accept | **`ohno verify`** |
+| `oh-no-plan` | plan | `ohno plan …` |
+| `oh-no-task` | start slice | `ohno task start` |
+| `oh-no-verify` | done / verify | **`ohno verify`** |
 | `oh-no-resume` | where are we | `ohno resume` |
 | `oh-no-status` | status | `ohno status` |
 | `oh-no-next` | next locator | `ohno next` |
 | `oh-no-change` | requirements changed | `ohno change …` |
-| `oh-no-requirements` | remember my words | `ohno requirements …` |
+| `oh-no-requirements` | remember words | `ohno requirements …` |
 | `oh-no-preferences` | craft rules | `ohno preferences …` |
-| `oh-no-doctor` | health check | `ohno doctor` |
-| `oh-no-cockpit` | glass board | `ohno cockpit` |
-| `oh-no-projectors` | refresh PROGRESS/AGENTS | `ohno projectors refresh` |
-| `oh-no-control` | hub / which skill? | routing table |
+| `oh-no-doctor` | health | `ohno doctor` |
+| `oh-no-cockpit` | board | `ohno cockpit` |
+| `oh-no-projectors` | refresh files | `ohno projectors refresh` |
+| `oh-no-control` | hub | routing table |
 
-**Do not** paste long CLI recipes into chat — that dilutes.  
-**Do not** claim done without a real `ohno verify` PASS.  
-**Do not** treat `next` as automatic permission for a new phase.
+**Do not** paste long CLI into chat.  
+**Do not** claim done without PASS.  
+**Do not** treat `next` as a blank cheque.
 
 ---
 

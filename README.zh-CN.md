@@ -177,9 +177,59 @@ plan accept / task start / verify …
 
 ---
 
-## 像 skill 一样用
+## 到底怎么用（自动还是手动）
 
-说人话，或直接点 skill 名。模型应去终端执行对应 `ohno`：
+**正常情况：你不用自己点 skill。**  
+`init` + `install` 之后，日常说人话即可；Codex 应靠 skill 描述自己想起
+`oh-no-verify` / `oh-no-task` 等，再去跑对应的 `ohno` 命令。  
+Oh No 是**合作式护栏**，不是全自动无人驾驶：后台 hooks 会帮一点；
+**验收必须真的跑过 `ohno verify`**，不会静默替你盖章。
+
+| 谁在动 | 典型情况 |
+| --- | --- |
+| **自动（hooks）** | 新开会话 / 压缩后注入进度；乱写范围外文件可能被拦 |
+| **你说人话 → 模型调 skill** | 「开工 / 验收 / 卡在哪 / 开驾驶舱」→ 模型执行 `ohno …` |
+| **你自己敲终端** | 每个仓库装一次；或模型忘了验收、你想 dual-check 时 |
+
+### 每个仓库只做一次（你自己终端）
+
+```bash
+npm install -g oh-no-codex
+cd 你的业务仓库
+ohno init
+ohno install
+# 再新开一个 Codex 会话
+```
+
+### 日常对话例子（你怎么说 → 期望 Codex 干什么）
+
+**例子 A — 第一刀**
+
+| 你说 | Codex 应该 |
+| --- | --- |
+| 「这是个外贸系统。列个线性计划，第一刀做客户建档。」 | 走 **`oh-no-plan`**：写 plan、`propose`，等你审完再 `accept` |
+| 「开工。」 | **`oh-no-task`** → `ohno task start`，再只在允许文件里改 |
+| 「做完了，帮我验收。」 | **`oh-no-verify`** → 只跑 `ohno verify`，按真实 PASS/FAIL 回话 |
+
+**例子 B — 做了一半**
+
+| 你说 | Codex 应该 |
+| --- | --- |
+| 「现在卡在哪？」 | **`oh-no-resume`**（或 status） |
+| 「记一句：先不做多租户。」 | **`oh-no-requirements`** → `requirements note` |
+| 「需求变了：优先做 PDF 导出。」 | **`oh-no-change`**，再换计划 |
+| 「打开驾驶舱。」 | **`oh-no-cockpit`** → `ohno cockpit`，把 `http://127.0.0.1:…/` 告诉你 |
+
+**例子 C — 什么时候要你自己上手**
+
+| 情况 | 你做什么 |
+| --- | --- |
+| 仓库第一次用 Oh No | 终端：`ohno init` + `ohno install` |
+| 模型嘴上说做完了，没跑 verify | 再说「跑 ohno verify」，或自己终端执行 |
+| 想盯进度板 | 终端 / 对话：`ohno cockpit` 或「开驾驶舱」 |
+| 升级后 skill 丢了 | `ohno skill install`，新开会话 |
+
+### Skill 对照表（备查，不是每天勾选清单）
 
 | Skill | 你怎么说 | 背后命令 |
 | --- | --- | --- |
@@ -187,23 +237,19 @@ plan accept / task start / verify …
 | `oh-no-install` | 装 hooks / skill | `ohno install` |
 | `oh-no-plan` | 排计划、接计划 | `ohno plan …` |
 | `oh-no-task` | 开工 | `ohno task start` |
-| `oh-no-verify` | 做完了、帮我验收 | **`ohno verify`** |
-| `oh-no-resume` | 现在卡在哪 | `ohno resume` |
+| `oh-no-verify` | 做完了、验收 | **`ohno verify`** |
+| `oh-no-resume` | 卡在哪 | `ohno resume` |
 | `oh-no-status` | 看状态 | `ohno status` |
 | `oh-no-next` | 下一步是啥 | `ohno next` |
 | `oh-no-change` | 需求变了 | `ohno change …` |
 | `oh-no-requirements` | 把这句话记下来 | `ohno requirements …` |
 | `oh-no-preferences` | 改工作习惯开关 | `ohno preferences …` |
-| `oh-no-doctor` | 体检一下 | `ohno doctor` |
+| `oh-no-doctor` | 体检 | `ohno doctor` |
 | `oh-no-cockpit` | 开驾驶舱 | `ohno cockpit` |
 | `oh-no-projectors` | 刷进度文件 | `ohno projectors refresh` |
-| `oh-no-control` | 不知道用哪个 | 总表 / 路由 |
+| `oh-no-control` | 不知道用哪个 | 总表 |
 
-硬规矩：
-
-- 没跑过 **`ohno verify` 且 PASS**，不许说做完了  
-- **`next` 不是开工许可证**  
-- 真相只在 **`.ohno/state.json`**
+硬规矩：没 **verify PASS** 不许说做完；**next 不是开工证**；真相只在 **`.ohno/state.json`**。
 
 ---
 
