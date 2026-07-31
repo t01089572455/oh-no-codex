@@ -157,13 +157,15 @@ Hooks 与 pre-commit 是**合作式护栏**。
 npm install -g oh-no-codex
 cd your-git-repo
 
-# --goal = 用一句话说清「这个项目要达成什么」（Owner 原话，自由文本）
-ohno init --goal "用户能登录并看到自己的工作台"
+# --goal = 这个仓库要做的「整盘产品/系统」（不是某一个小步骤）
+ohno init --goal "做一个外贸业务系统：订单、客户、单证"
 ohno install
 ```
 
-`--goal` **不是**固定咒语或模板名，就是你给项目定的**当前总目标**一句话，
-会写进 `.ohno/state.json`。以后要改目标，走需求变更流程，不要再 `init` 一次。
+`--goal` 是 **Owner 的顶层项目目标**（这个库是干什么的），自由文本，  
+**不是** Codex Goal 模式语法。  
+「先做登录」「先做导出 PDF」这类 **子步骤** 写在 **plan 任务**里，  
+不要当成 `init --goal`。
 
 Node.js **≥ 22.20**，普通 Git 仓库。  
 npm：[oh-no-codex](https://www.npmjs.com/package/oh-no-codex)（`0.1.1`）。
