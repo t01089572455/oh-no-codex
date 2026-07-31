@@ -66,6 +66,7 @@ ideas live.
 
 ## Exact next
 
-> **Stop.** Scheduled essences E1–E8 are implemented as projections of
-> `.ohno/state.json` only. Do not reintroduce Gateway / multi-authority design.
-> Do not publish npm without new Owner authorization.
+> **Stop.** Scheduled essences E1–E10 are implemented as projections of
+> `.ohno/state.json` only (REQUIREMENTS log is Owner notes + live projection,
+> never a second authority). Do not reintroduce Gateway / multi-authority
+> design. Do not invent eighteen new subsystems to “cure” the sins.

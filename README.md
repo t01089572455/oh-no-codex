@@ -57,7 +57,7 @@
 > cooperative hooks + Git pre-commit, read-only glass Cockpit with plan board
 > (polls `/api/state`), projectors (`.ohno/PROGRESS.md` + AGENTS managed block),
 > `ohno doctor`, handoff identity, A14 browser matrix, and P01–P06 trial
-> receipts. Public ledger: Tasks 1–7, Corrections 1–2, essence ports E1–E8.
+> receipts. Public ledger: Tasks 1–7, Corrections 1–2, essence ports E1–E10.
 > This is **not** a hostile-agent, production-authority, or universal speed
 > claim. Install: `npm install -g oh-no-codex`.
 
@@ -486,7 +486,7 @@ Capability labels name the evidence actually held by this repository:
 
 | Capability | Status | Evidence boundary |
 | --- | --- | --- |
-| Public product status | `V1_TRIAL_ACCEPTED` | Ledger Tasks 1–7 + Corrections 1–2 + essence ports E1–E8 |
+| Public product status | `V1_TRIAL_ACCEPTED` | Ledger Tasks 1–7 + Corrections 1–2 + essence ports E1–E10 |
 | CLI state, plan, verify, resume, change, hooks, and atomic-write behavior | `LOCAL_PASS` | Public Node black boxes A01–A12, A15, and A16 |
 | Plan board, projectors, doctor, handoff identity | `LOCAL_PASS` | `projectors` / resume-status-next / hooks black boxes |
 | Read-only Cockpit projection | `LOCAL_PASS` | A13 HTTP equality with `status --json` |
@@ -519,7 +519,7 @@ Public product truth lives in a small set of documents:
 3. [Acceptance contract](https://github.com/t01089572455/oh-no-codex/blob/main/docs/ACCEPTANCE.md)
 4. [Implementation ledger](https://github.com/t01089572455/oh-no-codex/blob/main/docs/IMPLEMENTATION-PLAN.md) (current status: `V1_TRIAL_ACCEPTED`)
 5. [Codex eighteen sins](https://github.com/t01089572455/oh-no-codex/blob/main/docs/CODEX-SINS.md)
-6. [Essence backlog](https://github.com/t01089572455/oh-no-codex/blob/main/docs/ESSENCE-BACKLOG.md) (E1–E8 complete)
+6. [Essence backlog](https://github.com/t01089572455/oh-no-codex/blob/main/docs/ESSENCE-BACKLOG.md) (E1–E10 complete)
 
 ## License
 
