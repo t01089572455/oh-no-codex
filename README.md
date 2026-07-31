@@ -52,11 +52,14 @@
 </p>
 
 > [!IMPORTANT]
-> **V1 is `V1_TRIAL_ACCEPTED`.** The CLI loops, cooperative hooks, Git guard,
-> read-only Cockpit, A14 browser matrix, and P01–P06 trial receipts pass on the
-> named local black-box and disposable-project evidence. This is not a
-> hostile-agent, production-authority, package-publication, or universal speed
-> claim. No npm package has been published or released.
+> **V1 is `V1_TRIAL_ACCEPTED`.** On named local black-box and disposable-project
+> evidence: CLI loops (init / plan / task / verify / status·resume·next / change),
+> cooperative hooks + Git pre-commit, read-only glass Cockpit with plan board
+> (polls `/api/state`), projectors (`.ohno/PROGRESS.md` + AGENTS managed block),
+> `ohno doctor`, handoff identity, A14 browser matrix, and P01–P06 trial
+> receipts. Public ledger: Tasks 1–7, Corrections 1–2, essence ports E1–E8.
+> This is **not** a hostile-agent, production-authority, package-publication, or
+> universal speed claim. No npm package has been published or released.
 
 ## Why
 

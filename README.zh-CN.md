@@ -52,9 +52,12 @@
 </p>
 
 > [!IMPORTANT]
-> **V1 状态为 `V1_TRIAL_ACCEPTED`。** CLI 闭环、合作式 Hooks、Git 护栏、只读
-> 驾驶舱、A14 浏览器矩阵与 P01–P06 试验收据均已在命名本地黑盒与可弃用项目
-> 副本证据上通过。这不是敌对 Agent 防护、生产权威、npm 发布或普适速度声明。
+> **V1 状态为 `V1_TRIAL_ACCEPTED`。** 在命名本地黑盒与可弃用项目副本证据上已
+> 具备：CLI 闭环（init / plan / task / verify / status·resume·next / change）、
+> 合作式 Hooks + Git pre-commit、只读玻璃驾驶舱与计划看板（轮询 `/api/state`）、
+> 投影（`.ohno/PROGRESS.md` + AGENTS 托管块）、`ohno doctor`、handoff 身份、
+> A14 浏览器矩阵与 P01–P06 试验收据。公开账本：Tasks 1–7、Corrections 1–2、
+> 精华 E1–E8。这**不是**敌对 Agent 防护、生产权威、npm 发布或普适速度声明。
 > 目前没有发布 npm 包或 Release。
 
 ## 为什么需要它
