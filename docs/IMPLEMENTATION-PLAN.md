@@ -388,6 +388,14 @@ Recorded on 2026-07-30 with Node.js v24.11.1 on Windows 10.0.19044 x64,
   `npm run test:performance` exited 1 because those package scripts did not
   exist. The real scripts now own the public black boxes and performance
   receipt verifier; no publication script or side effect was added.
+- The first clean-candidate full black-box run exposed two stale public
+  fixtures, not product failures: the Correction 1 ledger assertion still
+  named the historical Task 5 next action, and the Task 2 PASS-receipt fixture
+  omitted the now-required `plan_revision`. The tests were mechanically
+  adapted to the current linear schema; `node --test
+  test/blackbox/linear-plan-freshness.test.mjs` is now 8/8 and `node --test
+  test/blackbox/verify-finish.test.mjs` is 16/16. No production behavior or
+  acceptance denominator changed.
 - A12/A15 GREEN: `node --test test/blackbox/atomic-state.test.mjs` exited 0
   with 3/3 passing. It proves corrupt authority preserves exact bytes,
   interrupted atomic replacement leaves valid old or new authority, and

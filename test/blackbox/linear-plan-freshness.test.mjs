@@ -396,7 +396,15 @@ test("plan review records bounded local evidence and documents keep one dynamic 
     /LOCAL_OWNER_CONFIRMATION_ONLY/i,
   );
   assert.match(ledger, /Correction 1[\s\S]*LOCAL_PASS/);
-  assert.match(ledger, /unique next[\s\S]*Task 5 adaptation/i);
+  assert.equal(
+    (ledger.match(/unique next:/giu) ?? []).length,
+    1,
+    "the bootstrap ledger must expose exactly one dynamic next action",
+  );
+  assert.match(
+    ledger,
+    /## Exact current action[\s\S]*There is exactly one\. \*\*Unique next:\*\*/iu,
+  );
   assert.match(
     `${product}\n${design}`,
     /same-user[\s\S]{0,160}(?:bypass|circumvent)|malicious[\s\S]{0,160}not.*boundary/i,

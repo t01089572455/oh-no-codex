@@ -367,6 +367,7 @@ test("unchanged zero exit binds a fresh PASS receipt and returns exactly one nex
     result: "PASS",
     command: exactCommand,
     contract_digest: startedState.active_task.contract_digest,
+    plan_revision: startedState.active_task.plan_revision,
     head: "UNBORN",
     subject_digest: state.last_verification.subject_digest,
     exit_code: 0,
