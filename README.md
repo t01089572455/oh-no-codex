@@ -106,7 +106,7 @@ The next action is a locator, not fresh authorization.
 ## What is implemented
 
 **V1 harness scope is complete** as `V1_TRIAL_ACCEPTED` on named local black-box
-and disposable-project evidence. npm package `oh-no-codex@0.1.0` is public on
+and disposable-project evidence. npm package `oh-no-codex@0.1.1` is public on
 registry.npmjs.org. That still does **not** mean hostile-agent security or a
 universal speed guarantee.
 
@@ -531,7 +531,7 @@ Capability labels name the evidence actually held by this repository:
 | Three copied-project loops and P01–P05 | `TRIAL_PASS` | Bounded harness trials on anonymous TypeScript CLI, React/Vite Web, and Python OCR source copies |
 | Desktop/narrow visual and accessibility acceptance | `LOCAL_PASS` | A14 via system Chrome/Edge after Owner authorized external browser |
 | State-to-Cockpit browser reflection | `TRIAL_PASS` | P06 three-copy browser receipt; worst p95 73.690 ms |
-| npm package `oh-no-codex` | `0.1.0` on [registry.npmjs.org](https://www.npmjs.com/package/oh-no-codex) | `npm install -g oh-no-codex` |
+| npm package `oh-no-codex` | `0.1.1` on [registry.npmjs.org](https://www.npmjs.com/package/oh-no-codex) | `npm install -g oh-no-codex` |
 
 The three-copy measurements use one untimed warm-up and 30 raw samples per
 command per copy. Worst observed p95 values were:
