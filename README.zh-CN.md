@@ -132,7 +132,7 @@ ohno skill status
 # 新开一个 Codex 会话，方便 skill 被扫到
 ```
 
-需要 Node.js **≥ 22.20**。包名：[oh-no-codex](https://www.npmjs.com/package/oh-no-codex)（`0.1.2`）。
+需要 Node.js **≥ 22.20**。包名：[oh-no-codex](https://www.npmjs.com/package/oh-no-codex)（`0.1.3`）。
 
 ---
 
@@ -279,7 +279,7 @@ ohno install
 | CLI / hooks / 原子状态 | `LOCAL_PASS` |
 | 驾驶舱 = status JSON | `LOCAL_PASS` |
 | 真实项目副本试验 | `TRIAL_PASS`（P01–P06） |
-| npm | **`0.1.2`**（含 skill 套件、去掉项目 `--goal`、驾驶舱说明） |
+| npm | **`0.1.3`**（13 个日常 skill；init/install 仅终端） |
 
 合同：[产品](./docs/PRODUCT-CONTRACT.md) · [设计](./docs/DESIGN.md) · [验收](./docs/ACCEPTANCE.md) · [十八宗罪](./docs/CODEX-SINS.md)
 

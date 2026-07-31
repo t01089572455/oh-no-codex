@@ -131,7 +131,7 @@ ohno skill status
 # open a new Codex session so discovery picks them up
 ```
 
-Node.js **≥ 22.20**. Package: [oh-no-codex](https://www.npmjs.com/package/oh-no-codex) (`0.1.2`).
+Node.js **≥ 22.20**. Package: [oh-no-codex](https://www.npmjs.com/package/oh-no-codex) (`0.1.3`).
 
 ---
 
@@ -280,7 +280,7 @@ Shell details live inside each skill file for Codex; users need not memorize the
 | CLI / hooks / atomic state | `LOCAL_PASS` |
 | Cockpit = status JSON | `LOCAL_PASS` |
 | Disposable real copies | `TRIAL_PASS` (P01–P06) |
-| npm | **`0.1.2`** (skill suite, no project `--goal`, cockpit docs) |
+| npm | **`0.1.3`** (13 day-to-day skills; setup via CLI only) |
 
 Contracts: [Product](./docs/PRODUCT-CONTRACT.md) · [Design](./docs/DESIGN.md) · [Acceptance](./docs/ACCEPTANCE.md) · [Sins](./docs/CODEX-SINS.md)
 
