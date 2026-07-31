@@ -449,18 +449,31 @@ Current row classification:
 | P01–P05 | `TRIAL_PASS` on every copied project |
 | P06 | `UNAVAILABLE` / `NOT_MEASURED` — no valid browser samples |
 
-The exact clean-checkout final gate result is recorded below after the Task 7
-candidate commit is created. No npm publish, tag, release, or network mutation
-is authorized or performed.
+Final clean-candidate gate was run once on commit
+`0c5e4f849e6f7b8191f965b950d917e8dfafed2f` (Node.js v24.11.1):
+
+| Command | Result |
+| --- | --- |
+| `npm ci` | exit 0; 3 packages installed |
+| `npm run typecheck` | exit 0 |
+| `npm run build` | exit 0 |
+| `npm test` | exit 0; 112/112 passed |
+| `npm run test:acceptance` | exit 0; 112/112 passed |
+| `npm run test:performance` | exit 1 by design; P01–P05/P04 passed and the sole failure is `P06_NOT_MEASURED: IN_APP_BROWSER_NAVIGATION_REJECTED` |
+| `npm pack --dry-run` | exit 0; private `oh-no-codex@0.0.0`, 39 intended runtime/package files, no tests/evidence/docs/source tree |
+| `git diff --check` | exit 0; no output |
+| `git status --short` | exit 0; no output (`WORKTREE_CLEAN`) |
+
+No npm publish, tag, release, or network mutation is authorized or performed.
 
 ## Exact current action
 
 There is exactly one. **Unique next:**
 
-> **Task 7 final gate:** commit the scoped candidate, run every frozen final
-> command exactly once from its clean checkout, record the exact results, and
-> stop at `V1_CHANGES_REQUIRED` unless the required in-app Browser becomes
-> available for A14 and P06. No Task 8.
+> **A14/P06 browser retry:** when the required in-app Browser can open the
+> authorized loopback URL, run the locked desktop/narrow visual matrix and the
+> three-copy browser receipt. Until then the exact status is
+> `V1_CHANGES_REQUIRED` with A14/P06 `UNAVAILABLE`. No Task 8.
 
 ## Shared implementation rules
 
