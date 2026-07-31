@@ -20,8 +20,9 @@ Install once:
 ```bash
 npm install -g oh-no-codex
 cd <git-repo>
-ohno init
+ohno init             # no --goal
 ohno install          # hooks + all oh-no-* skills → ~/.codex/skills
+ohno cockpit          # optional: prints http://127.0.0.1:PORT/ for the board
 ```
 
 ## Skill → command map (call these as skills / run the shell line)

@@ -145,7 +145,7 @@ async function writeTruth(projectPath, truth = {
 }
 
 async function initialize(projectPath) {
-  const result = runCli(projectPath, ["init", "--goal", ownerGoal]);
+  const result = runCli(projectPath, ["init"]);
   assert.equal(result.status, 0, result.stderr);
 }
 

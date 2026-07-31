@@ -120,8 +120,6 @@ async function initializeTask(
   const projectPath = suppliedProjectPath ?? await createProject(t);
   const initialized = runCli(projectPath, [
     "init",
-    "--goal",
-    "Finish only with fresh exact evidence",
   ]);
   assert.equal(initialized.status, 0, initialized.stderr);
 

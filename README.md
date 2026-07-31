@@ -65,7 +65,7 @@ Oh No optimises for answers from **project files**, not memory:
 4. What is blocking?  
 5. What is the **one** next action (**locator**, not new permission)?
 
-An optional one-line product name (`--goal`) can sit on resume. It is **not required**. Real scope lives in **plan tasks** and **requirements notes**.
+There is **no project-level goal flag**. Product intent lives in **plan tasks** and **`ohno requirements note`**.
 
 ---
 
@@ -120,7 +120,7 @@ Enemy list from a long session audit — not eighteen features. Full text: [`doc
 ```bash
 npm install -g oh-no-codex
 cd your-git-repo
-ohno init                 # no slogan required
+ohno init                 # creates .ohno/ — no --goal
 ohno install              # hooks + all 15 oh-no-* skills
 ```
 
@@ -131,6 +131,28 @@ ohno skill status
 ```
 
 Node.js **≥ 22.20**. Package: [oh-no-codex](https://www.npmjs.com/package/oh-no-codex) (`0.1.1` on npm; git may be ahead).
+
+---
+
+## Cockpit (how to start)
+
+Local **read-only** glass board. Same data as `ohno status --json`.
+
+```bash
+cd your-git-repo          # must already have run ohno init
+ohno cockpit
+```
+
+Terminal prints a loopback URL, for example:
+
+```text
+Cockpit: http://127.0.0.1:53123/
+```
+
+1. Open that URL in a browser on the same machine.  
+2. The page polls `/api/state` about every 2.5s.  
+3. Stop with Ctrl+C in the terminal (no background daemon).  
+4. Or ask Codex via skill **`oh-no-cockpit`** (“打开驾驶舱”).
 
 ---
 

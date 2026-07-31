@@ -461,8 +461,6 @@ async function initializeTrialProject(cwd) {
   requireSuccess(
     runCli(cwd, [
       "init",
-      "--goal",
-      "Keep this disposable real-project copy aligned",
     ]),
     "ohno init",
   );
@@ -723,7 +721,7 @@ async function measureLargestAcceptedCapsule() {
     await writeFile(resolve(projectPath, "subject.txt"), "bounded\n", "utf8");
     await writeFile(resolve(projectPath, "fail.mjs"), "process.exit(9);\n", "utf8");
     requireSuccess(
-      runCli(projectPath, ["init", "--goal", maximumGoal]),
+      runCli(projectPath, ["init"]),
       "P04 ohno init",
     );
     const maximumTest = paddedCommand(

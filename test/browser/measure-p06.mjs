@@ -75,8 +75,6 @@ async function createMeasuredProject() {
   await writeFile(resolve(projectPath, "pass.mjs"), "process.exit(0);\n", "utf8");
   const initialized = runCli(projectPath, [
     "init",
-    "--goal",
-    "Measure cockpit state visibility",
   ]);
   assert.equal(initialized.status, 0, initialized.stderr);
   reviewPlan(projectPath, {

@@ -64,7 +64,7 @@ Oh No 要解决的是：打开项目就能从**文件**里读出进度，而不�
 4. 卡在哪？  
 5. 计划上的**下一步**是什么？（只是指路，不是新授权）
 
-`ohno init` **不必**先写一句项目口号。真要挂名可以加 `--goal`；真正干活靠 **计划任务** 和 **需求笔记**。
+没有「项目总 goal」这道门槛。产品意图写在 **计划任务** 和 **`ohno requirements note`** 里即可。
 
 ---
 
@@ -120,7 +120,7 @@ Hooks 和 Git pre-commit 是**合作式护栏**（注入进度、拦越权写）
 ```bash
 npm install -g oh-no-codex
 cd 你的业务仓库
-ohno init                 # 直接初始化，不必写 goal
+ohno init                 # 建 .ohno/，不要再写 --goal
 ohno install              # hooks + 全套 oh-no-* skill
 ```
 
@@ -131,6 +131,28 @@ ohno skill status
 ```
 
 需要 Node.js **≥ 22.20**。包名：[oh-no-codex](https://www.npmjs.com/package/oh-no-codex)（npm 上当前是 `0.1.1`；本仓库 `main` 可能更新）。
+
+---
+
+## 驾驶舱怎么开
+
+本地**只读**看板，数据和 `ohno status --json` 一致。
+
+```bash
+cd 你的业务仓库           # 先 ohno init 过
+ohno cockpit
+```
+
+终端会打印本机地址，例如：
+
+```text
+Cockpit: http://127.0.0.1:53123/
+```
+
+1. 用浏览器打开这行 URL（仅本机，不要用局域网 IP）。  
+2. 页面大约每 2.5 秒拉一次 `/api/state`。  
+3. 终端里 Ctrl+C 结束（没有后台守护进程）。  
+4. 或在 Codex 里用 skill **`oh-no-cockpit`** / 说「打开驾驶舱」。
 
 ---
 

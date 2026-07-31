@@ -74,7 +74,7 @@ function emptyCommit(projectPath, message) {
 }
 
 async function initialize(projectPath) {
-  const result = runCli(projectPath, ["init", "--goal", goal]);
+  const result = runCli(projectPath, ["init"]);
   assert.equal(result.status, 0, result.stderr);
 }
 

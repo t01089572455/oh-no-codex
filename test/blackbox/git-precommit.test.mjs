@@ -39,8 +39,6 @@ function quotePowerShell(value) {
 async function initialize(projectPath) {
   const result = runCli(projectPath, [
     "init",
-    "--goal",
-    "Keep ordinary commits aligned with the active bounded task",
   ]);
   assert.equal(result.status, 0, result.stderr);
 }

@@ -24,8 +24,6 @@ import {
 async function initialize(projectPath) {
   const initialized = runCli(projectPath, [
     "init",
-    "--goal",
-    "Keep current state valid across interrupted writes",
   ]);
   assert.equal(initialized.status, 0, initialized.stderr);
 }

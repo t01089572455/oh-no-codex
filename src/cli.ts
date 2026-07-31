@@ -65,7 +65,7 @@ import { resolve } from "node:path";
 
 const usageText = [
   "usage:",
-  "  ohno init [--goal <optional product line>]",
+  "  ohno init",
   "  ohno plan propose --file <review.json>",
   "  ohno plan accept --revision <sha256> --diff <sha256>",
   "  ohno task start",
@@ -118,21 +118,22 @@ function boundedDisplayValue(
 }
 
 async function initialize(projectPath: string, args: string[]): Promise<void> {
-  // Project-level --goal is optional. Real work is bounded by plan tasks.
-  let goal = "";
+  // Project-level slogans removed from UX. Scope lives in plan tasks + notes.
   if (args.includes("--goal")) {
-    goal = boundedDisplayValue(
-      requiredValue(args, "--goal"),
-      "--goal",
-      displayFieldByteLimits.goal,
+    throw new Error(
+      "ohno init no longer takes --goal; put product intent in plan tasks "
+      + "or `ohno requirements note`",
     );
+  }
+  if (args.length > 0) {
+    throw new Error("usage: ohno init");
   }
   if (await stateExists(projectPath)) {
     throw new Error("project is already initialized");
   }
 
   const truthInventory = await classifyTruthAtInit(projectPath);
-  await writeStateAtomic(projectPath, initialState(goal, truthInventory));
+  await writeStateAtomic(projectPath, initialState("", truthInventory));
   const prefs = await ensurePreferences(projectPath);
   const model = await readModel(projectPath);
   await writeFile(
@@ -147,20 +148,12 @@ async function initialize(projectPath: string, args: string[]): Promise<void> {
     ].join("\n"),
     "utf8",
   );
-  if (goal !== "") {
-    await appendRequirementsNote(
-      projectPath,
-      `Project goal set: ${goal}`,
-      "init",
-    ).catch(() => undefined);
-  } else {
-    await appendRequirementsNote(
-      projectPath,
-      "Project initialized without a top-line goal; use plan tasks and "
-      + "requirements notes for Owner intent.",
-      "init",
-    ).catch(() => undefined);
-  }
+  await appendRequirementsNote(
+    projectPath,
+    "Project initialized. Capture Owner intent with plan tasks and "
+    + "`ohno requirements note` (no project-level goal field in the UX).",
+    "init",
+  ).catch(() => undefined);
   await appendRequirementsNote(
     projectPath,
     "Default working method ON: research before implement; prefer existing OSS; "
@@ -169,10 +162,11 @@ async function initialize(projectPath: string, args: string[]): Promise<void> {
   ).catch(() => undefined);
   await refreshProjectors(projectPath).catch(() => undefined);
   process.stdout.write(
-    `Initialized${goal === "" ? " (no top-line goal)" : ` goal: ${goal}`}\n`
+    "Initialized\n"
     + `AGENTS: managed block ${agentsBeginMarker} … ${agentsEndMarker}\n`
     + "REQUIREMENTS: .ohno/REQUIREMENTS.md\n"
-    + "PREFERENCES: .ohno/preferences.json\n",
+    + "PREFERENCES: .ohno/preferences.json\n"
+    + "Next: ohno install  (hooks + skills), then ohno cockpit when you want the board\n",
   );
 }
 

@@ -80,8 +80,6 @@ async function createGovernedProject(t, {
   ]);
   const initialized = runCli(projectPath, [
     "init",
-    "--goal",
-    "Keep Correction 2 bounded",
   ]);
   assert.equal(initialized.status, 0, initialized.stderr);
   return projectPath;
@@ -91,8 +89,6 @@ test("plan review rejects unbounded root globs without writing active authority"
   const projectPath = await createProject(t);
   const initialized = runCli(projectPath, [
     "init",
-    "--goal",
-    "Reject root-wide subject globs",
   ]);
   assert.equal(initialized.status, 0, initialized.stderr);
   const before = await readStateBytes(projectPath);

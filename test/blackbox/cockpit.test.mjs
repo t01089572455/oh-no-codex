@@ -21,7 +21,7 @@ import {
 const goal = "Keep one local Cockpit projection honest";
 
 async function initialize(projectPath) {
-  const initialized = runCli(projectPath, ["init", "--goal", goal]);
+  const initialized = runCli(projectPath, ["init"]);
   assert.equal(initialized.status, 0, initialized.stderr);
 }
 

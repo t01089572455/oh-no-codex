@@ -17,8 +17,6 @@ test("projectors write PROGRESS.md and AGENTS managed block from state", async (
   const projectPath = await createProject(t);
   const init = runCli(projectPath, [
     "init",
-    "--goal",
-    "Keep projections honest",
   ]);
   assert.equal(init.status, 0, init.stderr);
 
@@ -136,7 +134,7 @@ test("projectors write PROGRESS.md and AGENTS managed block from state", async (
 
 test("plan board marks HALF when active proof is FAIL", async (t) => {
   const projectPath = await createProject(t);
-  runCli(projectPath, ["init", "--goal", "Show half-finished work"]);
+  runCli(projectPath, ["init"]);
   await writeFile(resolve(projectPath, "subject.txt"), "x\n", "utf8");
   await writeFile(
     resolve(projectPath, "fail.mjs"),
@@ -174,7 +172,7 @@ test("plan board marks HALF when active proof is FAIL", async (t) => {
 
 test("doctor reports state and projection health", async (t) => {
   const projectPath = await createProject(t);
-  runCli(projectPath, ["init", "--goal", "Doctor health surface"]);
+  runCli(projectPath, ["init"]);
   const doctor = runCli(projectPath, ["doctor"]);
   assert.equal(doctor.status, 0, doctor.stderr);
   assert.match(doctor.stdout, /^OK: YES$/m);

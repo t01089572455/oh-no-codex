@@ -56,7 +56,7 @@ function parseHookResult(result) {
 }
 
 async function initialize(projectPath) {
-  const initialized = runCli(projectPath, ["init", "--goal", goal]);
+  const initialized = runCli(projectPath, ["init"]);
   assert.equal(initialized.status, 0, initialized.stderr);
 }
 
