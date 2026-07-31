@@ -6,6 +6,8 @@
 
 </div>
 
+<br>
+
 <p align="center">
   <img
     src="./assets/brand/oh-no-codex-lockup.png"
@@ -14,254 +16,197 @@
   >
 </p>
 
-<h1 align="center">Oh No, Codex!</h1>
-
 <p align="center">
-  <strong>Codex can write brilliant code and still wreck the project.</strong><br>
-  This harness makes it finish the <em>right</em> thing — then stop.
+  <strong>Strong agents still drift.</strong><br>
+  A local harness that freezes one task, proves it with a user-visible black box,<br>
+  and stops Codex when the work is actually done.
 </p>
 
 <p align="center">
-  <code>one goal</code> · <code>one bounded task</code> · <code>one black-box test</code> · <code>then stop</code>
+  <code>one goal</code>&nbsp;&nbsp;·&nbsp;&nbsp;<code>one task</code>&nbsp;&nbsp;·&nbsp;&nbsp;<code>one test</code>&nbsp;&nbsp;·&nbsp;&nbsp;<code>then stop</code>
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/oh-no-codex"><img alt="npm" src="https://img.shields.io/npm/v/oh-no-codex?style=for-the-badge&color=74D6B1&labelColor=202624"></a>
-  <img alt="Status" src="https://img.shields.io/badge/status-V1_TRIAL_ACCEPTED-74D6B1?style=for-the-badge&labelColor=202624">
-  <img alt="Codex only" src="https://img.shields.io/badge/harness-Codex_only-FF4B35?style=for-the-badge&labelColor=202624">
-  <a href="./LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-FFF1CE?style=for-the-badge&labelColor=202624"></a>
+  <a href="https://www.npmjs.com/package/oh-no-codex"><img alt="npm" src="https://img.shields.io/npm/v/oh-no-codex?style=flat-square&color=74D6B1&labelColor=202624&label=npm"></a>
+  <img alt="status" src="https://img.shields.io/badge/status-V1_TRIAL_ACCEPTED-74D6B1?style=flat-square&labelColor=202624">
+  <img alt="codex" src="https://img.shields.io/badge/for-Codex_CLI-FF4B35?style=flat-square&labelColor=202624">
+  <img alt="node" src="https://img.shields.io/badge/node-%E2%89%A522.20-74D6B1?style=flat-square&labelColor=202624">
+  <a href="./LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-FFF1CE?style=flat-square&labelColor=202624"></a>
 </p>
 
 <p align="center">
-  <a href="#the-story">Story</a> ·
+  <a href="#why-this-exists">Why</a> ·
   <a href="#the-eighteen-sins">18 sins</a> ·
-  <a href="#what-oh-no-actually-does">What it does</a> ·
-  <a href="#60-second-start">Start</a> ·
-  <a href="#daily-path">Daily path</a> ·
-  <a href="#cockpit">Cockpit</a> ·
-  <a href="#evidence-not-vibes">Evidence</a>
+  <a href="#the-rule">The rule</a> ·
+  <a href="#install">Install</a> ·
+  <a href="#how-you-actually-use-it">Use</a> ·
+  <a href="#what-ships">Ships</a> ·
+  <a href="#evidence">Evidence</a>
 </p>
 
 ---
 
-## The story
+## Why this exists
 
-You open Codex on a real product. You say something small:
+Codex can produce excellent code and still leave the repository worse than it found it.
 
-> “Ship reliable draft save.”
+Not because the model is weak — because **long sessions invent authority**.
 
-Three hours later you have a provider abstraction, a plugin slot, a second
-state file, and a cheerful summary that claims *done* — while the draft still
-dies on refresh.
+A small request becomes a platform.  
+“Done” is declared from a green unit test the user never sees.  
+A chat summary outranks the plan you accepted yesterday.  
+After acceptance, “next” is treated as permission to keep going.
 
-That is not “the model is dumb.”  
-**Strong agents drift on long work.** They reinterpret you, enlarge the job,
-keep going after acceptance, treat chat summaries as truth, and green-light
-themselves with tests that never touch what the user sees.
+If you have felt that on a Friday night, this repository is for you.
 
-We audited that failure mode until it had a name — **Codex’s eighteen sins** —
-and built the smallest harness that fights them without becoming a second
-governance OS.
-
-> **Oh No, Codex!** is the moment the plush reaches for “just one more refactor”
-> and a red cross says: **prove it, or stop.**
-
-<p align="center">
-  <img
-    src="./assets/brand/oh-no-loop.png"
-    width="920"
-    alt="One goal → one bounded task → one black box → then stop"
-  >
-</p>
+**Oh No, Codex!** is a cooperative, local harness — not a cloud product, not a policy engine, not a claim that it can cage a hostile process under your own credentials.
 
 ---
 
 ## The eighteen sins
 
-These are the product’s enemy list. Not a joke appendix. Not buried under a
-`<details>` fold. Full audit notes live in
-[`docs/CODEX-SINS.md`](./docs/CODEX-SINS.md).
+We audited recurring Codex failure modes into **eighteen named sins**.  
+They are the product’s enemy list — kept visible, not buried.
 
-| # | Sin | What it looks like |
+| # | Sin | In one line |
 | ---: | --- | --- |
-| 1 | **Semantic usurpation** | You asked for a door; it builds a castle and calls it “alignment.” |
-| 2 | **Maximum interpretation** | “Control” becomes a platform. “Complete” becomes forever. |
-| 3 | **Never stopping** | Acceptance passed; “next” is treated as new permission. |
-| 4 | **Review becomes edit authority** | “Look at this” quietly becomes “I already fixed it.” |
-| 5 | **Zombie authority** | An old plan, branch name, or chat summary outranks your last decision. |
-| 6 | **Summary replaces truth** | Compaction text hardens into false history. |
-| 7 | **Local green equals complete** | One unit test, one mock — shipped as “the product works.” |
-| 8 | **Self-certified closure** | Same agent writes the claim, the proof, and the applause. |
-| 9 | **Test theatre** | Internal branches are green; the user-visible path is still broken. |
-| 10 | **Proxy goals take over** | Coverage, architecture neatness, reviewer vibes beat your outcome. |
-| 11 | **Reviewer denominator inflation** | Review invents new acceptance criteria and nothing can finish. |
-| 12 | **Control-tax blindness** | Anti-drift tool costs more than the drift it prevents. |
-| 13 | **Rebuilding the world** | Git, files, and ordinary tests are replaced by new machinery. |
-| 14 | **Workspace identity confusion** | Work lands in the wrong tree, branch, or dirty checkout. |
-| 15 | **Handoff tax on the user** | Next session burns an hour reconstructing state from prose. |
-| 16 | **UX debt last** | Internals grow for weeks; the UI is generic and untested. |
-| 17 | **Agreement plus overconfidence** | Instant “you’re right” + another unmeasured promise. |
-| 18 | **Apology without constraint** | Soft regret, same failure next session. |
+| 1 | Semantic usurpation | You asked for a door; it built a castle. |
+| 2 | Maximum interpretation | “Control” becomes a platform. |
+| 3 | Never stopping | Acceptance passed; work continues anyway. |
+| 4 | Review as edit rights | “Look at this” becomes “I already rewrote it.” |
+| 5 | Zombie authority | Old plans beat your latest decision. |
+| 6 | Summary as truth | Compaction text hardens into false history. |
+| 7 | Local green = complete | One mock, one unit test, “shipped.” |
+| 8 | Self-certified closure | Same agent writes claim and applause. |
+| 9 | Test theatre | Internal branches green; user path broken. |
+| 10 | Proxy goals | Coverage and neatness beat your outcome. |
+| 11 | Reviewer inflation | Review invents new acceptance forever. |
+| 12 | Control-tax blindness | The harness costs more than the drift. |
+| 13 | Rebuilding the world | New machinery instead of Git and tests. |
+| 14 | Workspace confusion | Wrong path, branch, or dirty tree. |
+| 15 | Handoff tax | Next session reconstructs state from chat. |
+| 16 | UX last | Internals for weeks; UI untested. |
+| 17 | Agree + overclaim | Instant apology, unmeasured promise. |
+| 18 | Apology without constraint | Soft regret; same failure tomorrow. |
 
-Oh No does **not** spawn eighteen bureaucracies.  
-It maps the sins into a few hard edges: **owner words, one task, black-box
-verify, single state file, stop means stop.**
+Full audit (privacy-scrubbed): [`docs/CODEX-SINS.md`](./docs/CODEX-SINS.md).
+
+Oh No does **not** add eighteen subsystems.  
+It answers with a few hard edges: **owner wording, one task, black-box verify, one state file, stop means stop.**
 
 ---
 
-## What Oh No actually does
+## The rule
 
-| Moment | Without Oh No | With Oh No |
+<p align="center">
+  <img
+    src="./assets/brand/oh-no-loop.png"
+    width="880"
+    alt="Goal → Task → Prove → Stop"
+  >
+</p>
+
+| Moment | Without | With Oh No |
 | --- | --- | --- |
-| **Start** | Coding before the job is frozen | Only the cursor task starts — behavior, one test, files, budget, stop |
-| **Finish** | “Looks good” / agent prose | `ohno verify` runs the **exact** black box and binds PASS to Git subject |
-| **Change** | Specs drift while code races ahead | `change` shows governing-doc diffs and blocks coding until plan replacement |
-| **Resume** | Chat archaeology | `ohno resume` — goal, board, proof, blocker, one next action |
+| **Start** | Coding before the job is frozen | Cursor task only: behaviour, one test, files, budget, stop |
+| **Finish** | “Looks good” in prose | `ohno verify` runs the exact black box |
+| **Change** | Specs lag while code races | Document diffs; coding blocked until plan replacement |
+| **Resume** | Chat archaeology | `ohno resume` — goal, proof, blocker, one next |
 
 **Sole runtime authority:** `.ohno/state.json`  
-Everything else — resume text, PROGRESS, AGENTS managed block, Cockpit — is a
-**projection**, not a second truth.
-
-**Cooperative, not hostile.** Hooks and Git pre-commit are guardrails for a
-same-user vibe loop. They are not a security sandbox against a malicious owner
-process. We say that out loud on purpose (sin #17).
+Resume text, PROGRESS, AGENTS blocks, Cockpit — **projections only**.
 
 ---
 
-## 60-second start
+## Install
 
 ```bash
 npm install -g oh-no-codex
-cd your-git-project
+cd your-git-repo
 ohno init --goal "Ship reliable draft save"
 ohno install
 ```
 
-Then open Codex and talk like a human. After install, most of the day is
-**conversation** — not memorizing CLI.
+Requires **Node.js ≥ 22.20** and a normal Git project.  
+Package: [oh-no-codex on npm](https://www.npmjs.com/package/oh-no-codex) (`0.1.1`).
 
-| You say | Codex should run |
+---
+
+## How you actually use it
+
+After `init` + `install`, you mostly **talk to Codex**.  
+Hooks inject the resume capsule, refresh projections, and cooperatively scope writes.
+
+| You mean | Codex runs |
 | --- | --- |
-| Start this slice / 开工 | `ohno task start` (or plan first) |
-| This is done / 做完了 | **only** `ohno verify` |
-| Requirements changed / 需求变了 | `ohno change begin --summary "…"` |
-| Remember this / 记下来 | `ohno requirements note --text "…"` |
-| Where are we / 卡在哪 | `ohno resume` or `ohno doctor` |
+| Start this slice | `ohno task start` (or plan first) |
+| This slice is done | **`ohno verify` only** |
+| Requirements changed | `ohno change begin --summary "…"` |
+| Remember my words | `ohno requirements note --text "…"` |
+| Where are we? | `ohno resume` / `ohno doctor` |
 
-That map is injected into the project `AGENTS.md` managed block. Optional copy:
-[`skills/oh-no-control/SKILL.md`](./skills/oh-no-control/SKILL.md).
+That map lives in the project `AGENTS.md` managed block.  
+Optional skill copy: [`skills/oh-no-control/SKILL.md`](./skills/oh-no-control/SKILL.md).
 
-**Never automated:** silent plan accept, inventing PASS, treating `next` as a
-blank check.
+```bash
+ohno cockpit          # read-only glass board → same model as status --json
+ohno preferences show # craft defaults: research first, reuse OSS, adapt UI
+```
+
+**Never automated:** silent plan accept · invented PASS · `next` as blank cheque.
 
 ---
 
-## Daily path
-
-```text
-once     →  npm i -g  ·  ohno init  ·  ohno install
-daily    →  talk to Codex  (hooks inject resume, scope writes, refresh projections)
-optional →  ohno cockpit  ·  doctor  ·  preferences  ·  requirements note
-```
-
-### Working method defaults (yours to flip)
-
-On init, `.ohno/preferences.json` defaults **on**:
-
-- research open source before consequential implementation  
-- prefer existing packages / templates over greenfield rewrites  
-- for UI: adapt a real reference — don’t invent a whole UI language from scratch  
-
-```bash
-ohno preferences show
-ohno preferences set --id frontend_adapt_not_invent --enabled false
-```
-
-### Owner requirements log
-
-All the “please don’t do X” lines that used to die in chat:
-
-```bash
-ohno requirements note --text "Owner: ship user-visible save first — no platform rewrite"
-ohno requirements show   # → .ohno/REQUIREMENTS.md
-```
-
----
-
-## Cockpit
-
-Local, **read-only** glass dashboard. Same model as `ohno status --json`.
-Polls `/api/state` ~2.5s. No writes. No second authority.
-
-```bash
-ohno cockpit
-```
-
-Answers three questions on one screen:
-
-1. What is happening **now**?  
-2. What is the **one** next action?  
-3. Is proof **fresh**, or is something blocking?
-
----
-
-## What’s in the box
+## What ships
 
 | Surface | Role |
 | --- | --- |
-| `ohno init / plan / task / verify` | Bounded start → evidence-bound finish |
-| `ohno status · resume · next · doctor` | Instant recovery |
-| `ohno change` | Honest requirement + document sync |
-| `ohno projectors refresh` | `.ohno/PROGRESS.md` + AGENTS managed capsule |
-| `ohno preferences` · `requirements` | Craft rules + owner word log |
-| Codex hooks + Git pre-commit | Cooperative guardrails |
-| `ohno cockpit` | Read-only mission board |
+| `plan` · `task` · `verify` | Bounded start → evidence-bound finish |
+| `status` · `resume` · `next` · `doctor` | Instant recovery |
+| `change` | Honest requirement + document sync |
+| `projectors` | PROGRESS + AGENTS capsule |
+| `preferences` · `requirements` | Craft rules + owner log |
+| Codex hooks · Git pre-commit | Cooperative guardrails |
+| `cockpit` | Read-only mission board |
 
-**Deliberately not in V1:** database, daemon, skill marketplace, multi-agent
-scheduler, hostile same-user containment, Claude dual-stack.
-
----
-
-## Evidence, not vibes
-
-| Claim | Label | Boundary |
-| --- | --- | --- |
-| Product status | `V1_TRIAL_ACCEPTED` | Tasks 1–7, Corrections 1–2, essence E1–E12 |
-| CLI / hooks / atomic state | `LOCAL_PASS` | Public Node black boxes |
-| Cockpit = status JSON | `LOCAL_PASS` | A13 |
-| Real disposable copies | `TRIAL_PASS` | P01–P06 on named anonymous projects |
-| npm | **`0.1.1`** | [oh-no-codex](https://www.npmjs.com/package/oh-no-codex) |
-
-Worst observed trial p95 (local machine, named copies — not a universal SLA):
-
-| Surface | Budget | Observed |
-| --- | ---: | ---: |
-| `status` / `next` | &lt;250 ms | ~92 / ~84 ms |
-| `resume` | &lt;500 ms | ~86 ms |
-| Cockpit reflection | &lt;250 ms | ~74 ms |
+**Not in V1 (on purpose):** database, daemon, skill marketplace, multi-agent scheduler, hostile same-user containment.
 
 ---
 
-## Contracts
+## Evidence
 
-1. [`docs/PRODUCT-CONTRACT.md`](./docs/PRODUCT-CONTRACT.md)  
-2. [`docs/DESIGN.md`](./docs/DESIGN.md)  
-3. [`docs/ACCEPTANCE.md`](./docs/ACCEPTANCE.md)  
-4. [`docs/IMPLEMENTATION-PLAN.md`](./docs/IMPLEMENTATION-PLAN.md)  
-5. [`docs/CODEX-SINS.md`](./docs/CODEX-SINS.md)  
-6. [`docs/ESSENCE-BACKLOG.md`](./docs/ESSENCE-BACKLOG.md)  
+Honesty is part of the brand (sin 17).
+
+| Claim | Label |
+| --- | --- |
+| Public status | `V1_TRIAL_ACCEPTED` |
+| CLI / hooks / atomic state | `LOCAL_PASS` (public black boxes) |
+| Cockpit = `status --json` | `LOCAL_PASS` |
+| Disposable real copies | `TRIAL_PASS` (P01–P06) |
+| npm | **`0.1.1`** |
+
+Trial p95 (named local copies — not a universal SLA): `status`/`next` &lt; 100 ms class, `resume` &lt; 100 ms class, cockpit reflection &lt; 80 ms class against frozen budgets.
+
+Contracts: [Product](./docs/PRODUCT-CONTRACT.md) · [Design](./docs/DESIGN.md) · [Acceptance](./docs/ACCEPTANCE.md) · [Ledger](./docs/IMPLEMENTATION-PLAN.md)
 
 ---
 
-## License
+## Star it if…
 
-[MIT](./LICENSE)
+- you vibe-code with Codex and lose weekends to drift  
+- you want **stop conditions**, not another orchestration framework  
+- you prefer **measured labels** over “production-ready” theatre  
 
-Oh No, Codex! is an independent community project and is not affiliated with
-or endorsed by OpenAI.
+Contributions: keep slices small, keep black boxes user-visible, do not invent a second authority.
+
+---
 
 <p align="center">
-  <strong>Measure the task. Prove the behavior. Stop the agent.</strong>
+  <sub>MIT · Independent community project · Not affiliated with OpenAI</sub>
 </p>
 
-<p align="center"><a href="#readme-top">Back to top ↑</a></p>
+<p align="center">
+  <strong>Measure the task. Prove the behaviour. Stop the agent.</strong>
+</p>
+
+<p align="center"><a href="#readme-top">↑ top</a></p>
