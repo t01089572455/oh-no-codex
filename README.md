@@ -181,6 +181,8 @@ Creates / updates:
 | --- | --- |
 | `.ohno/state.json` | Sole current runtime authority |
 | `.ohno/truth.json` | Owner-maintained governing-document list |
+| `AGENTS.md` | Scaffold with an Oh No managed projection block |
+| `.ohno/PROGRESS.md` | Generated progress board (best-effort on init) |
 
 `init` refuses silent re-initialization. Goal changes go through the
 requirement-change loop, not another `init`.
@@ -346,9 +348,12 @@ ohno plan accept --revision … --diff …
 ohno task start
 # implement within allowed_files
 ohno verify
+ohno install                 # optional cooperative hooks
+ohno doctor                  # health surface
+ohno projectors refresh      # PROGRESS.md + AGENTS managed block
 ohno resume
 ohno next
-ohno cockpit
+ohno cockpit                 # GET /api/state, ~2.5s poll
 ```
 
 ## CLI core, thin hooks
@@ -358,7 +363,7 @@ moment Codex is about to act:
 
 | Surface | V1 job |
 | --- | --- |
-| `SessionStart` / `PostCompact` | Inject the goal, current task, proof, blocker, and one next action. |
+| `SessionStart` / `PostCompact` | Best-effort projector refresh, then inject the bounded resume capsule (goal, board, proof, blocker, next, handoff). |
 | `PreToolUse` | Block supported writes when the task contract is missing or the path is outside the declared scope. |
 | `Stop` | On the exact `OHNO_COMPLETE:<task-id>` marker, keep the task open unless proof is fresh and document sync is clean. Missing or paraphrased markers are not completion signals. |
 | Git `pre-commit` | Reject an out-of-scope or unverified commit. |
@@ -369,19 +374,21 @@ boundary.
 ## One authority, several views
 
 ```text
-ohno CLI -- atomic replace --> .ohno/state.json
-                                  |-- status / resume / next
-                                  |-- thin Codex hooks
+ohno CLI -- atomic replace --> .ohno/state.json   (sole runtime authority)
+                                  |-- status / resume / next / doctor
+                                  |-- thin Codex hooks (capsule inject)
                                   |-- Git pre-commit guard
-                                  `-- read-only Cockpit
+                                  |-- projectors → .ohno/PROGRESS.md
+                                  |               → AGENTS.md managed block
+                                  `-- read-only Cockpit ← GET /api/state (poll)
 
 .ohno/truth.json -------------> named governing documents
 ```
 
 - `.ohno/state.json` is the sole current runtime authority.
 - `.ohno/truth.json` is the Owner-maintained document applicability list.
-- Hooks, receipts, terminal output, and Cockpit are projections—not competing
-  sources of truth.
+- Hooks, receipts, terminal output, PROGRESS, AGENTS managed blocks, and
+  Cockpit are projections—not competing sources of truth.
 - Normal read paths stay bounded: no whole-repository document scan and no
   full test suite.
 
@@ -411,19 +418,20 @@ ohno cockpit
 
 ```text
 +-- OH NO, CODEX! ------ CURRENT STAGE ------ PROGRESS ------ REFRESH --+
-| NOW: draft-persistence     |   MISSION PULSE (ring)   | PROOF: FRESH  |
-| expected user behavior     |   cursor / task count    | GUARDRAIL     |
-| NEXT: START_TASK:…         |   CALIBRATION RAIL       | counts only   |
-| ATTENTION / DRIFT          |                          | from state    |
-| RECENT completed ledger    |                          |               |
-+-- COMPLETION VECTOR --------------------------------------------------+
+| NOW / NEXT / ATTENTION |  MISSION PULSE + CALIBRATION  | PROOF        |
+| RECENT completed       |  cursor / task count          | PLAN BOARD   |
+|                        |                               | Truth paths  |
+|                        |                               | Handoff id   |
++-- COMPLETION VECTOR (poll ~2.5s from /api/state) --------------------+
 ```
 
 Honesty rules for the UI:
 
+- all panels bind the same `/api/state` model as `status --json`
 - progress = `cursor / task_count` only
 - no invented “trust weather” percentages or fake metrics
 - unavailable / corrupt state shows an explicit offline gate
+- read-only: the UI never writes authority
 
 | Color | Role |
 | --- | --- |
@@ -474,7 +482,9 @@ Capability labels name the evidence actually held by this repository:
 
 | Capability | Status | Evidence boundary |
 | --- | --- | --- |
+| Public product status | `V1_TRIAL_ACCEPTED` | Ledger Tasks 1–7 + Corrections 1–2 + essence ports E1–E8 |
 | CLI state, plan, verify, resume, change, hooks, and atomic-write behavior | `LOCAL_PASS` | Public Node black boxes A01–A12, A15, and A16 |
+| Plan board, projectors, doctor, handoff identity | `LOCAL_PASS` | `projectors` / resume-status-next / hooks black boxes |
 | Read-only Cockpit projection | `LOCAL_PASS` | A13 HTTP equality with `status --json` |
 | Three copied-project loops and P01–P05 | `TRIAL_PASS` | Bounded harness trials on anonymous TypeScript CLI, React/Vite Web, and Python OCR source copies |
 | Desktop/narrow visual and accessibility acceptance | `LOCAL_PASS` | A14 via system Chrome/Edge after Owner authorized external browser |
@@ -503,8 +513,9 @@ Public product truth lives in a small set of documents:
 1. [Product contract](https://github.com/t01089572455/oh-no-codex/blob/main/docs/PRODUCT-CONTRACT.md)
 2. [V1 design](https://github.com/t01089572455/oh-no-codex/blob/main/docs/DESIGN.md)
 3. [Acceptance contract](https://github.com/t01089572455/oh-no-codex/blob/main/docs/ACCEPTANCE.md)
-4. [Implementation ledger](https://github.com/t01089572455/oh-no-codex/blob/main/docs/IMPLEMENTATION-PLAN.md)
-5. [The Codex sins](https://github.com/t01089572455/oh-no-codex/blob/main/docs/CODEX-SINS.md)
+4. [Implementation ledger](https://github.com/t01089572455/oh-no-codex/blob/main/docs/IMPLEMENTATION-PLAN.md) (current status: `V1_TRIAL_ACCEPTED`)
+5. [Codex eighteen sins](https://github.com/t01089572455/oh-no-codex/blob/main/docs/CODEX-SINS.md)
+6. [Essence backlog](https://github.com/t01089572455/oh-no-codex/blob/main/docs/ESSENCE-BACKLOG.md) (E1–E8 complete)
 
 ## License
 

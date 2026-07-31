@@ -167,8 +167,10 @@ ready` unless a later Owner-approved contract defines and earns that term.
 - state-to-Cockpit reflection: below 250 ms.
 - normal paths read bounded state and named files only.
 
-These are hypotheses until Task 7 records measurements on three disposable
-project copies.
+Task 7 recorded measurements on three disposable project copies; public status
+is `V1_TRIAL_ACCEPTED` with exact p95 values in the implementation ledger and
+README evidence table. Those remain local trial results, not a universal speed
+guarantee.
 
 ## Authority order
 

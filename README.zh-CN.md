@@ -178,6 +178,8 @@ ohno init --goal "让草稿保存可靠"
 | --- | --- |
 | `.ohno/state.json` | 唯一当前运行时权威 |
 | `.ohno/truth.json` | Owner 维护的规范文档清单 |
+| `AGENTS.md` | 带 Oh No 托管投影块的脚手架 |
+| `.ohno/PROGRESS.md` | 生成式进度看板（init 时尽量写出） |
 
 `init` 禁止静默重复初始化。目标变更走需求变更闭环，不要再 `init` 一次。
 
@@ -340,9 +342,12 @@ ohno plan accept --revision … --diff …
 ohno task start
 # 在 allowed_files 内实现
 ohno verify
+ohno install                 # 可选：合作式 hooks
+ohno doctor                  # 健康检查
+ohno projectors refresh      # PROGRESS.md + AGENTS 托管块
 ohno resume
 ohno next
-ohno cockpit
+ohno cockpit                 # GET /api/state，约 2.5s 轮询
 ```
 
 ## CLI 内核，薄 Hooks
@@ -351,7 +356,7 @@ CLI 掌握状态和判断；Hooks 只负责在 Codex 即将行动的时刻执行
 
 | 接入点 | V1 职责 |
 | --- | --- |
-| `SessionStart` / `PostCompact` | 注入目标、当前任务、证据、阻塞和唯一下一步。 |
+| `SessionStart` / `PostCompact` | 尽量刷新投影，再注入有界 resume 胶囊（目标、看板、证据、阻塞、下一步、handoff）。 |
 | `PreToolUse` | 缺少任务合同，或路径超出声明范围时，阻止受支持的写操作。 |
 | `Stop` | 只在看到精确的 `OHNO_COMPLETE:<task-id>` 标记时检查：若 PASS 不新鲜或文档同步未清理，则保持任务未完成。缺失或改写过的标记不算完成信号。 |
 | Git `pre-commit` | 拒绝超范围或未经验证的提交。 |
@@ -361,18 +366,21 @@ Hooks 是约束合作型 Codex 的护栏，不是不可绕过的安全边界。
 ## 一个权威，多个视图
 
 ```text
-ohno CLI -- 原子替换 --> .ohno/state.json
-                              |-- status / resume / next
-                              |-- 薄 Codex Hooks
+ohno CLI -- 原子替换 --> .ohno/state.json   （唯一运行时权威）
+                              |-- status / resume / next / doctor
+                              |-- 薄 Codex Hooks（注入 capsule）
                               |-- Git pre-commit 护栏
-                              `-- 只读驾驶舱
+                              |-- projectors → .ohno/PROGRESS.md
+                              |               → AGENTS.md 托管块
+                              `-- 只读驾驶舱 ← GET /api/state（轮询）
 
 .ohno/truth.json ----------> 指定的规范文档
 ```
 
 - `.ohno/state.json` 是唯一的当前运行时权威。
 - `.ohno/truth.json` 是由 Owner 维护的规范文档适用清单。
-- Hooks、收据、终端输出和驾驶舱都只是投影，不会建立第二套真相。
+- Hooks、收据、终端输出、PROGRESS、AGENTS 托管块和驾驶舱都只是投影，
+  不会建立第二套真相。
 - 正常读取只看有边界的小状态，不扫描全部文档，也不运行完整测试套件。
 
 ## 刻意保持简单
@@ -400,19 +408,20 @@ ohno cockpit
 
 ```text
 +-- OH NO, CODEX! ---- 当前阶段 ---- 总进度 ---- REFRESH --+
-| NOW: 当前任务         |   任务环 PULSE        | PROOF     |
-| 预期用户行为          |   cursor / 任务数     | GUARDRAIL |
-| NEXT: 唯一下一步      |   CALIBRATION RAIL    | 真实计数  |
-| ATTENTION / DRIFT     |                       |           |
-| RECENT 已完成清单     |                       |           |
-+-- COMPLETION VECTOR -------------------------------------+
+| NOW / NEXT / ATTENTION |  任务环 + 校准轨     | PROOF     |
+| RECENT 已完成          |  cursor / 任务数     | PLAN BOARD|
+|                        |                      | Truth 列表|
+|                        |                      | Handoff   |
++-- COMPLETION VECTOR（约 2.5s 轮询 /api/state） ----------+
 ```
 
 UI 诚实规则：
 
+- 所有面板绑定与 `status --json` 相同的 `/api/state` 模型
 - 进度只等于 `cursor / task_count`
 - 不发明“信任天气”百分比或假指标
 - 状态不可用/损坏时显示明确离线门
+- 只读：UI 不写权威
 
 | 颜色 | 用途 |
 | --- | --- |
@@ -463,7 +472,9 @@ Oh No, Codex! 把它们变成约束、测试或明确不做的事情，而不是
 
 | 能力 | 状态 | 证据边界 |
 | --- | --- | --- |
+| 公开产品状态 | `V1_TRIAL_ACCEPTED` | 账本 Tasks 1–7 + Corrections 1–2 + 精华 E1–E8 |
 | CLI 状态、计划、验证、恢复、变更、Hooks 与原子写行为 | `LOCAL_PASS` | 公共 Node 黑盒 A01–A12、A15、A16 |
+| 计划看板、投影、doctor、handoff 身份 | `LOCAL_PASS` | projectors / resume-status-next / hooks 黑盒 |
 | 只读驾驶舱投影 | `LOCAL_PASS` | A13 HTTP 输出与 `status --json` 相等 |
 | 三个项目副本的完整闭环与 P01–P05 | `TRIAL_PASS` | 匿名 TypeScript CLI、React/Vite Web 与 Python OCR 源码副本上的有界 harness 试验 |
 | 桌面/窄屏视觉与无障碍验收 | `LOCAL_PASS` | Owner 授权外置浏览器后，用系统 Chrome/Edge 完成 A14 |
@@ -491,8 +502,9 @@ Oh No, Codex! 把它们变成约束、测试或明确不做的事情，而不是
 1. [产品合同](https://github.com/t01089572455/oh-no-codex/blob/main/docs/PRODUCT-CONTRACT.md)
 2. [V1 设计](https://github.com/t01089572455/oh-no-codex/blob/main/docs/DESIGN.md)
 3. [验收合同](https://github.com/t01089572455/oh-no-codex/blob/main/docs/ACCEPTANCE.md)
-4. [实现账本](https://github.com/t01089572455/oh-no-codex/blob/main/docs/IMPLEMENTATION-PLAN.md)
+4. [实现账本](https://github.com/t01089572455/oh-no-codex/blob/main/docs/IMPLEMENTATION-PLAN.md)（当前状态：`V1_TRIAL_ACCEPTED`）
 5. [Codex 十八宗罪](https://github.com/t01089572455/oh-no-codex/blob/main/docs/CODEX-SINS.md)
+6. [精华迁移清单](https://github.com/t01089572455/oh-no-codex/blob/main/docs/ESSENCE-BACKLOG.md)（E1–E8 已完成）
 
 ## 开源许可
 

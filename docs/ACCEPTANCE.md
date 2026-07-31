@@ -111,11 +111,13 @@ Expected:
 
 ## Completion language
 
-Before Task 7, public status remains `PLANNED` or precise `LOCAL_PASS` per row.
-After all A and P rows pass, status may become:
+Public product status is earned only from the rows above and the ledger:
 
-> `V1_TRIAL_ACCEPTED` — Codex-only cooperative harness accepted on the named
-> local black-box and disposable-project trials; no hostile-agent, production
-> authority, package publication, or universal speed claim.
+> **Current (earned):** `V1_TRIAL_ACCEPTED` — Codex-only cooperative harness
+> accepted on the named local black-box and disposable-project trials; no
+> hostile-agent, production authority, package publication, or universal speed
+> claim.
 
-Anything less remains `V1_CHANGES_REQUIRED` with exact failing rows.
+If any A/P row later fails or is withdrawn, status returns to
+`V1_CHANGES_REQUIRED` with the exact failing rows. Do not use older phrases
+such as “still PLANNED before Task 7” as current status.
