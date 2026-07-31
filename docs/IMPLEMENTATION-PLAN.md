@@ -554,9 +554,9 @@ Owning checks: projectors, codex-hooks, resume-status-next, cockpit black boxes.
 
 There is exactly one. **Unique next:**
 
-> **Stop.** Essence ports E1–E8 are complete as projections of
-> `.ohno/state.json`. Do not reintroduce Gateway / multi-authority design. Do
-> not publish npm without new Owner authorization.
+> **Owner authorized npm publish (2026-07-31).** Prepare and publish
+> `oh-no-codex@0.1.0` to the public npm registry when credentials are available.
+> Do not reintroduce Gateway / multi-authority design.
 
 ## Shared implementation rules
 

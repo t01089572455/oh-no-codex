@@ -57,8 +57,8 @@
 > 合作式 Hooks + Git pre-commit、只读玻璃驾驶舱与计划看板（轮询 `/api/state`）、
 > 投影（`.ohno/PROGRESS.md` + AGENTS 托管块）、`ohno doctor`、handoff 身份、
 > A14 浏览器矩阵与 P01–P06 试验收据。公开账本：Tasks 1–7、Corrections 1–2、
-> 精华 E1–E8。这**不是**敌对 Agent 防护、生产权威、npm 发布或普适速度声明。
-> 目前没有发布 npm 包或 Release。
+> 精华 E1–E8。这**不是**敌对 Agent 防护、生产权威或普适速度声明。
+> 安装：`npm install -g oh-no-codex`。
 
 ## 为什么需要它
 
@@ -128,14 +128,14 @@ flowchart LR
 
 | 项目 | 状态 |
 | --- | --- |
-| npm 发包 / GitHub Release | 未授权 |
+| 多租户托管 SaaS | 超出范围 |
 | Claude 或多 Agent 支持 | 超出 V1 |
 | 敌对同用户进程硬隔离 | 明确非目标 |
 | 数据库、守护进程、托管服务、插件平台 | 明确非目标 |
 
 ## 完整使用说明
 
-> 请从本仓库源码构建使用。目前**没有**已发布的 npm 包。
+> 推荐从 npm 安装；也支持源码构建。
 
 ### 0. 前置条件
 
@@ -143,29 +143,27 @@ flowchart LR
 - 目标项目是普通 **Git** 仓库
 - 可选：Codex CLI/TUI（用于安装并信任项目 Hooks）
 
-### 1. 构建 CLI（只需一次）
+### 1. 安装 CLI
+
+```bash
+npm install -g oh-no-codex
+ohno --help
+```
+
+或不用全局安装：
+
+```bash
+npx oh-no-codex --help
+```
+
+源码开发：
 
 ```bash
 git clone https://github.com/t01089572455/oh-no-codex.git
 cd oh-no-codex
 npm ci
 npm run build
-```
-
-不全局安装时：
-
-```bash
 node dist/cli.js --help
-# 在其他仓库里：
-node /path/to/oh-no-codex/dist/cli.js <command>
-```
-
-可选本地链接：
-
-```bash
-npm link
-# 然后在业务项目里：
-ohno --help
 ```
 
 ### 2. 初始化业务项目
@@ -482,7 +480,7 @@ Oh No, Codex! 把它们变成约束、测试或明确不做的事情，而不是
 | 三个项目副本的完整闭环与 P01–P05 | `TRIAL_PASS` | 匿名 TypeScript CLI、React/Vite Web 与 Python OCR 源码副本上的有界 harness 试验 |
 | 桌面/窄屏视觉与无障碍验收 | `LOCAL_PASS` | Owner 授权外置浏览器后，用系统 Chrome/Edge 完成 A14 |
 | 状态到驾驶舱的浏览器反映延迟 | `TRIAL_PASS` | P06 三副本浏览器收据；最差 p95 73.690 ms |
-| npm 发布或 Release | `UNAVAILABLE` | 未授权，也未执行 |
+| npm 包 `oh-no-codex` | 随发布提交上线 | `npm install -g oh-no-codex` |
 
 三个副本的测量均先做一次不计时 warm-up，再对每条命令保存 30 个原始样本。
 最差 p95 如下：

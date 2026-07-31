@@ -1,12 +1,11 @@
 {
   "name": "oh-no-codex",
-  "version": "0.0.0",
-  "private": true,
-  "description": "A cooperative anti-drift harness for Codex projects",
+  "version": "0.1.0",
+  "description": "A cooperative anti-drift harness for Codex vibe coding",
   "license": "MIT",
   "type": "module",
   "bin": {
-    "ohno": "./dist/cli.js"
+    "ohno": "dist/cli.js"
   },
   "files": [
     "dist",
@@ -23,9 +22,27 @@
   "engines": {
     "node": ">=22.20.0"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/t01089572455/oh-no-codex.git"
+  },
+  "homepage": "https://github.com/t01089572455/oh-no-codex#readme",
+  "bugs": {
+    "url": "https://github.com/t01089572455/oh-no-codex/issues"
+  },
+  "keywords": [
+    "codex",
+    "vibe-coding",
+    "ai-agents",
+    "agent-harness",
+    "anti-drift",
+    "black-box-testing",
+    "ohno"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepublishOnly": "npm run build",
     "test": "node --test test/blackbox/*.test.mjs",
     "test:acceptance": "node --test test/blackbox/*.test.mjs",
     "test:performance": "node --test test/performance/local-latency.test.mjs"

@@ -58,8 +58,8 @@
 > (polls `/api/state`), projectors (`.ohno/PROGRESS.md` + AGENTS managed block),
 > `ohno doctor`, handoff identity, A14 browser matrix, and P01–P06 trial
 > receipts. Public ledger: Tasks 1–7, Corrections 1–2, essence ports E1–E8.
-> This is **not** a hostile-agent, production-authority, package-publication, or
-> universal speed claim. No npm package has been published or released.
+> This is **not** a hostile-agent, production-authority, or universal speed
+> claim. Install: `npm install -g oh-no-codex`.
 
 ## Why
 
@@ -131,14 +131,14 @@ hostile-agent security, or a universal speed guarantee.
 
 | Item | Status |
 | --- | --- |
-| npm package publish / GitHub Release | Not authorized |
+| Hostile multi-tenant SaaS hosting | Out of scope |
 | Claude or multi-agent support | Out of V1 scope |
 | Hostile same-user containment | Explicit non-goal |
 | Database, daemon, hosted service, plugin platform | Explicit non-goals |
 
 ## Complete usage guide
 
-> Install from this repository source. No published npm release exists yet.
+> Preferred: install from npm. Source build remains supported.
 
 ### 0. Prerequisites
 
@@ -146,29 +146,27 @@ hostile-agent security, or a universal speed guarantee.
 - An ordinary **Git** repository (the project you want to harness)
 - Optional: Codex CLI/TUI for hook integration
 
-### 1. Build the CLI (once)
+### 1. Install the CLI
+
+```bash
+npm install -g oh-no-codex
+ohno --help
+```
+
+Or without a global install:
+
+```bash
+npx oh-no-codex --help
+```
+
+From source (development):
 
 ```bash
 git clone https://github.com/t01089572455/oh-no-codex.git
 cd oh-no-codex
 npm ci
 npm run build
-```
-
-Run it without a global install:
-
-```bash
 node dist/cli.js --help
-# or, from another repo:
-node /path/to/oh-no-codex/dist/cli.js <command>
-```
-
-Optional local bin link:
-
-```bash
-npm link
-# then, inside your project:
-ohno --help
 ```
 
 ### 2. Initialize a project
@@ -492,7 +490,7 @@ Capability labels name the evidence actually held by this repository:
 | Three copied-project loops and P01–P05 | `TRIAL_PASS` | Bounded harness trials on anonymous TypeScript CLI, React/Vite Web, and Python OCR source copies |
 | Desktop/narrow visual and accessibility acceptance | `LOCAL_PASS` | A14 via system Chrome/Edge after Owner authorized external browser |
 | State-to-Cockpit browser reflection | `TRIAL_PASS` | P06 three-copy browser receipt; worst p95 73.690 ms |
-| npm publication or release | `UNAVAILABLE` | Not authorized and not performed |
+| npm package `oh-no-codex` | Published when release commits land | `npm install -g oh-no-codex` |
 
 The three-copy measurements use one untimed warm-up and 30 raw samples per
 command per copy. Worst observed p95 values were:
