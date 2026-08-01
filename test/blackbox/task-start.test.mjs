@@ -15,6 +15,7 @@ import {
   runCli,
   spawnCli,
   runInit,
+  writeDefaultAcceptanceBasis,
 } from "../helpers/blackbox.mjs";
 
 const requiredFrozenFields = [
@@ -32,11 +33,13 @@ async function initialize(projectPath, projectGoal = "Ship one bounded change") 
 }
 
 async function writeProposal(projectPath, task) {
+  writeDefaultAcceptanceBasis(projectPath, [task], ".ohno/acceptance-basis.md");
   await writeFile(
     resolve(projectPath, ".ohno", "test-plan.json"),
     `${JSON.stringify({
       cursor: 0,
       ordered_tasks: [task],
+      acceptance_source: ".ohno/acceptance-basis.md",
     }, null, 2)}\n`,
     "utf8",
   );

@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { relative, resolve } from "node:path";
 
 import {
+  assertAcceptanceDenominator,
   assertPlanDiscipline,
   planSoftWarnings,
 } from "./discipline.js";
@@ -14,6 +15,7 @@ import {
   readState,
 } from "./state.js";
 import type {
+  AcceptanceBasis,
   PendingPlan,
   PlanTask,
   ProjectState,
@@ -22,8 +24,11 @@ import type {
 interface PlanProposalFile {
   cursor: number;
   ordered_tasks: PlanTask[];
-  /** Optional project-relative governing plan / checklist for denominator checks. */
-  acceptance_source?: string;
+  /**
+   * Required project-relative path to the external acceptance basis
+   * (detailed plan / checklist). Bound into plan_revision by content digest.
+   */
+  acceptance_source: string;
 }
 
 export interface PlanProposalEvidence {
@@ -32,6 +37,8 @@ export interface PlanProposalEvidence {
   head: string;
   proposedAt: string;
   exactDiff: string;
+  acceptanceSourcePath: string;
+  acceptanceSourceDigest: string;
   warnings: string[];
 }
 
@@ -66,6 +73,24 @@ function safeSourcePath(projectPath: string, input: string): {
     relativePath,
     absolutePath,
   };
+}
+
+function normalizeAcceptanceSourcePath(value: unknown): string {
+  if (
+    typeof value !== "string"
+    || value.trim() === ""
+    || value.includes("\\")
+    || value.includes("\0")
+    || value.startsWith("/")
+    || value.startsWith("../")
+    || value.includes("..")
+  ) {
+    throw new Error(
+      "ACCEPTANCE_BASIS_REQUIRED: acceptance_source must be a safe "
+        + "project-relative path to the external acceptance basis",
+    );
+  }
+  return value.trim().replaceAll("\\", "/");
 }
 
 function normalizeTask(value: unknown): PlanTask {
@@ -150,30 +175,17 @@ function parsePlan(bytes: string): PlanProposalFile {
   if (
     !keys.includes("cursor")
     || !keys.includes("ordered_tasks")
+    || !keys.includes("acceptance_source")
     || !keys.every((key) => allowed.has(key))
   ) {
     throw new Error(
-      "plan proposal may contain only cursor, ordered_tasks, "
-      + "and optional acceptance_source",
+      "ACCEPTANCE_BASIS_REQUIRED: plan proposal must contain cursor, "
+        + "ordered_tasks, and acceptance_source (external acceptance path)",
     );
   }
-  let acceptanceSource: string | undefined;
-  if (parsed.acceptance_source !== undefined) {
-    if (
-      typeof parsed.acceptance_source !== "string"
-      || parsed.acceptance_source.trim() === ""
-      || parsed.acceptance_source.includes("\\")
-      || parsed.acceptance_source.includes("\0")
-      || parsed.acceptance_source.startsWith("/")
-      || parsed.acceptance_source.startsWith("../")
-      || parsed.acceptance_source.includes("..")
-    ) {
-      throw new Error(
-        "acceptance_source must be a safe project-relative path",
-      );
-    }
-    acceptanceSource = parsed.acceptance_source.trim().replaceAll("\\", "/");
-  }
+  const acceptanceSource = normalizeAcceptanceSourcePath(
+    parsed.acceptance_source,
+  );
   const orderedTasks = parsed.ordered_tasks.map(normalizeTask);
   if ((parsed.cursor as number) > orderedTasks.length) {
     throw new Error("plan cursor cannot exceed ordered_tasks length");
@@ -185,9 +197,7 @@ function parsePlan(bytes: string): PlanProposalFile {
   return {
     cursor: parsed.cursor as number,
     ordered_tasks: orderedTasks,
-    ...(acceptanceSource === undefined
-      ? {}
-      : { acceptance_source: acceptanceSource }),
+    acceptance_source: acceptanceSource,
   };
 }
 
@@ -195,18 +205,26 @@ function exactPlanDiff(
   state: ProjectState,
   proposal: PlanProposalFile,
   planRevision: string,
+  basis: AcceptanceBasis,
 ): string {
   return `${JSON.stringify({
-    format: "ohno-linear-plan-diff-v1",
+    format: "ohno-linear-plan-diff-v2",
     before: {
       plan_revision: state.plan_revision,
       ordered_tasks: state.ordered_tasks,
       cursor: state.cursor,
+      acceptance_basis: state.plan_review === null
+        ? null
+        : {
+          path: state.plan_review.acceptance_source_path,
+          digest: state.plan_review.acceptance_source_digest,
+        },
     },
     after: {
       plan_revision: planRevision,
       ordered_tasks: proposal.ordered_tasks,
       cursor: proposal.cursor,
+      acceptance_basis: basis,
     },
   }, null, 2)}\n`;
 }
@@ -237,14 +255,59 @@ async function readSource(
   };
 }
 
+/**
+ * Load external acceptance basis: path must exist and be readable.
+ * Content digest binds into plan_revision.
+ */
+export async function loadAcceptanceBasis(
+  projectPath: string,
+  relativePath: string,
+): Promise<AcceptanceBasis & { prose: string }> {
+  const path = normalizeAcceptanceSourcePath(relativePath);
+  const absolutePath = resolve(projectPath, path);
+  let prose: string;
+  try {
+    prose = await readFile(absolutePath, "utf8");
+  } catch {
+    throw new Error(
+      `ACCEPTANCE_BASIS_UNREADABLE: cannot read acceptance_source ${path}`,
+    );
+  }
+  if (prose.trim() === "") {
+    throw new Error(
+      `ACCEPTANCE_BASIS_EMPTY: acceptance_source ${path} is empty`,
+    );
+  }
+  return {
+    path,
+    digest: sha256(prose),
+    prose,
+  };
+}
+
 export async function proposePlan(
   projectPath: string,
   sourcePath: string,
 ): Promise<PlanProposalEvidence> {
   const state = await readState(projectPath);
   const source = await readSource(projectPath, sourcePath);
-  const planRevision = planRevisionFor(source.proposal.ordered_tasks);
-  const exactDiff = exactPlanDiff(state, source.proposal, planRevision);
+  const basis = await loadAcceptanceBasis(
+    projectPath,
+    source.proposal.acceptance_source,
+  );
+  // Hard gate on propose: refuse silent denominator shrink early.
+  assertAcceptanceDenominator(source.proposal.ordered_tasks, basis.prose);
+
+  const planRevision = planRevisionFor(source.proposal.ordered_tasks, {
+    path: basis.path,
+    digest: basis.digest,
+  });
+  const exactDiff = exactPlanDiff(
+    state,
+    source.proposal,
+    planRevision,
+    { path: basis.path, digest: basis.digest },
+  );
   const diffDigest = sha256(exactDiff);
   const head = readGitHead(projectPath);
   const proposedAt = new Date().toISOString();
@@ -257,6 +320,8 @@ export async function proposePlan(
     proposed_at: proposedAt,
     source_path: source.sourcePath,
     source_digest: source.sourceDigest,
+    acceptance_source_path: basis.path,
+    acceptance_source_digest: basis.digest,
   };
   const recorded = await compareAndSwapStateAtomic(projectPath, state, {
     ...state,
@@ -266,29 +331,12 @@ export async function proposePlan(
     throw new Error("current state changed while recording the plan proposal");
   }
 
-  // Soft discipline warnings (FT-02/05/14 + denominator shrink) — cooperative.
-  let externalAcceptanceProse = "";
-  let acceptanceSourceUnreadable = false;
-  if (source.proposal.acceptance_source !== undefined) {
-    try {
-      const abs = resolve(projectPath, source.proposal.acceptance_source);
-      externalAcceptanceProse = await readFile(abs, "utf8");
-    } catch {
-      acceptanceSourceUnreadable = true;
-    }
-  }
+  // Soft warnings only for non-denominator discipline (weak blackbox note, etc.).
   const warnings = planSoftWarnings(source.proposal.ordered_tasks, {
-    externalAcceptanceProse,
+    externalAcceptanceProse: basis.prose,
+    // Denominator is hard-gated above; do not duplicate as WARN.
+    skipDenominator: true,
   });
-  if (
-    source.proposal.acceptance_source !== undefined
-    && acceptanceSourceUnreadable
-  ) {
-    warnings.push(
-      `WARN: acceptance_source ${source.proposal.acceptance_source} `
-        + "could not be read; denominator check used freeze contract only",
-    );
-  }
 
   return {
     planRevision,
@@ -296,6 +344,8 @@ export async function proposePlan(
     head,
     proposedAt,
     exactDiff,
+    acceptanceSourcePath: basis.path,
+    acceptanceSourceDigest: basis.digest,
     warnings,
   };
 }
@@ -329,8 +379,36 @@ export async function acceptPlan(
       "plan proposal file changed; record a new exact local plan review",
     );
   }
-  const currentRevision = planRevisionFor(source.proposal.ordered_tasks);
-  const currentDiff = exactPlanDiff(state, source.proposal, currentRevision);
+  if (
+    source.proposal.acceptance_source !== pending.acceptance_source_path
+  ) {
+    throw new Error(
+      "ACCEPTANCE_BASIS_DRIFT: acceptance_source path changed after propose",
+    );
+  }
+  // Re-read external basis at accept (CAS on content digest).
+  const basis = await loadAcceptanceBasis(
+    projectPath,
+    pending.acceptance_source_path,
+  );
+  if (basis.digest !== pending.acceptance_source_digest) {
+    throw new Error(
+      "ACCEPTANCE_BASIS_DRIFT: acceptance_source content changed after propose; "
+        + "record a new plan propose",
+    );
+  }
+  assertAcceptanceDenominator(source.proposal.ordered_tasks, basis.prose);
+
+  const currentRevision = planRevisionFor(source.proposal.ordered_tasks, {
+    path: basis.path,
+    digest: basis.digest,
+  });
+  const currentDiff = exactPlanDiff(
+    state,
+    source.proposal,
+    currentRevision,
+    { path: basis.path, digest: basis.digest },
+  );
   if (
     currentRevision !== pending.plan_revision
     || sha256(currentDiff) !== pending.diff_digest
@@ -340,7 +418,8 @@ export async function acceptPlan(
     );
   }
 
-  // Hard gate (FT-02/05/14): Owner may override with --allow-weak-plan only.
+  // Weak blackbox / micro-plan hard gate (Owner may pass --allow-weak-plan).
+  // Denominator shrink is NEVER overridable by --allow-weak-plan.
   assertPlanDiscipline(source.proposal.ordered_tasks, {
     allowWeakPlan: options.allowWeakPlan === true,
   });
@@ -361,6 +440,8 @@ export async function acceptPlan(
       head: pending.head,
       proposed_at: pending.proposed_at,
       recorded_at: recordedAt,
+      acceptance_source_path: pending.acceptance_source_path,
+      acceptance_source_digest: pending.acceptance_source_digest,
     },
     pending_plan: null,
     active_task: null,
@@ -372,5 +453,9 @@ export async function acceptPlan(
   const weakNote = options.allowWeakPlan
     ? "WEAK_PLAN_OVERRIDE: Owner passed --allow-weak-plan\n"
     : "";
-  return `${weakNote}LOCAL_REVIEW_RECORDED: ${pending.plan_revision}\n`;
+  return (
+    `${weakNote}LOCAL_REVIEW_RECORDED: ${pending.plan_revision}\n`
+    + `ACCEPTANCE_SOURCE: ${pending.acceptance_source_path}\n`
+    + `ACCEPTANCE_DIGEST: ${pending.acceptance_source_digest}\n`
+  );
 }

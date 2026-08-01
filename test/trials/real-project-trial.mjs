@@ -176,11 +176,23 @@ function trialTask({
 
 async function reviewPlan(cwd, tasks, fileName) {
   const planPath = resolve(cwd, fileName);
+  const basis = ".ohno/acceptance-basis.md";
+  const lines = [
+    "# Trial acceptance basis",
+    "",
+    "Claims only the frozen black-box commands in this trial plan.",
+    "",
+  ];
+  for (const task of tasks.filter((t) => t.status === "FROZEN")) {
+    lines.push(`## ${task.id}`, "", `- test: \`${task.test_command}\``, "");
+  }
+  await writeFile(resolve(cwd, basis), `${lines.join("\n")}`, "utf8");
   await writeFile(
     planPath,
     `${JSON.stringify({
       cursor: 0,
       ordered_tasks: tasks,
+      acceptance_source: basis,
     }, null, 2)}\n`,
     "utf8",
   );

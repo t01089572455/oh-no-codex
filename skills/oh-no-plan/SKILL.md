@@ -10,11 +10,24 @@ description: >
 
 ## Propose
 
-Write a review JSON under **`.ohno/`** (cursor + ordered_tasks), then:
+Write a review JSON under **`.ohno/`** with:
+
+- `cursor`, `ordered_tasks`
+- **`acceptance_source`**: project-relative path to the external acceptance basis
+  (detailed plan / checklist). Required. Content digest binds into `plan_revision`.
 
 ```bash
 ohno plan propose --file .ohno/review-plan.json
 ```
+
+### Acceptance denominator hard gate (#7/#9)
+
+- Frozen `test_command` / stop / expected **must not shrink** heavy paths claimed
+  by the acceptance basis (e.g. 微信开发者工具 / multi-user smoke vs unit-only Vitest).
+- Missing, empty, or unreadable `acceptance_source` → refuse propose.
+- After propose, if basis **content** changes → accept refuses (`ACCEPTANCE_BASIS_DRIFT`).
+- Shrink → refuse with `ACCEPTANCE_DENOMINATOR_SHRINK` (not overridable by
+  `--allow-weak-plan`).
 
 ### FREEZE / no-ACTIVE write path (0.1.6)
 

@@ -90,19 +90,51 @@ export function frozenPlanTask(overrides = {}) {
   };
 }
 
+/**
+ * Write a minimal acceptance basis that matches frozen test_commands
+ * (no heavy-path claims). Required by the denominator hard gate.
+ */
+export function writeDefaultAcceptanceBasis(cwd, tasks, relativePath) {
+  const frozen = tasks.filter((task) => task.status === "FROZEN");
+  const lines = [
+    "# Acceptance basis (test helper)",
+    "",
+    "This basis only claims the frozen black-box commands listed below.",
+    "No additional user-path claims beyond those commands.",
+    "",
+  ];
+  for (const task of frozen) {
+    lines.push(`## ${task.id}`);
+    lines.push("");
+    lines.push(`- test_command: \`${task.test_command}\``);
+    lines.push(`- expected: ${task.expected_behavior ?? ""}`);
+    lines.push("");
+  }
+  if (frozen.length === 0) {
+    lines.push("Outline-only plan; no frozen black box yet.");
+    lines.push("");
+  }
+  writeFileSync(resolve(cwd, relativePath), `${lines.join("\n")}`, "utf8");
+  return relativePath;
+}
+
 export function reviewPlan(
   cwd,
   {
     tasks = [frozenPlanTask()],
     cursor = 0,
     fileName = ".ohno/test-plan.json",
+    acceptanceSource = ".ohno/acceptance-basis.md",
+    allowWeakPlan = false,
   } = {},
 ) {
+  writeDefaultAcceptanceBasis(cwd, tasks, acceptanceSource);
   writeFileSync(
     resolve(cwd, fileName),
     `${JSON.stringify({
       cursor,
       ordered_tasks: tasks,
+      acceptance_source: acceptanceSource,
     }, null, 2)}\n`,
     "utf8",
   );
@@ -121,20 +153,25 @@ export function reviewPlan(
   )?.[1];
   assert.ok(revision, "plan proposal must expose its exact revision");
   assert.ok(diff, "plan proposal must expose its exact diff digest");
-  const accepted = runCli(cwd, [
+  const acceptArgs = [
     "plan",
     "accept",
     "--revision",
     revision,
     "--diff",
     diff,
-  ]);
+  ];
+  if (allowWeakPlan) {
+    acceptArgs.push("--allow-weak-plan");
+  }
+  const accepted = runCli(cwd, acceptArgs);
   assert.equal(accepted.status, 0, accepted.stderr);
   return {
     revision,
     diff,
     proposed,
     accepted,
+    acceptanceSource,
   };
 }
 

@@ -118,10 +118,10 @@ export function weakBlackboxSummary(testCommand: string): string | null {
 }
 
 /**
- * Soft warn when stop/expected language names a heavier user path than the
- * frozen test_command (Task2-style denominator shrink / #7/#9). Cooperative
- * only — does not hard-refuse; Owner may still accept intentionally narrow
- * unit black boxes, but the shrink is not silent.
+ * Heavy acceptance-path signals. When present in freeze contract or external
+ * acceptance basis but absent from frozen test_command, that is denominator
+ * shrink (#7/#9). Hard-gated on plan propose/accept (not overridable by
+ * --allow-weak-plan).
  */
 const heavyPathSignals: Array<{ re: RegExp; label: string }> = [
   { re: /微信开发者工具/u, label: "WeChat DevTools" },
@@ -230,7 +230,7 @@ export function planDisciplineViolations(tasks: Array<{
   return out;
 }
 
-/** Soft warnings for propose (never hard-gate alone). */
+/** Soft warnings for propose (never hard-gate alone; denominator is hard). */
 export function planSoftWarnings(
   tasks: Array<{
     id: string;
@@ -242,7 +242,10 @@ export function planSoftWarnings(
     allowed_files?: string[];
     test_command?: string;
   }>,
-  options: { externalAcceptanceProse?: string } = {},
+  options: {
+    externalAcceptanceProse?: string;
+    skipDenominator?: boolean;
+  } = {},
 ): string[] {
   const warnings: string[] = [];
   if (planLooksLikeCommitLicense(tasks)) {
@@ -261,12 +264,40 @@ export function planSoftWarnings(
     if (weak !== null) {
       warnings.push(`WARN: task ${task.id}: ${weak}`);
     }
-    const shrink = denominatorShrinkSummary(task, external);
-    if (shrink !== null) {
-      warnings.push(`WARN: ${shrink}`);
+    if (options.skipDenominator !== true) {
+      const shrink = denominatorShrinkSummary(task, external);
+      if (shrink !== null) {
+        warnings.push(`WARN: ${shrink}`);
+      }
     }
   }
   return warnings;
+}
+
+/**
+ * Hard gate: frozen tasks must not shrink the acceptance denominator relative
+ * to freeze-contract prose or the external acceptance basis. Not overridable
+ * by --allow-weak-plan.
+ */
+export function assertAcceptanceDenominator(
+  tasks: Array<{
+    id?: string;
+    status?: string;
+    expected_behavior?: string;
+    stop_condition?: string;
+    test_command?: string;
+  }>,
+  externalAcceptanceProse: string,
+): void {
+  for (const task of tasks) {
+    if (task.status !== undefined && task.status !== "FROZEN") {
+      continue;
+    }
+    const shrink = denominatorShrinkSummary(task, externalAcceptanceProse);
+    if (shrink !== null) {
+      throw new Error(`ACCEPTANCE_DENOMINATOR_SHRINK: ${shrink}`);
+    }
+  }
 }
 
 export function assertPlanDiscipline(

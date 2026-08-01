@@ -384,6 +384,8 @@ async function main(): Promise<void> {
       `DIFF_DIGEST: ${proposal.diffDigest}`,
       `HEAD: ${proposal.head}`,
       `PROPOSED_AT: ${proposal.proposedAt}`,
+      `ACCEPTANCE_SOURCE: ${proposal.acceptanceSourcePath}`,
+      `ACCEPTANCE_DIGEST: ${proposal.acceptanceSourceDigest}`,
       `EXACT_PLAN_DIFF_BYTES: ${
         Buffer.byteLength(proposal.exactDiff, "utf8")
       }`,

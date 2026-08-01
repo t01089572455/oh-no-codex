@@ -91,16 +91,20 @@ test("plan review rejects unbounded root globs without writing active authority"
   const before = await readStateBytes(projectPath);
 
   for (const pattern of ["**", "*.ts", "**/*", "README*"]) {
+    const tasks = [
+      frozenPlanTask({
+        id: `reject-${pattern.replaceAll(/[^A-Za-z0-9]+/g, "-")}`,
+        allowed_files: [pattern, "src/ok.ts"],
+      }),
+    ];
+    const { writeDefaultAcceptanceBasis } = await import("../helpers/blackbox.mjs");
+    writeDefaultAcceptanceBasis(projectPath, tasks, ".ohno/acceptance-basis.md");
     await writeFile(
       resolve(projectPath, ".ohno", "bad-plan.json"),
       `${JSON.stringify({
         cursor: 0,
-        ordered_tasks: [
-          frozenPlanTask({
-            id: `reject-${pattern.replaceAll(/[^A-Za-z0-9]+/g, "-")}`,
-            allowed_files: [pattern, "src/ok.ts"],
-          }),
-        ],
+        ordered_tasks: tasks,
+        acceptance_source: ".ohno/acceptance-basis.md",
       }, null, 2)}\n`,
       "utf8",
     );

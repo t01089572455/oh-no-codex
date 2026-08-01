@@ -296,27 +296,31 @@ test("PreToolUse allows .ohno plan JSON when next is FREEZE_TASK", async (t) => 
   );
   const passCmd = `"${process.execPath}" "pass.mjs"`;
   const planPath = ".ohno/freeze-setup.json";
+  const tasks = [
+    frozenPlanTask({
+      id: "done-slice",
+      title: "Done slice",
+      expected_behavior: "A pass script exits zero",
+      test_command: passCmd,
+      stop_condition: "Stop after pass",
+      allowed_files: ["pass.mjs"],
+      time_budget_minutes: 30,
+    }),
+    {
+      id: "outline-next",
+      title: "Outline next",
+      goal: "freeze later",
+      status: "OUTLINE",
+    },
+  ];
+  const { writeDefaultAcceptanceBasis } = await import("../helpers/blackbox.mjs");
+  writeDefaultAcceptanceBasis(projectPath, tasks, ".ohno/acceptance-basis.md");
   await writeFile(
     resolve(projectPath, planPath),
     `${JSON.stringify({
       cursor: 0,
-      ordered_tasks: [
-        frozenPlanTask({
-          id: "done-slice",
-          title: "Done slice",
-          expected_behavior: "A pass script exits zero",
-          test_command: passCmd,
-          stop_condition: "Stop after pass",
-          allowed_files: ["pass.mjs"],
-          time_budget_minutes: 30,
-        }),
-        {
-          id: "outline-next",
-          title: "Outline next",
-          goal: "freeze later",
-          status: "OUTLINE",
-        },
-      ],
+      ordered_tasks: tasks,
+      acceptance_source: ".ohno/acceptance-basis.md",
     }, null, 2)}\n`,
     "utf8",
   );

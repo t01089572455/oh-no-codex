@@ -80,6 +80,12 @@ export interface VerificationReceipt {
   finished_at: string;
 }
 
+/** External acceptance basis bound into plan_revision (denominator hard gate). */
+export interface AcceptanceBasis {
+  path: string;
+  digest: string;
+}
+
 export interface PlanReview {
   status: "LOCAL_REVIEW_RECORDED";
   plan_revision: string;
@@ -87,6 +93,8 @@ export interface PlanReview {
   head: string;
   proposed_at: string;
   recorded_at: string;
+  acceptance_source_path: string;
+  acceptance_source_digest: string;
 }
 
 export interface PendingPlan {
@@ -98,6 +106,8 @@ export interface PendingPlan {
   proposed_at: string;
   source_path: string;
   source_digest: string;
+  acceptance_source_path: string;
+  acceptance_source_digest: string;
 }
 
 export type TruthClassification =
@@ -292,9 +302,20 @@ export function isPlanTask(value: unknown): value is PlanTask {
     && isFrozenFields(value);
 }
 
-export function planRevisionFor(tasks: readonly PlanTask[]): string {
+/**
+ * Plan revision binds ordered_tasks and the external acceptance basis
+ * (path + content digest) so the denominator cannot drift silently.
+ */
+export function planRevisionFor(
+  tasks: readonly PlanTask[],
+  acceptanceBasis: AcceptanceBasis | null = null,
+): string {
   return createHash("sha256")
-    .update(JSON.stringify(tasks))
+    .update(JSON.stringify({
+      format: "ohno-plan-revision-v2",
+      ordered_tasks: tasks,
+      acceptance_basis: acceptanceBasis,
+    }))
     .digest("hex");
 }
 
@@ -401,6 +422,8 @@ function isPlanReview(value: unknown): value is PlanReview {
       "head",
       "proposed_at",
       "recorded_at",
+      "acceptance_source_path",
+      "acceptance_source_digest",
     ])
     && value.status === "LOCAL_REVIEW_RECORDED"
     && isSha256(value.plan_revision)
@@ -408,7 +431,9 @@ function isPlanReview(value: unknown): value is PlanReview {
     && isGitHead(value.head)
     && isRfc3339Timestamp(value.proposed_at)
     && isRfc3339Timestamp(value.recorded_at)
-    && Date.parse(value.recorded_at) >= Date.parse(value.proposed_at);
+    && Date.parse(value.recorded_at) >= Date.parse(value.proposed_at)
+    && isSafePath(value.acceptance_source_path)
+    && isSha256(value.acceptance_source_digest);
 }
 
 function isOrderedTasks(value: unknown): value is PlanTask[] {
@@ -420,8 +445,9 @@ function isOrderedTasks(value: unknown): value is PlanTask[] {
 }
 
 function isPendingPlan(value: unknown): value is PendingPlan {
-  return isRecord(value)
-    && hasExactKeys(value, [
+  if (
+    !isRecord(value)
+    || !hasExactKeys(value, [
       "plan_revision",
       "ordered_tasks",
       "cursor",
@@ -430,18 +456,32 @@ function isPendingPlan(value: unknown): value is PendingPlan {
       "proposed_at",
       "source_path",
       "source_digest",
+      "acceptance_source_path",
+      "acceptance_source_digest",
     ])
-    && isSha256(value.plan_revision)
-    && isOrderedTasks(value.ordered_tasks)
-    && value.plan_revision === planRevisionFor(value.ordered_tasks)
-    && Number.isSafeInteger(value.cursor)
-    && (value.cursor as number) >= 0
-    && (value.cursor as number) <= value.ordered_tasks.length
-    && isSha256(value.diff_digest)
-    && isGitHead(value.head)
-    && isRfc3339Timestamp(value.proposed_at)
-    && isSafePath(value.source_path)
-    && isSha256(value.source_digest);
+    || !isSha256(value.plan_revision)
+    || !isOrderedTasks(value.ordered_tasks)
+    || !Number.isSafeInteger(value.cursor)
+    || (value.cursor as number) < 0
+    || (value.cursor as number) > value.ordered_tasks.length
+    || !isSha256(value.diff_digest)
+    || !isGitHead(value.head)
+    || !isRfc3339Timestamp(value.proposed_at)
+    || !isSafePath(value.source_path)
+    || !isSha256(value.source_digest)
+    || !isSafePath(value.acceptance_source_path)
+    || !isSha256(value.acceptance_source_digest)
+  ) {
+    return false;
+  }
+  const basis: AcceptanceBasis = {
+    path: value.acceptance_source_path as string,
+    digest: value.acceptance_source_digest as string,
+  };
+  return value.plan_revision === planRevisionFor(
+    value.ordered_tasks as PlanTask[],
+    basis,
+  );
 }
 
 const truthClassifications: readonly TruthClassification[] = [
@@ -615,12 +655,20 @@ function isProjectState(value: unknown): value is ProjectState {
   } else if (
     !isSha256(value.plan_revision)
     || !isOrderedTasks(value.ordered_tasks)
-    || value.plan_revision !== planRevisionFor(value.ordered_tasks)
-    || (value.cursor as number) > value.ordered_tasks.length
     || value.plan_review === null
+    || !isPlanReview(value.plan_review)
     || value.plan_review.plan_revision !== value.plan_revision
+    || (value.cursor as number) > value.ordered_tasks.length
   ) {
     return false;
+  } else {
+    const basis: AcceptanceBasis = {
+      path: value.plan_review.acceptance_source_path,
+      digest: value.plan_review.acceptance_source_digest,
+    };
+    if (value.plan_revision !== planRevisionFor(value.ordered_tasks, basis)) {
+      return false;
+    }
   }
 
   if (value.status === "ACTIVE") {

@@ -9,28 +9,32 @@ import {
   reviewPlan,
   runCli,
   runInit,
+  writeDefaultAcceptanceBasis,
 } from "../helpers/blackbox.mjs";
 
 test("field trial: plan propose warns and accept refuses micro-plan without override", async (t) => {
   const projectPath = await createProject(t);
   assert.equal(runInit(projectPath).status, 0);
+  const tasks = [
+    frozenPlanTask({
+      id: "commit-design-doc",
+      title: "Commit design document only",
+      goal: "Submit the design markdown",
+      expected_behavior: "Design doc is staged and format-checked",
+      test_command: "git diff --cached --check -- docs/design.md",
+      allowed_files: ["docs/design.md"],
+      stop_condition: "Only the design doc",
+      time_budget_minutes: 15,
+    }),
+  ];
+  writeDefaultAcceptanceBasis(projectPath, tasks, ".ohno/acceptance-basis.md");
   const planPath = resolve(projectPath, ".ohno", "toy-plan.json");
   await writeFile(
     planPath,
     JSON.stringify({
       cursor: 0,
-      ordered_tasks: [
-        frozenPlanTask({
-          id: "commit-design-doc",
-          title: "Commit design document only",
-          goal: "Submit the design markdown",
-          expected_behavior: "Design doc is staged and format-checked",
-          test_command: "git diff --cached --check -- docs/design.md",
-          allowed_files: ["docs/design.md"],
-          stop_condition: "Only the design doc",
-          time_budget_minutes: 15,
-        }),
-      ],
+      ordered_tasks: tasks,
+      acceptance_source: ".ohno/acceptance-basis.md",
     }, null, 2),
     "utf8",
   );
@@ -96,22 +100,25 @@ test("field trial: resume frames plan progress and authority cwd", async (t) => 
 test("field trial: doctor warns on weak blackbox when weak plan forced", async (t) => {
   const projectPath = await createProject(t);
   assert.equal(runInit(projectPath).status, 0);
+  const tasks = [
+    frozenPlanTask({
+      id: "commit-design-doc",
+      title: "Commit design document only",
+      goal: "Submit the design markdown",
+      expected_behavior: "Design doc is staged and format-checked",
+      test_command: "git diff --cached --check -- docs/design.md",
+      allowed_files: ["docs/design.md"],
+      stop_condition: "Only the design doc",
+    }),
+  ];
+  writeDefaultAcceptanceBasis(projectPath, tasks, ".ohno/acceptance-basis.md");
   const planPath = resolve(projectPath, ".ohno", "toy-plan.json");
   await writeFile(
     planPath,
     JSON.stringify({
       cursor: 0,
-      ordered_tasks: [
-        frozenPlanTask({
-          id: "commit-design-doc",
-          title: "Commit design document only",
-          goal: "Submit the design markdown",
-          expected_behavior: "Design doc is staged and format-checked",
-          test_command: "git diff --cached --check -- docs/design.md",
-          allowed_files: ["docs/design.md"],
-          stop_condition: "Only the design doc",
-        }),
-      ],
+      ordered_tasks: tasks,
+      acceptance_source: ".ohno/acceptance-basis.md",
     }, null, 2),
     "utf8",
   );
