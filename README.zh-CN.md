@@ -1,8 +1,8 @@
-<a id="readme-top"></a>
+﻿<a id="readme-top"></a>
 
 <div align="center">
 
-[English](./README.md) · [**简体中文**](./README.zh-CN.md)
+[English](./README.md) 路 [**绠€浣撲腑鏂?*](./README.zh-CN.md)
 
 </div>
 
@@ -12,285 +12,263 @@
   <img
     src="./assets/brand/oh-no-codex-lockup.png"
     width="920"
-    alt="Oh No, Codex!：蓝色编程玩偶还想继续敲键盘，被红叉拦下"
+    alt="Oh No, Codex!锛氳摑鑹茬紪绋嬬帺鍋惰繕鎯崇户缁暡閿洏锛岃绾㈠弶鎷︿笅"
   >
 </p>
 
 <p align="center">
-  <strong>Codex 代码写得再溜，也照样能把项目带跑偏。</strong><br>
-  Oh No 是装在本地的护栏：把活收成「一刀」、用你看得见的验收卡住它、<br>
-  换会话不用翻聊天记录 — 收口的是<strong>这一刀任务</strong>，不是把 Codex 关掉。
-</p>
+  <strong>Codex 浠ｇ爜鍐欏緱鍐嶆簻锛屼篃鐓ф牱鑳芥妸椤圭洰甯﹁窇鍋忋€?/strong><br>
+  Oh No 鏄鍦ㄦ湰鍦扮殑鎶ゆ爮锛氭妸娲绘敹鎴愩€屼竴鍒€銆嶃€佺敤浣犵湅寰楄鐨勯獙鏀跺崱浣忓畠銆?br>
+  鎹細璇濅笉鐢ㄧ炕鑱婂ぉ璁板綍 鈥?鏀跺彛鐨勬槸<strong>杩欎竴鍒€浠诲姟</strong>锛屼笉鏄妸 Codex 鍏虫帀銆?</p>
 
 <p align="center">
-  <code>收束</code>&nbsp;&nbsp;·&nbsp;&nbsp;<code>验收</code>&nbsp;&nbsp;·&nbsp;&nbsp;<code>恢复</code>&nbsp;&nbsp;·&nbsp;&nbsp;<code>这一刀到此为止</code>
+  <code>鏀舵潫</code>&nbsp;&nbsp;路&nbsp;&nbsp;<code>楠屾敹</code>&nbsp;&nbsp;路&nbsp;&nbsp;<code>鎭㈠</code>&nbsp;&nbsp;路&nbsp;&nbsp;<code>杩欎竴鍒€鍒版涓烘</code>
 </p>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/oh-no-codex"><img alt="npm" src="https://img.shields.io/npm/v/oh-no-codex?style=flat-square&color=74D6B1&labelColor=202624&label=npm"></a>
-  <img alt="状态" src="https://img.shields.io/badge/status-V1_TRIAL_ACCEPTED-74D6B1?style=flat-square&labelColor=202624">
+  <img alt="鐘舵€? src="https://img.shields.io/badge/status-V1_TRIAL_ACCEPTED-74D6B1?style=flat-square&labelColor=202624">
   <img alt="codex" src="https://img.shields.io/badge/for-Codex_CLI-FF4B35?style=flat-square&labelColor=202624">
-  <img alt="skills" src="https://img.shields.io/badge/13_个_Codex_skill-74D6B1?style=flat-square&labelColor=202624">
+  <img alt="skills" src="https://img.shields.io/badge/13_涓猒Codex_skill-74D6B1?style=flat-square&labelColor=202624">
   <a href="./LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-FFF1CE?style=flat-square&labelColor=202624"></a>
 </p>
 
 <p align="center">
-  <a href="#痛点">痛点</a> ·
-  <a href="#十八宗罪">十八宗罪</a> ·
-  <a href="#它到底管什么">它管什么</a> ·
-  <a href="#安装">安装</a> ·
-  <a href="#像-skill-一样用">Skill 用法</a> ·
-  <a href="#证据">证据</a>
+  <a href="#鐥涚偣">鐥涚偣</a> 路
+  <a href="#鍗佸叓瀹楃姜">鍗佸叓瀹楃姜</a> 路
+  <a href="#瀹冨埌搴曠浠€涔?>瀹冪浠€涔?/a> 路
+  <a href="#瀹夎">瀹夎</a> 路
+  <a href="#鍍?skill-涓€鏍风敤">Skill 鐢ㄦ硶</a> 路
+  <a href="#璇佹嵁">璇佹嵁</a>
 </p>
 
 ---
 
-## 痛点
+## 鐥涚偣
 
-模型一直在「干活」，仓库却离你要的越来越远：
+妯″瀷涓€鐩村湪銆屽共娲汇€嶏紝浠撳簱鍗寸浣犺鐨勮秺鏉ヨ秺杩滐細
 
-| | 现象 | 例子 |
+| | 鐜拌薄 | 渚嬪瓙 |
 | ---: | --- | --- |
-| 1 | **范围被偷换** | 说做外贸系统，写着写着变成重构底层平台 |
-| 2 | **假完成** | 单测、mock 全绿，用户真点路径还是挂 |
-| 3 | **现场对不上** | 换个会话，只好翻聊天考古「上次说到哪了」 |
-| 4 | **这一刀收不掉** | 真过了验收，又拿「下一步」当空白授权继续摊 |
+| 1 | **鑼冨洿琚伔鎹?* | 璇村仛澶栬锤绯荤粺锛屽啓鐫€鍐欑潃鍙樻垚閲嶆瀯搴曞眰骞冲彴 |
+| 2 | **鍋囧畬鎴?* | 鍗曟祴銆乵ock 鍏ㄧ豢锛岀敤鎴风湡鐐硅矾寰勮繕鏄寕 |
+| 3 | **鐜板満瀵逛笉涓?* | 鎹釜浼氳瘽锛屽彧濂界炕鑱婂ぉ鑰冨彜銆屼笂娆¤鍒板摢浜嗐€?|
+| 4 | **杩欎竴鍒€鏀朵笉鎺?* | 鐪熻繃浜嗛獙鏀讹紝鍙堟嬁銆屼笅涓€姝ャ€嶅綋绌虹櫧鎺堟潈缁х画鎽?|
 
-Oh No 要解决的是：打开项目就能从**文件**里读出进度，而不是靠记性。
+Oh No 瑕佽В鍐崇殑鏄細鎵撳紑椤圭洰灏辫兘浠?*鏂囦欢**閲岃鍑鸿繘搴︼紝鑰屼笉鏄潬璁版€с€?
+1. 宸茬粡鍋氬畬浠€涔堬紵  
+2. **褰撳墠鍙噯鍋?*鍝竴鍒€锛? 
+3. 鐢ㄥ摢鏉?*鐢ㄦ埛鐪嬪緱瑙?*鐨勫懡浠ょ畻杩囧叧锛? 
+4. 鍗″湪鍝紵  
+5. 璁″垝涓婄殑**涓嬩竴姝?*鏄粈涔堬紵锛堝彧鏄寚璺紝涓嶆槸鏂版巿鏉冿級
 
-1. 已经做完什么？  
-2. **当前只准做**哪一刀？  
-3. 用哪条**用户看得见**的命令算过关？  
-4. 卡在哪？  
-5. 计划上的**下一步**是什么？（只是指路，不是新授权）
+娌℃湁銆岄」鐩€?goal銆嶈繖閬撻棬妲涖€備骇鍝佹剰鍥惧啓鍦?**璁″垝浠诲姟** 鍜?**`ohno requirements note`** 閲屽嵆鍙€?
+---
 
-没有「项目总 goal」这道门槛。产品意图写在 **计划任务** 和 **`ohno requirements note`** 里即可。
+## 鍗佸叓瀹楃姜
+
+闀夸細璇濋噷鍙嶅韪╃殑鍧戯紝鐐瑰悕鎴愯〃 鈥?鐢ㄦ潵瀹氳璁℃晫锛屼笉鏄啀閫犲崄鍏釜鍔熻兘銆? 
+缁嗚处瑙?[`docs/CODEX-SINS.md`](./docs/CODEX-SINS.md)銆?
+| # | 鍙硶 | 浜鸿瘽 |
+| ---: | --- | --- |
+| 1 | 瓒婁繋浠ｅ簴 | 浣犺鎵囬棬锛屽畠鐩栧骇鍩?|
+| 2 | 瑙ｉ噴鍒版渶澶?| 銆岀鎺т竴涓嬨€嶅彉鎴愭暣濂椾腑鍙?|
+| 3 | 鍋氬畬涓嶅仠 | 杩欎竴鍒€杩囦簡杩樻帴鐫€鎽?|
+| 4 | 瀹℃煡鍙樻敼鏉?| 銆屽府鎴戠湅鐪嬨€嶅彉鎴愰粯榛樺ぇ鏀?|
+| 5 | 鍍靛案鏉冨▉ | 鏃ц鍒掑帇杩囦綘鏈€鏂拌娉?|
+| 6 | 鎽樿褰撶湡 | 鍘嬬缉绋垮彉鎴愬亣鍘嗗彶 |
+| 7 | 灞€閮ㄧ豢鐏?| 涓€涓?mock 灏卞綋浜у搧鑳界敤 |
+| 8 | 鑷鑷瘽 | 鑷繁鍐欏畬鑷繁榧撴帉 |
+| 9 | 娴嬭瘯婕旀垙 | 鍐呴儴鏋濇潯缁匡紝鐢ㄦ埛璺緞绾?|
+| 10 | 鐩爣琚疆鎹?| 瑕嗙洊鐜囨瘮浣犵殑缁撴灉杩橀噸瑕?|
+| 11 | 瀹＄鍔犳垙 | 楠屾敹椤硅秺鍔犺秺澶?|
+| 12 | 鎺у埗绋?| 宸ュ叿姣旇窇鍋忚繕璐?|
+| 13 | 鍙﹁捣鐐夌伓 | 鏀剧潃 Git 鍜屾祴璇曚笉鐢紝纭€犳柊浣撶郴 |
+| 14 | 宸ヤ綔鍖鸿閿?| 鍐欓敊鐩綍銆佸啓閿欏垎鏀?|
+| 15 | 浜ゆ帴鐢╅攨 | 鏂颁細璇濆厛鑰冨彜鍗婂皬鏃?|
+| 16 | 鐣岄潰鍨簳 | 鍐呮牳鍫嗕笁鍛紝UI 浠庢病璁ょ湡楠?|
+| 17 | 闄勫拰涔卞惞 | 绉掑洖銆屼綘璇村緱瀵广€? 鏃犺瘉鎹壙璇?|
+| 18 | 閬撴瓑鐧芥惌 | 瀵逛笉璧峰畬浜嗭紝鏄庡ぉ鐓х姱 |
 
 ---
 
-## 十八宗罪
-
-长会话里反复踩的坑，点名成表 — 用来定设计敌，不是再造十八个功能。  
-细账见 [`docs/CODEX-SINS.md`](./docs/CODEX-SINS.md)。
-
-| # | 叫法 | 人话 |
-| ---: | --- | --- |
-| 1 | 越俎代庖 | 你要扇门，它盖座城 |
-| 2 | 解释到最大 | 「管控一下」变成整套中台 |
-| 3 | 做完不停 | 这一刀过了还接着摊 |
-| 4 | 审查变改权 | 「帮我看看」变成默默大改 |
-| 5 | 僵尸权威 | 旧计划压过你最新说法 |
-| 6 | 摘要当真 | 压缩稿变成假历史 |
-| 7 | 局部绿灯 | 一个 mock 就当产品能用 |
-| 8 | 自说自话 | 自己写完自己鼓掌 |
-| 9 | 测试演戏 | 内部枝条绿，用户路径红 |
-| 10 | 目标被置换 | 覆盖率比你的结果还重要 |
-| 11 | 审稿加戏 | 验收项越加越多 |
-| 12 | 控制税 | 工具比跑偏还贵 |
-| 13 | 另起炉灶 | 放着 Git 和测试不用，硬造新体系 |
-| 14 | 工作区认错 | 写错目录、写错分支 |
-| 15 | 交接甩锅 | 新会话先考古半小时 |
-| 16 | 界面垫底 | 内核堆三周，UI 从没认真验 |
-| 17 | 附和乱吹 | 秒回「你说得对」+ 无证据承诺 |
-| 18 | 道歉白搭 | 对不起完了，明天照犯 |
-
----
-
-## 它到底管什么
-
+## 瀹冨埌搴曠浠€涔?
 <p align="center">
-  <img src="./assets/brand/oh-no-loop.png" width="880" alt="任务 → 验收 → 收口这一刀">
+  <img src="./assets/brand/oh-no-loop.png" width="880" alt="浠诲姟 鈫?楠屾敹 鈫?鏀跺彛杩欎竴鍒€">
 </p>
 
-| 事 | 含义 |
+| 浜?| 鍚箟 |
 | --- | --- |
-| **收束一刀** | 写之前定死：用户可见行为、一条验收命令、可改文件、时限、何时停 |
-| **验收** | `ohno verify` 跑**那条**命令，不看 Agent 自吹 |
-| **收口** | 真 PASS 才关掉这一刀、推进计划；`next` 只**指路** |
-| **找回现场** | `ohno resume` / 驾驶舱读 `.ohno/state.json`（唯一真相源） |
+| **鏀舵潫涓€鍒€** | 鍐欎箣鍓嶅畾姝伙細鐢ㄦ埛鍙琛屼负銆佷竴鏉￠獙鏀跺懡浠ゃ€佸彲鏀规枃浠躲€佹椂闄愩€佷綍鏃跺仠 |
+| **楠屾敹** | `ohno verify` 璺?*閭ｆ潯**鍛戒护锛屼笉鐪?Agent 鑷惞 |
+| **鏀跺彛** | 鐪?PASS 鎵嶅叧鎺夎繖涓€鍒€銆佹帹杩涜鍒掞紱`next` 鍙?*鎸囪矾** |
+| **鎵惧洖鐜板満** | `ohno resume` / 椹鹃┒鑸辫 `.ohno/state.json`锛堝敮涓€鐪熺浉婧愶級 |
 
-Hooks 和 Git pre-commit 是**合作式护栏**（注入进度、拦越权写），不是防你自己账号作恶的安全沙箱。
-
-日常给模型用的入口是 **13 个 Codex skill**（`oh-no-verify`、`oh-no-task` …），装在 `~/.codex/skills/` 下。  
-**初始化 / 装 hooks 只在终端做**（`ohno init`、`ohno install`），不做成 skill。  
-别把长命令整段贴进聊天——会被冲淡。
-
+Hooks 鍜?Git pre-commit 鏄?*鍚堜綔寮忔姢鏍?*锛堟敞鍏ヨ繘搴︺€佹嫤瓒婃潈鍐欙級锛屼笉鏄槻浣犺嚜宸辫处鍙蜂綔鎭剁殑瀹夊叏娌欑銆?
+鏃ュ父缁欐ā鍨嬬敤鐨勫叆鍙ｆ槸 **13 涓?Codex skill**锛坄oh-no-verify`銆乣oh-no-task` 鈥︼級锛岃鍦?`~/.codex/skills/` 涓嬨€? 
+**鍒濆鍖?/ 瑁?hooks 鍙湪缁堢鍋?*锛坄ohno init`銆乣ohno install`锛夛紝涓嶅仛鎴?skill銆? 
+鍒妸闀垮懡浠ゆ暣娈佃创杩涜亰澶┾€斺€斾細琚啿娣°€?
 ---
 
-## 安装
+## 瀹夎
 
 ```bash
 npm install -g oh-no-codex
-cd 你的业务仓库
-ohno init                 # 建 .ohno/，不要再写 --goal
-ohno install              # hooks + 日常 oh-no-* skill
+cd 浣犵殑涓氬姟浠撳簱
+ohno init                 # 寤?.ohno/锛屼笉瑕佸啀鍐?--goal
+ohno install              # hooks + 鏃ュ父 oh-no-* skill
 ```
 
 ```bash
-ohno skill install        # 只刷新 skill
+ohno skill install        # 鍙埛鏂?skill
 ohno skill status
-# 新开一个 Codex 会话，方便 skill 被扫到
-```
+# 鏂板紑涓€涓?Codex 浼氳瘽锛屾柟渚?skill 琚壂鍒?```
 
-需要 Node.js **≥ 22.20**。包名：[oh-no-codex](https://www.npmjs.com/package/oh-no-codex)（`0.1.3`）。
-
+闇€瑕?Node.js **鈮?22.20**銆傚寘鍚嶏細[oh-no-codex](https://www.npmjs.com/package/oh-no-codex)锛坄0.1.4`锛夈€?
 ---
 
-## 驾驶舱怎么开
+## 椹鹃┒鑸辨€庝箞寮€
 
-本地**只读**看板，数据和 `ohno status --json` 一致。
-
+鏈湴**鍙**鐪嬫澘锛屾暟鎹拰 `ohno status --json` 涓€鑷淬€?
 ```bash
-cd 你的业务仓库           # 先 ohno init 过
-ohno cockpit
+cd 浣犵殑涓氬姟浠撳簱           # 鍏?ohno init 杩?ohno cockpit
 ```
 
-终端会打印本机地址，例如：
+缁堢浼氭墦鍗版湰鏈哄湴鍧€锛屼緥濡傦細
 
 ```text
 Cockpit: http://127.0.0.1:53123/
 ```
 
-1. 用浏览器打开这行 URL（仅本机，不要用局域网 IP）。  
-2. 页面大约每 2.5 秒拉一次 `/api/state`。  
-3. 终端里 Ctrl+C 结束（没有后台守护进程）。  
-4. 或在 Codex 里用 skill **`oh-no-cockpit`** / 说「打开驾驶舱」。
-
-### 驾驶舱数据从哪来（它不「管」进度）
+1. 鐢ㄦ祻瑙堝櫒鎵撳紑杩欒 URL锛堜粎鏈満锛屼笉瑕佺敤灞€鍩熺綉 IP锛夈€? 
+2. 椤甸潰澶х害姣?2.5 绉掓媺涓€娆?`/api/state`銆? 
+3. 缁堢閲?Ctrl+C 缁撴潫锛堟病鏈夊悗鍙板畧鎶よ繘绋嬶級銆? 
+4. 鎴栧湪 Codex 閲岀敤 skill **`oh-no-cockpit`** / 璇淬€屾墦寮€椹鹃┒鑸便€嶃€?
+### 椹鹃┒鑸辨暟鎹粠鍝潵锛堝畠涓嶃€岀銆嶈繘搴︼級
 
 ```text
-plan accept / task start / verify …
-        ↓ 写入
-  .ohno/state.json          ← 唯一权威
-        ↓ readModel()
-  GET /api/state            ← 与 status --json 同源
-        ↓ 浏览器轮询
-  驾驶舱画面
-```
+plan accept / task start / verify 鈥?        鈫?鍐欏叆
+  .ohno/state.json          鈫?鍞竴鏉冨▉
+        鈫?readModel()
+  GET /api/state            鈫?涓?status --json 鍚屾簮
+        鈫?娴忚鍣ㄨ疆璇?  椹鹃┒鑸辩敾闈?```
 
-| 你在屏上看到的 | 实际怎么来的 |
+| 浣犲湪灞忎笂鐪嬪埌鐨?| 瀹為檯鎬庝箞鏉ョ殑 |
 | --- | --- |
-| 一共多少子任务 | 计划里 `ordered_tasks.length`（`task_count`） |
-| 推进到哪一刀 | 状态里的 `cursor` + 当前 `active_task` |
-| 总体完成度条 | 前端用 **`cursor / task_count`**（没有别的假百分比） |
-| 看板 DONE/ACTIVE… | 由 cursor、任务类型、验收是否失败推导，**不另存库** |
+| 涓€鍏卞灏戝瓙浠诲姟 | 璁″垝閲?`ordered_tasks.length`锛坄task_count`锛?|
+| 鎺ㄨ繘鍒板摢涓€鍒€ | 鐘舵€侀噷鐨?`cursor` + 褰撳墠 `active_task` |
+| 鎬讳綋瀹屾垚搴︽潯 | 鍓嶇鐢?**`cursor / task_count`**锛堟病鏈夊埆鐨勫亣鐧惧垎姣旓級 |
+| 鐪嬫澘 DONE/ACTIVE鈥?| 鐢?cursor銆佷换鍔＄被鍨嬨€侀獙鏀舵槸鍚﹀け璐ユ帹瀵硷紝**涓嶅彟瀛樺簱** |
 
-进度只由 CLI / skill 改 state 推动；驾驶舱**只读展示**，点不了「完成 50%」。
-
+杩涘害鍙敱 CLI / skill 鏀?state 鎺ㄥ姩锛涢┚椹惰埍**鍙灞曠ず**锛岀偣涓嶄簡銆屽畬鎴?50%銆嶃€?
 ---
 
-## 到底怎么用（自动还是手动）
-
-**正常情况：你不用自己点 skill。**  
-`init` + `install` 之后，日常说人话即可；Codex 应靠 skill 描述自己想起
-`oh-no-verify` / `oh-no-task` 等，再去跑对应的 `ohno` 命令。  
-Oh No 是**合作式护栏**，不是全自动无人驾驶：后台 hooks 会帮一点；
-**验收必须真的跑过 `ohno verify`**，不会静默替你盖章。
-
-| 谁在动 | 典型情况 |
+## 鍒板簳鎬庝箞鐢紙鑷姩杩樻槸鎵嬪姩锛?
+**姝ｅ父鎯呭喌锛氫綘涓嶇敤鑷繁鐐?skill銆?*  
+`init` + `install` 涔嬪悗锛屾棩甯歌浜鸿瘽鍗冲彲锛汣odex 搴旈潬 skill 鎻忚堪鑷繁鎯宠捣
+`oh-no-verify` / `oh-no-task` 绛夛紝鍐嶅幓璺戝搴旂殑 `ohno` 鍛戒护銆? 
+Oh No 鏄?*鍚堜綔寮忔姢鏍?*锛屼笉鏄叏鑷姩鏃犱汉椹鹃┒锛氬悗鍙?hooks 浼氬府涓€鐐癸紱
+**楠屾敹蹇呴』鐪熺殑璺戣繃 `ohno verify`**锛屼笉浼氶潤榛樻浛浣犵洊绔犮€?
+| 璋佸湪鍔?| 鍏稿瀷鎯呭喌 |
 | --- | --- |
-| **自动（hooks）** | 新开会话 / 压缩后注入进度；乱写范围外文件可能被拦 |
-| **你说人话 → 模型调 skill** | 「开工 / 验收 / 卡在哪 / 开驾驶舱」→ 模型执行 `ohno …` |
-| **你自己敲终端** | 每个仓库装一次；或模型忘了验收、你想 dual-check 时 |
+| **鑷姩锛坔ooks锛?* | 鏂板紑浼氳瘽 / 鍘嬬缉鍚庢敞鍏ヨ繘搴︼紱涔卞啓鑼冨洿澶栨枃浠跺彲鑳借鎷?|
+| **浣犺浜鸿瘽 鈫?妯″瀷璋?skill** | 銆屽紑宸?/ 楠屾敹 / 鍗″湪鍝?/ 寮€椹鹃┒鑸便€嶁啋 妯″瀷鎵ц `ohno 鈥 |
+| **浣犺嚜宸辨暡缁堢** | 姣忎釜浠撳簱瑁呬竴娆★紱鎴栨ā鍨嬪繕浜嗛獙鏀躲€佷綘鎯?dual-check 鏃?|
 
-### 每个仓库只做一次（你自己终端）
+### 姣忎釜浠撳簱鍙仛涓€娆★紙浣犺嚜宸辩粓绔級
 
 ```bash
 npm install -g oh-no-codex
-cd 你的业务仓库
+cd 浣犵殑涓氬姟浠撳簱
 ohno init
 ohno install
-# 再新开一个 Codex 会话
+# 鍐嶆柊寮€涓€涓?Codex 浼氳瘽
 ```
 
-### 日常对话例子（你怎么说 → 期望 Codex 干什么）
+### 鏃ュ父瀵硅瘽渚嬪瓙锛堜綘鎬庝箞璇?鈫?鏈熸湜 Codex 骞蹭粈涔堬級
 
-**例子 A — 第一刀**
+**渚嬪瓙 A 鈥?绗竴鍒€**
 
-| 你说 | Codex 应该 |
+| 浣犺 | Codex 搴旇 |
 | --- | --- |
-| 「这是个外贸系统。列个线性计划，第一刀做客户建档。」 | 走 **`oh-no-plan`**：写 plan、`propose`，等你审完再 `accept` |
-| 「开工。」 | **`oh-no-task`** → `ohno task start`，再只在允许文件里改 |
-| 「做完了，帮我验收。」 | **`oh-no-verify`** → 只跑 `ohno verify`，按真实 PASS/FAIL 回话 |
+| 銆岃繖鏄釜澶栬锤绯荤粺銆傚垪涓嚎鎬ц鍒掞紝绗竴鍒€鍋氬鎴峰缓妗ｃ€傘€?| 璧?**`oh-no-plan`**锛氬啓 plan銆乣propose`锛岀瓑浣犲瀹屽啀 `accept` |
+| 銆屽紑宸ャ€傘€?| **`oh-no-task`** 鈫?`ohno task start`锛屽啀鍙湪鍏佽鏂囦欢閲屾敼 |
+| 銆屽仛瀹屼簡锛屽府鎴戦獙鏀躲€傘€?| **`oh-no-verify`** 鈫?鍙窇 `ohno verify`锛屾寜鐪熷疄 PASS/FAIL 鍥炶瘽 |
 
-**例子 B — 做了一半**
+**渚嬪瓙 B 鈥?鍋氫簡涓€鍗?*
 
-| 你说 | Codex 应该 |
+| 浣犺 | Codex 搴旇 |
 | --- | --- |
-| 「现在卡在哪？」 | **`oh-no-resume`**（或 status） |
-| 「记一句：先不做多租户。」 | **`oh-no-requirements`** → `requirements note` |
-| 「需求变了：优先做 PDF 导出。」 | **`oh-no-change`**，再换计划 |
-| 「打开驾驶舱。」 | **`oh-no-cockpit`** → `ohno cockpit`，把 `http://127.0.0.1:…/` 告诉你 |
+| 銆岀幇鍦ㄥ崱鍦ㄥ摢锛熴€?| **`oh-no-resume`**锛堟垨 status锛?|
+| 銆岃涓€鍙ワ細鍏堜笉鍋氬绉熸埛銆傘€?| **`oh-no-requirements`** 鈫?`requirements note` |
+| 銆岄渶姹傚彉浜嗭細浼樺厛鍋?PDF 瀵煎嚭銆傘€?| **`oh-no-change`**锛屽啀鎹㈣鍒?|
+| 銆屾墦寮€椹鹃┒鑸便€傘€?| **`oh-no-cockpit`** 鈫?`ohno cockpit`锛屾妸 `http://127.0.0.1:鈥?` 鍛婅瘔浣?|
 
-**例子 C — 什么时候要你自己上手**
+**渚嬪瓙 C 鈥?浠€涔堟椂鍊欒浣犺嚜宸变笂鎵?*
 
-| 情况 | 你做什么 |
+| 鎯呭喌 | 浣犲仛浠€涔?|
 | --- | --- |
-| 仓库第一次用 Oh No | 终端：`ohno init` + `ohno install` |
-| 模型嘴上说做完了，没跑 verify | 再说「跑 ohno verify」，或自己终端执行 |
-| 想盯进度板 | 终端 / 对话：`ohno cockpit` 或「开驾驶舱」 |
-| 升级后 skill 丢了 | `ohno skill install`，新开会话 |
+| 浠撳簱绗竴娆＄敤 Oh No | 缁堢锛歚ohno init` + `ohno install` |
+| 妯″瀷鍢翠笂璇村仛瀹屼簡锛屾病璺?verify | 鍐嶈銆岃窇 ohno verify銆嶏紝鎴栬嚜宸辩粓绔墽琛?|
+| 鎯崇洴杩涘害鏉?| 缁堢 / 瀵硅瘽锛歚ohno cockpit` 鎴栥€屽紑椹鹃┒鑸便€?|
+| 鍗囩骇鍚?skill 涓簡 | `ohno skill install`锛屾柊寮€浼氳瘽 |
 
-### 日常 skill（备查，不是每天勾选）
+### 鏃ュ父 skill锛堝鏌ワ紝涓嶆槸姣忓ぉ鍕鹃€夛級
 
-`ohno init` / `ohno install` **只在终端做**，不做成 skill。  
-具体 shell 写在各 skill 文件里给模型看，用户表里不列「背后命令」，避免你去背 CLI。
-
-| Skill | 你怎么说 |
+`ohno init` / `ohno install` **鍙湪缁堢鍋?*锛屼笉鍋氭垚 skill銆? 
+鍏蜂綋 shell 鍐欏湪鍚?skill 鏂囦欢閲岀粰妯″瀷鐪嬶紝鐢ㄦ埛琛ㄩ噷涓嶅垪銆岃儗鍚庡懡浠ゃ€嶏紝閬垮厤浣犲幓鑳?CLI銆?
+| Skill | 浣犳€庝箞璇?|
 | --- | --- |
-| `oh-no-plan` | 排计划、接计划 |
-| `oh-no-task` | 开工 |
-| `oh-no-verify` | 做完了、验收 |
-| `oh-no-resume` | 卡在哪 |
-| `oh-no-status` | 看状态 |
-| `oh-no-next` | 下一步是啥 |
-| `oh-no-change` | 需求变了 |
-| `oh-no-requirements` | 把这句话记下来 |
-| `oh-no-preferences` | 改工作习惯开关 |
-| `oh-no-doctor` | 体检 |
-| `oh-no-cockpit` | 开驾驶舱 |
-| `oh-no-projectors` | 刷进度文件 |
-| `oh-no-control` | 不知道用哪个 |
+| `oh-no-plan` | 鎺掕鍒掋€佹帴璁″垝 |
+| `oh-no-task` | 寮€宸?|
+| `oh-no-verify` | 鍋氬畬浜嗐€侀獙鏀?|
+| `oh-no-resume` | 鍗″湪鍝?|
+| `oh-no-status` | 鐪嬬姸鎬?|
+| `oh-no-next` | 涓嬩竴姝ユ槸鍟?|
+| `oh-no-change` | 闇€姹傚彉浜?|
+| `oh-no-requirements` | 鎶婅繖鍙ヨ瘽璁颁笅鏉?|
+| `oh-no-preferences` | 鏀瑰伐浣滀範鎯紑鍏?|
+| `oh-no-doctor` | 浣撴 |
+| `oh-no-cockpit` | 寮€椹鹃┒鑸?|
+| `oh-no-projectors` | 鍒疯繘搴︽枃浠?|
+| `oh-no-control` | 涓嶇煡閬撶敤鍝釜 |
 
-硬规矩：没 **verify PASS** 不许说做完；**next 不是开工证**；真相只在 **`.ohno/state.json`**。
-
+纭鐭╋細娌?**verify PASS** 涓嶈璇村仛瀹岋紱**next 涓嶆槸寮€宸ヨ瘉**锛涚湡鐩稿彧鍦?**`.ohno/state.json`**銆?
 ---
 
-## 盒子里有什么
-
-| 块 | 干什么 |
+## 鐩掑瓙閲屾湁浠€涔?
+| 鍧?| 骞蹭粈涔?|
 | --- | --- |
-| CLI | init / plan / task / verify / change / resume … |
-| 13 个 skill | 日常可发现流程（init/install 仍走终端） |
-| Hooks + pre-commit | 注入现场、拦越权写 |
-| 投影文件 | PROGRESS、需求日志、AGENTS 短胶囊 |
-| 偏好 | 可选：先调研、复用开源、前端先抄再改 |
-| 驾驶舱 | 只读看板，和 `status --json` 同源 |
+| CLI | init / plan / task / verify / change / resume 鈥?|
+| 13 涓?skill | 鏃ュ父鍙彂鐜版祦绋嬶紙init/install 浠嶈蛋缁堢锛?|
+| Hooks + pre-commit | 娉ㄥ叆鐜板満銆佹嫤瓒婃潈鍐?|
+| 鎶曞奖鏂囦欢 | PROGRESS銆侀渶姹傛棩蹇椼€丄GENTS 鐭兌鍥?|
+| 鍋忓ソ | 鍙€夛細鍏堣皟鐮斻€佸鐢ㄥ紑婧愩€佸墠绔厛鎶勫啀鏀?|
+| 椹鹃┒鑸?| 鍙鐪嬫澘锛屽拰 `status --json` 鍚屾簮 |
 
-**V1 故意不做：** 数据库、常驻进程、技能市场产品、多 Agent 调度、「绝对防君子也防小人」。
-
+**V1 鏁呮剰涓嶅仛锛?* 鏁版嵁搴撱€佸父椹昏繘绋嬨€佹妧鑳藉競鍦轰骇鍝併€佸 Agent 璋冨害銆併€岀粷瀵归槻鍚涘瓙涔熼槻灏忎汉銆嶃€?
 ---
 
-## 证据
+## 璇佹嵁
 
-| 说法 | 标签 |
+| 璇存硶 | 鏍囩 |
 | --- | --- |
-| 产品状态 | `V1_TRIAL_ACCEPTED` |
-| CLI / hooks / 原子状态 | `LOCAL_PASS` |
-| 驾驶舱 = status JSON | `LOCAL_PASS` |
-| 真实项目副本试验 | `TRIAL_PASS`（P01–P06） |
-| npm | **`0.1.3`**（13 个日常 skill；init/install 仅终端） |
+| 浜у搧鐘舵€?| `V1_TRIAL_ACCEPTED` |
+| CLI / hooks / 鍘熷瓙鐘舵€?| `LOCAL_PASS` |
+| 椹鹃┒鑸?= status JSON | `LOCAL_PASS` |
+| 鐪熷疄椤圭洰鍓湰璇曢獙 | `TRIAL_PASS`锛圥01鈥揚06锛?|
+| npm | **`0.1.4`**锛?3 涓棩甯?skill锛沬nit/install 浠呯粓绔級 |
 
-合同：[产品](./docs/PRODUCT-CONTRACT.md) · [设计](./docs/DESIGN.md) · [验收](./docs/ACCEPTANCE.md) · [十八宗罪](./docs/CODEX-SINS.md)
+鍚堝悓锛歔浜у搧](./docs/PRODUCT-CONTRACT.md) 路 [璁捐](./docs/DESIGN.md) 路 [楠屾敹](./docs/ACCEPTANCE.md) 路 [鍗佸叓瀹楃姜](./docs/CODEX-SINS.md)
 
 ---
 
 <p align="center">
-  <sub>MIT · 独立社区项目 · 与 OpenAI 无隶属或背书关系</sub>
+  <sub>MIT 路 鐙珛绀惧尯椤圭洰 路 涓?OpenAI 鏃犻毝灞炴垨鑳屼功鍏崇郴</sub>
 </p>
 
 <p align="center">
-  <strong>收成一刀。验给你看。别靠聊天考古。</strong>
+  <strong>鏀舵垚涓€鍒€銆傞獙缁欎綘鐪嬨€傚埆闈犺亰澶╄€冨彜銆?/strong>
 </p>
 
-<p align="center"><a href="#readme-top">↑ 回顶</a></p>
+<p align="center"><a href="#readme-top">鈫?鍥為《</a></p>

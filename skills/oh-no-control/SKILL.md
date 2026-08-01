@@ -30,7 +30,7 @@ ohno install          # hooks + day-to-day oh-no-* skills
 | Skill | When user means |
 | --- | --- |
 | `oh-no-plan` | 排计划 / 接受计划 |
-| `oh-no-task` | 开工 |
+| `oh-no-task` | 开工 / reopen STALE slice |
 | `oh-no-verify` | 做完了 / 验收 |
 | `oh-no-resume` | 卡在哪 |
 | `oh-no-status` | 状态 |
@@ -48,5 +48,19 @@ Exact shell lines live **inside each skill file** (for you), not in the user cha
 
 1. Never claim done without **`ohno verify` PASS**.  
 2. `next` is a locator, not new permission.  
-3. `.ohno/state.json` is sole runtime authority.  
-4. Live board in `AGENTS.md` managed block — procedure in these skills.
+3. `.ohno/state.json` is sole runtime authority **for this cwd** (worktrees differ).  
+4. Live board in `AGENTS.md` managed block — procedure in these skills.  
+5. `PROJECT_COMPLETE` / plan progress % = **this linear plan**, not product done.  
+6. Prefer multi-slice product plans; avoid one-task commit-license micro-plans.  
+7. After PASS-then-STALE: `ohno task reopen` (not a fake new plan).  
+8. Capture Owner decisions with `ohno requirements note` during discovery.  
+9. Multi-agent (Codex spawn) is outside Oh No — root still runs plan/task/verify.
+
+## Windows
+
+- Install: `npm install -g oh-no-codex` then ensure npm global bin is on PATH  
+  (often `…\nodejs\node_global`).  
+- Run `ohno` via the npm shim (`ohno.cmd`), never double-click `dist\cli.js`  
+  (Windows Script Host cannot run ESM — “无效字符”).  
+- PowerShell: prefer simple commands; avoid over-quoted multi-step pipelines  
+  for `ohno verify` subject tests when possible.

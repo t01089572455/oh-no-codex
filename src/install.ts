@@ -166,12 +166,20 @@ export async function installGuardrails(
       }`,
     ]);
 
+  const windowsTips = process.platform === "win32"
+    ? [
+      "Windows: ensure npm global bin is on PATH (often …\\nodejs\\node_global).",
+      "Windows: use ohno.cmd — never double-click dist\\cli.js (WScript cannot run ESM).",
+    ]
+    : [];
+
   if (states.every(({ status }) => status === "INSTALLED_TEMPLATE")) {
     return [
       "COOPERATIVE_GUARDRAIL already installed (idempotent).",
       "  .codex/hooks.json: SessionStart, PostCompact, PreToolUse, Stop",
       "  .git/hooks/pre-commit",
       "Codex hook feature and trust: UNVERIFIED; review with /hooks.",
+      ...windowsTips,
       ...skillLines,
       "",
     ].join("\n");
@@ -206,6 +214,7 @@ export async function installGuardrails(
     "  .git/hooks/pre-commit",
     "Codex hook feature and trust: UNVERIFIED; review with /hooks.",
     "Coverage is limited to supported local hook paths and ordinary Git.",
+    ...windowsTips,
     ...skillLines,
     "",
   ].join("\n");
