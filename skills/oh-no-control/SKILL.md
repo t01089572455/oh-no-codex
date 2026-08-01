@@ -21,7 +21,7 @@ which command. Humans should not paste long CLI into chat.
 ```bash
 npm install -g oh-no-codex
 cd <git-repo>
-ohno init
+ohno init --goal "Owner project goal"
 ohno install          # hooks + day-to-day oh-no-* skills
 ```
 
