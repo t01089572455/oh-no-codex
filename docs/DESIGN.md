@@ -121,14 +121,19 @@ required, the sole next action is `MIGRATE_ACCEPTANCE_BASIS` (even over FAIL
 proof). Migration is two-phase and fail-closed:
 
 1. `ohno migrate acceptance-basis --file <basis.json>` — zero-write preview of
-   the full side-effect exact diff (Truth action, inventory rebuild, active
-   task clear, pending rebind-or-clear, status);
-2. re-run with returned `--diff <sha256> --head <git-head>` — CAS apply only.
+   the semantic side-effect exact diff (Truth action, inventory rebuild, active
+   task clear, pending rebind-or-clear, status); wall-clock review fields are
+   marked `apply_metadata`;
+2. re-run with caller-returned `--diff <sha256> --head <git-head>` — under
+   `state.cas.lock`, atomic Truth replace then state CAS (rollback Truth on
+   state-write failure). Provenance is **caller-returned local review**, not
+   Owner identity.
 
 Only ENOENT may create `.ohno/truth.json`; corrupt Truth is never overwritten.
-Pending schema-2 proposals are rebound to schema 3 (not silently dropped);
-stale pending alongside an accepted plan is cleared only as an explicit
-side-effect in the exact migrate diff.
+Pending schema-2 proposals rebind with a fresh v3 exact plan diff when the
+proposal source is still accept-able; otherwise pending is cleared to
+`PROPOSE_PLAN`. Stale pending alongside an accepted plan is cleared only as an
+explicit side-effect in the exact migrate diff.
 
 This is a conceptual public contract, not a demand for a generalized domain
 model. The implementation may serialize a flatter equivalent if public
@@ -217,7 +222,8 @@ schema 3 without dropping cursor or completed history. Empty Truth inventories
 are migratable; migrate rebuilds the full high-risk inventory (including
 Truth file and projector-owned AGENTS path) so `change begin` does not
 self-lock. `LOCAL_REVIEW_RECORDED` is written only on successful apply after
-the Owner returns digest/HEAD—not self-approved before display. While
+caller-returned digest/HEAD (local review, not Owner identity)—not
+self-approved before display. While
 migration is required, verify, task start, pre-commit, and Codex completion
 hooks refuse product work (parseable PreToolUse mutations; arbitrary Bash
 remains an honest cooperative limitation). Unknown FROZEN plan fields are

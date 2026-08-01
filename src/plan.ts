@@ -27,7 +27,7 @@ import type {
   ProjectState,
 } from "./state.js";
 
-interface PlanProposalFile {
+export interface PlanProposalFile {
   cursor: number;
   ordered_tasks: PlanTask[];
   /** Project-relative path to structured acceptance basis JSON (Truth target). */
@@ -144,7 +144,8 @@ function normalizeTask(value: unknown): PlanTask {
   throw new Error("ordered task status must be FROZEN or OUTLINE");
 }
 
-function parsePlan(bytes: string): PlanProposalFile {
+/** Parse a plan proposal file body (same rules as plan propose/accept). */
+export function parsePlan(bytes: string): PlanProposalFile {
   let parsed: unknown;
   try {
     parsed = JSON.parse(bytes);
@@ -194,7 +195,8 @@ function parsePlan(bytes: string): PlanProposalFile {
   };
 }
 
-function exactPlanDiff(
+/** Exact plan diff body used by propose/accept (and migrate pending rebind). */
+export function exactPlanDiff(
   state: ProjectState,
   proposal: PlanProposalFile,
   planRevision: string,

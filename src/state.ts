@@ -923,11 +923,9 @@ export async function writeStateAtomic(
   }
 }
 
-export async function compareAndSwapStateAtomic(
+async function acquireStateCasLock(
   projectPath: string,
-  expected: ProjectState,
-  next: ProjectState,
-): Promise<boolean> {
+): Promise<FileHandle> {
   const directory = stateDirectory(projectPath);
   const lockPath = resolve(directory, "state.cas.lock");
   const deadline = Date.now() + 2_000;
@@ -947,7 +945,27 @@ export async function compareAndSwapStateAtomic(
       await delay(10);
     }
   }
+  return handle;
+}
 
+async function releaseStateCasLock(
+  projectPath: string,
+  handle: FileHandle,
+): Promise<void> {
+  const lockPath = resolve(stateDirectory(projectPath), "state.cas.lock");
+  try {
+    await handle.close();
+  } finally {
+    await rm(lockPath, { force: true });
+  }
+}
+
+export async function compareAndSwapStateAtomic(
+  projectPath: string,
+  expected: ProjectState,
+  next: ProjectState,
+): Promise<boolean> {
+  const handle = await acquireStateCasLock(projectPath);
   try {
     const current = await readState(projectPath);
     if (!isDeepStrictEqual(current, expected)) {
@@ -956,10 +974,41 @@ export async function compareAndSwapStateAtomic(
     await writeStateAtomic(projectPath, next);
     return true;
   } finally {
-    try {
-      await handle.close();
-    } finally {
-      await rm(lockPath, { force: true });
+    await releaseStateCasLock(projectPath, handle);
+  }
+}
+
+/**
+ * CAS under the same state.cas.lock: after expected matches, run side-effect
+ * commit (e.g. atomic Truth replace), then write next state. On state write
+ * failure, invoke rollback so ordinary failures leave no half-migration.
+ */
+export async function compareAndSwapStateWithSideEffects(
+  projectPath: string,
+  expected: ProjectState,
+  next: ProjectState,
+  sideEffects: {
+    commit: () => Promise<void>;
+    rollback: () => Promise<void>;
+  },
+): Promise<boolean> {
+  const handle = await acquireStateCasLock(projectPath);
+  let committed = false;
+  try {
+    const current = await readState(projectPath);
+    if (!isDeepStrictEqual(current, expected)) {
+      return false;
     }
+    await sideEffects.commit();
+    committed = true;
+    await writeStateAtomic(projectPath, next);
+    return true;
+  } catch (error) {
+    if (committed) {
+      await sideEffects.rollback().catch(() => undefined);
+    }
+    throw error;
+  } finally {
+    await releaseStateCasLock(projectPath, handle);
   }
 }

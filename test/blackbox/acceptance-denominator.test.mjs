@@ -279,7 +279,7 @@ test("empty-Truth schema 2 ACTIVE two-phase migrates and enables change begin", 
   const applied = runMigrateApply(projectPath, preview.stdout);
   assert.equal(applied.status, 0, applied.stderr);
   assert.match(applied.stdout, /MIGRATED: schema_version=3/);
-  assert.match(applied.stdout, /REVIEW: LOCAL_REVIEW_RECORDED after Owner-returned/);
+  assert.match(applied.stdout, /REVIEW: LOCAL_REVIEW_RECORDED after caller-returned/);
 
   const after = JSON.parse(
     await readFile(resolve(projectPath, ".ohno", "state.json"), "utf8"),
@@ -387,12 +387,20 @@ test("basis mismatch refuses without Truth write", async (t) => {
   );
 });
 
-test("legacy schema 2 pending_plan is readable and rebinds on migrate", async (t) => {
+test("legacy schema 2 pending rebinds with accept-able v3 diff", async (t) => {
   const projectPath = await createProject(t);
   runInit(projectPath, ownerGoal);
   await writePassScript(projectPath);
   writeStructuredAcceptanceBasis(projectPath, [basisUnit], basisPath);
   const tasks = [frozenUnit];
+  // Source file must be accept-able after rebind (includes acceptance_source).
+  const planBody = `${JSON.stringify({
+    cursor: 0,
+    ordered_tasks: tasks,
+    acceptance_source: basisPath,
+  }, null, 2)}\n`;
+  await writeFile(resolve(projectPath, ".ohno", "plan.json"), planBody, "utf8");
+  const sourceDigest = createHash("sha256").update(planBody).digest("hex");
   const rev = createHash("sha256").update(JSON.stringify(tasks)).digest("hex");
   const now = new Date().toISOString();
   const state = JSON.parse(
@@ -415,7 +423,7 @@ test("legacy schema 2 pending_plan is readable and rebinds on migrate", async (t
     head: "UNBORN",
     proposed_at: now,
     source_path: ".ohno/plan.json",
-    source_digest: rev,
+    source_digest: sourceDigest,
   };
   await writeFile(
     resolve(projectPath, ".ohno", "state.json"),
@@ -430,9 +438,12 @@ test("legacy schema 2 pending_plan is readable and rebinds on migrate", async (t
 
   const preview = runMigratePreview(projectPath);
   assert.equal(preview.status, 0, preview.stderr);
-  assert.match(preview.stdout, /rebind_schema3|pending_disposition/);
+  assert.match(preview.stdout, /rebind_schema3/);
+  assert.match(preview.stdout, /apply_metadata/);
+  assert.match(preview.stdout, /caller-returned local review/i);
   const applied = runMigrateApply(projectPath, preview.stdout);
   assert.equal(applied.status, 0, applied.stderr);
+  assert.match(applied.stdout, /caller-returned/i);
   const after = JSON.parse(
     await readFile(resolve(projectPath, ".ohno", "state.json"), "utf8"),
   );
@@ -442,6 +453,62 @@ test("legacy schema 2 pending_plan is readable and rebinds on migrate", async (t
   assert.notEqual(after.pending_plan.plan_revision, rev);
   const next = runCli(projectPath, ["next"]);
   assert.match(next.stdout.trim(), /^REVIEW_PLAN:[a-f0-9]{64}$/);
+
+  // Executable next: plan accept must succeed with rebound digests.
+  const accepted = runCli(projectPath, [
+    "plan",
+    "accept",
+    "--revision",
+    after.pending_plan.plan_revision,
+    "--diff",
+    after.pending_plan.diff_digest,
+  ]);
+  assert.equal(accepted.status, 0, accepted.stderr);
+  assert.match(accepted.stdout, /LOCAL_REVIEW_RECORDED/);
+  const finalNext = runCli(projectPath, ["next"]);
+  assert.equal(finalNext.stdout.trim(), "START_TASK:cloudbase-data");
+});
+
+test("failed migrate apply does not leave Truth half-written", async (t) => {
+  const projectPath = await createProject(t);
+  await writeSchema2ActiveFixture(projectPath);
+  writeStructuredAcceptanceBasis(projectPath, [basisUnit], basisPath);
+  const preview = runMigratePreview(projectPath);
+  assert.equal(preview.status, 0, preview.stderr);
+  const diff = /^DIFF_DIGEST: ([a-f0-9]{64})$/m.exec(preview.stdout)?.[1];
+  const head = /^HEAD: (.+)$/m.exec(preview.stdout)?.[1];
+  // Mutate authority fields covered by the exact migrate diff so stale
+  // --diff cannot apply; Truth must stay unwritten.
+  const state = JSON.parse(
+    await readFile(resolve(projectPath, ".ohno", "state.json"), "utf8"),
+  );
+  state.status = "IDLE";
+  state.active_task = null;
+  await writeFile(
+    resolve(projectPath, ".ohno", "state.json"),
+    `${JSON.stringify(state, null, 2)}\n`,
+    "utf8",
+  );
+  const applied = runCli(projectPath, [
+    "migrate",
+    "acceptance-basis",
+    "--file",
+    basisPath,
+    "--diff",
+    diff,
+    "--head",
+    head,
+  ]);
+  assert.notEqual(applied.status, 0);
+  assert.match(applied.stderr, /DIFF_DIGEST|state changed|re-preview/i);
+  await assert.rejects(
+    () => readFile(resolve(projectPath, ".ohno", "truth.json"), "utf8"),
+    "failed apply must not leave Truth created",
+  );
+  const still = JSON.parse(
+    await readFile(resolve(projectPath, ".ohno", "state.json"), "utf8"),
+  );
+  assert.equal(still.schema_version, 2);
 });
 
 test("absolute path acceptance_source is refused", async (t) => {

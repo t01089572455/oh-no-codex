@@ -918,14 +918,17 @@ First landing `4f316d9` used keyword detectors and broke schema-2 read → marke
 **Repair + six-point follow-up + Correction 4 closure:**
 
 - Structured basis JSON exact-match; unknown FROZEN fields hard-refuse.
-- **Two-phase migrate:** zero-write preview → Owner returns `--diff`/`--head`
-  → CAS apply. Full side-effect exact diff (`ohno-acceptance-basis-migrate-v2`).
-  `LOCAL_REVIEW_RECORDED` only on successful apply.
+- **Two-phase migrate:** zero-write preview → caller-returned `--diff`/`--head`
+  → under `state.cas.lock` atomic Truth then state CAS (Truth rolled back if
+  state write fails). Exact diff `ohno-acceptance-basis-migrate-v2` with
+  `apply_metadata` for wall-clock plan_review fields. `LOCAL_REVIEW_RECORDED`
+  only on successful apply (local review, not Owner identity).
 - Truth: only ENOENT may create; corrupt/invalid fail-closed (never overwrite).
   Basis validated before any Truth write. Full inventory rebuild (+ projected
   AGENTS) so `migrate → change begin` does not self-lock.
-- Pending: schema-2 pending **rebinds** to schema 3; stale pending with accepted
-  plan cleared only as explicit exact-diff side-effect (no silent drop).
+- Pending: schema-2 pending **rebinds** with accept-able v3 exact plan diff
+  (black-box `plan accept`); unreadable source clears to `PROPOSE_PLAN`; stale
+  pending with accepted plan cleared only as explicit exact-diff side-effect.
 - MIGRATE is sole next even over FAIL receipts (`read-model` priority).
 - `change begin` unions `acceptance-basis` concern targets only (not all
   black-box paths).
