@@ -82,8 +82,9 @@ function honestyLines(model: ReadModel): string[] {
   if (model.next_action === "MIGRATE_ACCEPTANCE_BASIS") {
     lines.push(
       "MIGRATE_NOTE: schema predates structured acceptance basis — "
-        + "run ohno migrate acceptance-basis --file <Truth-listed basis.json> "
-        + "before task start (cursor/completed preserved)",
+        + "preview with ohno migrate acceptance-basis --file <basis.json>, "
+        + "then apply with returned --diff and --head "
+        + "(cursor/completed preserved)",
     );
   }
   return lines;

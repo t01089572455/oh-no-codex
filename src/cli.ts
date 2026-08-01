@@ -96,7 +96,7 @@ const usageText = [
   "  ohno change diff | ohno change accept --change <id> --diff <displayed digest>",
   "  ohno install | ohno hooks status --json",
   "  ohno skill install | ohno skill status",
-  "  ohno migrate acceptance-basis --file <structured-basis.json>",
+  "  ohno migrate acceptance-basis --file <structured-basis.json> [--diff <sha256> --head <git-head>]",
   "  ohno hook | ohno git pre-commit",
   "",
   "Hook classification: COOPERATIVE_GUARDRAIL.",
@@ -357,22 +357,42 @@ async function main(): Promise<void> {
     && subcommand === "acceptance-basis"
   ) {
     const file = requiredValue(args, "--file");
+    const hasDiff = args.includes("--diff");
+    const hasHead = args.includes("--head");
+    if (hasDiff !== hasHead) {
+      throw new Error(
+        "migrate apply requires both --diff <sha256> and --head <git-head> "
+          + "(omit both for zero-write preview)",
+      );
+    }
+    const apply = hasDiff
+      ? {
+        diffDigest: requiredValue(args, "--diff"),
+        head: requiredValue(args, "--head"),
+      }
+      : null;
+    const consumed = new Set(["--file", "--diff", "--head"]);
     const leftover = args.filter((arg, index) => {
-      if (arg === "--file") {
+      if (consumed.has(arg)) {
         return false;
       }
-      if (index > 0 && args[index - 1] === "--file") {
+      if (index > 0 && consumed.has(args[index - 1] ?? "")) {
         return false;
       }
       return true;
     });
     if (leftover.length > 0) {
       throw new Error(
-        "usage: ohno migrate acceptance-basis --file <structured-basis.json>",
+        "usage: ohno migrate acceptance-basis --file <structured-basis.json> "
+          + "[--diff <sha256> --head <git-head>]",
       );
     }
-    const message = await migrateAcceptanceBasis(projectPath, file);
-    await refreshProjectors(projectPath).catch(() => undefined);
+    const message = await migrateAcceptanceBasis(projectPath, file, apply);
+    // Preview is zero-write — do not refresh projectors (would create AGENTS.md
+    // and drift the migrate inventory digest between preview and apply).
+    if (apply !== null) {
+      await refreshProjectors(projectPath).catch(() => undefined);
+    }
     process.stdout.write(message);
     return;
   }

@@ -47,7 +47,7 @@ The sole current runtime authority. Conceptual fields:
 
 ```json
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "goal": "Owner-authored project goal",
   "status": "IDLE | ACTIVE | BLOCKED_DOC_SYNC",
   "plan_revision": "sha256 or null",
@@ -77,8 +77,11 @@ The sole current runtime authority. Conceptual fields:
     "diff_digest": "sha256",
     "head": "git commit or UNBORN",
     "proposed_at": "RFC3339",
-    "recorded_at": "RFC3339"
+    "recorded_at": "RFC3339",
+    "acceptance_source_path": ".ohno/acceptance-basis.json",
+    "acceptance_source_digest": "sha256"
   },
+  "pending_plan": null,
   "truth_inventory": {
     "inventory_digest": "sha256",
     "classification": []
@@ -96,6 +99,7 @@ The sole current runtime authority. Conceptual fields:
   "last_verification": {
     "result": "PASS | FAIL | UNKNOWN",
     "command": "exact command",
+    "contract_digest": "sha256",
     "plan_revision": "sha256",
     "head": "git commit or UNBORN",
     "subject_digest": "sha256",
@@ -111,6 +115,20 @@ The sole current runtime authority. Conceptual fields:
   }
 }
 ```
+
+Schema **2** (pre–structured basis) remains readable. While migration is
+required, the sole next action is `MIGRATE_ACCEPTANCE_BASIS` (even over FAIL
+proof). Migration is two-phase and fail-closed:
+
+1. `ohno migrate acceptance-basis --file <basis.json>` — zero-write preview of
+   the full side-effect exact diff (Truth action, inventory rebuild, active
+   task clear, pending rebind-or-clear, status);
+2. re-run with returned `--diff <sha256> --head <git-head>` — CAS apply only.
+
+Only ENOENT may create `.ohno/truth.json`; corrupt Truth is never overwritten.
+Pending schema-2 proposals are rebound to schema 3 (not silently dropped);
+stale pending alongside an accepted plan is cleared only as an explicit
+side-effect in the exact migrate diff.
 
 This is a conceptual public contract, not a demand for a generalized domain
 model. The implementation may serialize a flatter equivalent if public
@@ -194,14 +212,17 @@ Propose and accept both re-read the basis; path/content drift or mismatch
 refuses the operation.
 
 Schema 2 projects that still lack structured basis remain readable; `next` is
-`MIGRATE_ACCEPTANCE_BASIS` until `ohno migrate acceptance-basis --file …`
-upgrades them to schema 3 without dropping cursor or completed history.
-Empty Truth inventories are migratable: migrate registers the basis path into
-`truth.json` and the inventory. Migrate evidence is a fresh exact migrate diff
-bound to current HEAD—not a recycled pre-basis `LOCAL_REVIEW` digest. While
+`MIGRATE_ACCEPTANCE_BASIS` until the two-phase migrate above upgrades them to
+schema 3 without dropping cursor or completed history. Empty Truth inventories
+are migratable; migrate rebuilds the full high-risk inventory (including
+Truth file and projector-owned AGENTS path) so `change begin` does not
+self-lock. `LOCAL_REVIEW_RECORDED` is written only on successful apply after
+the Owner returns digest/HEAD—not self-approved before display. While
 migration is required, verify, task start, pre-commit, and Codex completion
-hooks refuse product work. Unknown FROZEN plan fields are hard-rejected.
-`change begin` always includes Truth-listed acceptance-basis / black-box paths.
+hooks refuse product work (parseable PreToolUse mutations; arbitrary Bash
+remains an honest cooperative limitation). Unknown FROZEN plan fields are
+hard-rejected. `change begin` always unions Truth targets that carry the
+`acceptance-basis` concern (not every black-box path).
 
 The cursor task must be `FROZEN` with behavior, exact test, file scope, stop
 condition, and budget. Later tasks may be `OUTLINE` with only id, title, and

@@ -204,6 +204,11 @@ function nextActionFor(
   state: ProjectState,
   freshness: ProofFreshness,
 ): string {
+  // Schema-2 migrate is the sole next while required — even over FAIL/UNKNOWN.
+  const planNext = nextActionFromPlan(state);
+  if (planNext === "MIGRATE_ACCEPTANCE_BASIS") {
+    return planNext;
+  }
   if (
     freshness === "FAIL"
     || freshness === "UNKNOWN"
@@ -222,7 +227,7 @@ function nextActionFor(
     }
     return "NONE";
   }
-  return nextActionFromPlan(state);
+  return planNext;
 }
 
 /**

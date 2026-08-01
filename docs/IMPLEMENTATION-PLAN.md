@@ -559,8 +559,9 @@ Owning checks: projectors, codex-hooks, resume-status-next, cockpit black boxes.
 
 There is exactly one. **Unique next:**
 
-> **Owner authorized npm publish (2026-07-31).** Prepare and publish
-> `oh-no-codex@0.1.0` to the public npm registry when credentials are available.
+> **Do not publish.** Package remains `0.1.7` local / unpublished until Owner
+> re-authorizes after Correction 4 independent review and LIVE performance
+> remeasure. Do not push/publish while Gate is red or review is open.
 > Do not reintroduce Gateway / multi-authority design.
 
 ## Shared implementation rules
@@ -914,29 +915,23 @@ unless Owner explicitly accepts HISTORICAL-only.
 First landing `4f316d9` used keyword detectors and broke schema-2 read → marked
 `CHANGES_REQUIRED` (kept as failed checkpoint).
 
-**Repair (structured basis) + Codex six-point follow-up:**
+**Repair + six-point follow-up + Correction 4 closure:**
 
-- Structured basis JSON: `{ schema_version:1, tasks:[{id, expected_behavior,
-  test_command, stop_condition}] }` — exact string match per FROZEN id.
-- `acceptance_source` must be a **Truth target**; path uses unified
-  project-relative validator (`src/paths.ts`).
-- `plan_revision` format `ohno-plan-revision-v3` binds path+digest.
-- Propose/accept re-read; mismatch → `ACCEPTANCE_DENOMINATOR_MISMATCH` /
-  `ACCEPTANCE_BASIS_DRIFT` (not overridable by `--allow-weak-plan`).
-- Unknown FROZEN fields → hard refuse `ACCEPTANCE_UNKNOWN_FIELD` (no silent drop).
-- Schema **2** legacy plans/pending remain readable; `next=MIGRATE_ACCEPTANCE_BASIS`.
-- **Empty-Truth** schema-2 ACTIVE migrates: migrate registers basis into
-  `truth.json` + inventory (no test helper inventory patch required).
-- Migrate records a **fresh** exact migrate diff + current HEAD as
-  `LOCAL_REVIEW_RECORDED` (does not recycle pre-basis digests); preserves
-  cursor/completed; clears active_task / last_verification / pending_plan.
-- While MIGRATE is required: **verify**, **task start**, **pre-commit**, and
-  Codex PreToolUse/Stop completion paths hard-block (shared
-  `assertMigrationNotRequired` / `needsAcceptanceBasisMigration`).
-- `change begin` always unions acceptance-basis / black-box Truth targets into
-  `required_paths`.
-- Owning black box: `node --test test/blackbox/acceptance-denominator.test.mjs`
-  (real schema-2 fixtures; CLI-only migrate/verify; no state-patch fake migrate).
-- Full suite: `npm test` → 139/139.
-- Still **not** a release (HISTORICAL perf; no push/publish in this slice).
-  Stop for independent review after this commit.
+- Structured basis JSON exact-match; unknown FROZEN fields hard-refuse.
+- **Two-phase migrate:** zero-write preview → Owner returns `--diff`/`--head`
+  → CAS apply. Full side-effect exact diff (`ohno-acceptance-basis-migrate-v2`).
+  `LOCAL_REVIEW_RECORDED` only on successful apply.
+- Truth: only ENOENT may create; corrupt/invalid fail-closed (never overwrite).
+  Basis validated before any Truth write. Full inventory rebuild (+ projected
+  AGENTS) so `migrate → change begin` does not self-lock.
+- Pending: schema-2 pending **rebinds** to schema 3; stale pending with accepted
+  plan cleared only as explicit exact-diff side-effect (no silent drop).
+- MIGRATE is sole next even over FAIL receipts (`read-model` priority).
+- `change begin` unions `acceptance-basis` concern targets only (not all
+  black-box paths).
+- Parseable hooks/verify/pre-commit block while MIGRATE required; arbitrary
+  Bash remains honest cooperative limitation.
+- Owning black box: `test/blackbox/acceptance-denominator.test.mjs` (listed in
+  ACCEPTANCE public layout). Docs: DESIGN schema 3; unique next = no publish.
+- Full suite after this closure: `npm test`.
+- Still **not** a release. Stop for independent review; no push/publish.

@@ -52,6 +52,7 @@ test/blackbox/task-start.test.mjs
 test/blackbox/verify-finish.test.mjs
 test/blackbox/resume-status-next.test.mjs
 test/blackbox/requirement-change.test.mjs
+test/blackbox/acceptance-denominator.test.mjs
 test/blackbox/codex-hooks.test.mjs
 test/blackbox/git-precommit.test.mjs
 test/blackbox/cockpit.test.mjs

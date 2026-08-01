@@ -21,105 +21,249 @@ import {
   truthInventoryDigestFor,
 } from "./state.js";
 import type {
+  AnyPendingPlan,
+  PendingPlan,
   ProjectState,
   TruthClassificationEntry,
   TruthInventory,
 } from "./state.js";
 import type { TruthDocument } from "./truth.js";
+import { readTruth } from "./truth.js";
+import { classifyWithTruthDocument } from "./truth-inventory.js";
 
 function sha256(value: string): string {
   return createHash("sha256").update(value).digest("hex");
 }
 
-async function ensureTruthListsBasis(
+const truthRelativePath = ".ohno/truth.json";
+
+export interface MigrateApplyOptions {
+  /** Exact DIFF_DIGEST from a prior zero-write preview. */
+  diffDigest: string;
+  /** Exact HEAD from that same preview. */
+  head: string;
+}
+
+interface PlannedTruth {
+  action: "create" | "update" | "unchanged";
+  before: TruthDocument | null;
+  after: TruthDocument;
+  serialized: string;
+}
+
+interface MigratePlan {
+  expectedState: ProjectState;
+  basisPath: string;
+  basisDigest: string;
+  head: string;
+  exactDiff: string;
+  diffDigest: string;
+  plannedTruth: PlannedTruth;
+  hasAcceptedPlan: boolean;
+  buildAppliedState(now: string, recordedDiffDigest: string): ProjectState;
+}
+
+/**
+ * Load Truth fail-closed: only ENOENT is "missing". Corrupt/invalid refuses.
+ */
+async function loadTruthStrict(
   projectPath: string,
-  basisPath: string,
-): Promise<void> {
+): Promise<TruthDocument | null> {
   const truthPath = resolve(projectPath, ".ohno", "truth.json");
-  let truth: TruthDocument;
   try {
-    truth = JSON.parse(await readFile(truthPath, "utf8")) as TruthDocument;
+    await access(truthPath);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return null;
+    }
+    throw new Error(
+      `cannot access Truth document at ${truthRelativePath}; repair before migrate`,
+    );
+  }
+  try {
+    await readFile(truthPath, "utf8");
   } catch {
-    await mkdir(resolve(projectPath, ".ohno"), { recursive: true });
-    truth = { schema_version: 1, targets: [] };
+    throw new Error(
+      `cannot read Truth document at ${truthRelativePath}; repair before migrate`,
+    );
   }
-  if (truth.schema_version !== 1 || !Array.isArray(truth.targets)) {
-    throw new Error("invalid Truth document; cannot register acceptance basis");
-  }
-  if (!truth.targets.some((t) => t.path === basisPath)) {
-    truth.targets.push({
-      path: basisPath,
-      concerns: ["acceptance-basis", "black-box"],
-    });
-    await writeFile(truthPath, `${JSON.stringify(truth, null, 2)}\n`, "utf8");
+  try {
+    return await readTruth(projectPath);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(
+      "invalid Truth document; repair before migrate (fail-closed, will not "
+        + `overwrite): ${message}`,
+    );
   }
 }
 
-function inventoryWithBasisTarget(
-  previous: TruthInventory,
+function truthWithBasisTarget(
+  previous: TruthDocument | null,
   basisPath: string,
-): TruthInventory {
-  const entry: TruthClassificationEntry = {
+): PlannedTruth {
+  const basisTarget = {
     path: basisPath,
-    classification: "TRUTH_TARGET",
-    governing: true,
-    truth_target: true,
+    concerns: ["acceptance-basis", "black-box"],
   };
-  const classification: TruthClassificationEntry[] = [
-    ...previous.classification.filter((item) => item.path !== basisPath),
-    entry,
-  ].toSorted((left, right) => (
-    left.path < right.path ? -1 : left.path > right.path ? 1 : 0
-  ));
+  if (previous === null) {
+    const after: TruthDocument = {
+      schema_version: 1,
+      targets: [basisTarget],
+    };
+    return {
+      action: "create",
+      before: null,
+      after,
+      serialized: `${JSON.stringify(after, null, 2)}\n`,
+    };
+  }
+  const existing = previous.targets.find((t) => t.path === basisPath);
+  if (existing !== undefined) {
+    const concerns = new Set(existing.concerns);
+    concerns.add("acceptance-basis");
+    const nextConcerns = [...concerns];
+    const sameConcerns = nextConcerns.length === existing.concerns.length
+      && nextConcerns.every((c) => existing.concerns.includes(c));
+    if (sameConcerns) {
+      return {
+        action: "unchanged",
+        before: previous,
+        after: previous,
+        serialized: `${JSON.stringify(previous, null, 2)}\n`,
+      };
+    }
+    const after: TruthDocument = {
+      schema_version: 1,
+      targets: previous.targets.map((t) => (
+        t.path === basisPath
+          ? { path: basisPath, concerns: nextConcerns }
+          : t
+      )),
+    };
+    return {
+      action: "update",
+      before: previous,
+      after,
+      serialized: `${JSON.stringify(after, null, 2)}\n`,
+    };
+  }
+  const after: TruthDocument = {
+    schema_version: 1,
+    targets: [...previous.targets, basisTarget],
+  };
+  return {
+    action: "update",
+    before: previous,
+    after,
+    serialized: `${JSON.stringify(after, null, 2)}\n`,
+  };
+}
+
+/**
+ * Apply runs projectors after CAS, which creates/updates AGENTS.md. Bind that
+ * path into the migrate inventory so digest is stable and change begin does
+ * not see a new high-risk entry.
+ */
+function inventoryWithProjectedAgents(
+  inventory: TruthInventory,
+): TruthInventory {
+  if (inventory.classification.some((entry) => entry.path === "AGENTS.md")) {
+    return inventory;
+  }
+  const agents: TruthClassificationEntry = {
+    path: "AGENTS.md",
+    classification: "AGENT_INSTRUCTIONS",
+    governing: true,
+    truth_target: false,
+  };
+  const classification = [...inventory.classification, agents].toSorted(
+    (left, right) => (
+      left.path < right.path ? -1 : left.path > right.path ? 1 : 0
+    ),
+  );
   return {
     inventory_digest: truthInventoryDigestFor(classification),
     classification,
   };
 }
 
-/**
- * Build an exact migrate diff so plan_review evidence is real for the new
- * revision (not a recycled pre-basis digest/HEAD).
- */
-function migrateExactDiff(
-  state: ProjectState,
-  nextRevision: string,
+function rebindLegacyPending(
+  pending: AnyPendingPlan,
   basisPath: string,
   basisDigest: string,
-): string {
-  return `${JSON.stringify({
-    format: "ohno-acceptance-basis-migrate-v1",
-    before: {
-      schema_version: state.schema_version,
-      plan_revision: state.plan_revision,
-      ordered_tasks: state.ordered_tasks,
-      cursor: state.cursor,
-      acceptance_basis: null,
-    },
-    after: {
-      schema_version: 3,
-      plan_revision: nextRevision,
-      ordered_tasks: state.ordered_tasks,
-      cursor: state.cursor,
-      acceptance_basis: {
-        path: basisPath,
-        digest: basisDigest,
-      },
-    },
-  }, null, 2)}\n`;
+  head: string,
+): PendingPlan {
+  const ordered = pending.ordered_tasks;
+  const planRevision = planRevisionFor(ordered, {
+    path: basisPath,
+    digest: basisDigest,
+  });
+  return {
+    plan_revision: planRevision,
+    ordered_tasks: ordered,
+    cursor: pending.cursor,
+    diff_digest: pending.diff_digest,
+    head,
+    proposed_at: pending.proposed_at,
+    source_path: pending.source_path,
+    source_digest: pending.source_digest,
+    acceptance_source_path: basisPath,
+    acceptance_source_digest: basisDigest,
+  };
+}
+
+function sideEffectSlice(state: ProjectState) {
+  return {
+    schema_version: state.schema_version,
+    status: state.status,
+    plan_revision: state.plan_revision,
+    ordered_tasks: state.ordered_tasks,
+    cursor: state.cursor,
+    completed: state.completed,
+    plan_review: state.plan_review,
+    pending_plan: state.pending_plan,
+    active_task: state.active_task,
+    last_verification: state.last_verification,
+    truth_inventory: state.truth_inventory,
+    document_sync: state.document_sync,
+  };
 }
 
 /**
- * Explicit migration from schema 2 → 3.
- * - Works with empty Truth (registers basis into truth.json + inventory).
- * - Records a fresh exact migrate diff + current HEAD as review evidence.
- * - Preserves goal, ordered_tasks, cursor, completed.
- * - Clears active_task / last_verification / pending_plan.
+ * Deterministic migrate exact diff — no wall-clock. plan_review embeds path/
+ * digest/revision/head but not diff_digest or recorded_at (filled at apply).
  */
-export async function migrateAcceptanceBasis(
+function buildExactMigrateDiff(input: {
+  before: ProjectState;
+  after: unknown;
+  plannedTruth: PlannedTruth;
+  head: string;
+  basisPath: string;
+  basisDigest: string;
+}): string {
+  return `${JSON.stringify({
+    format: "ohno-acceptance-basis-migrate-v2",
+    head: input.head,
+    acceptance_basis: {
+      path: input.basisPath,
+      digest: input.basisDigest,
+    },
+    truth: {
+      path: truthRelativePath,
+      action: input.plannedTruth.action,
+      before: input.plannedTruth.before,
+      after: input.plannedTruth.after,
+    },
+    before: sideEffectSlice(input.before),
+    after: input.after,
+  }, null, 2)}\n`;
+}
+
+async function planMigration(
   projectPath: string,
   acceptanceSourcePath: string,
-): Promise<string> {
+): Promise<MigratePlan> {
   const state = await readState(projectPath);
   if (!needsAcceptanceBasisMigration(state)) {
     throw new Error(
@@ -133,93 +277,273 @@ export async function migrateAcceptanceBasis(
     "acceptance_source",
   );
 
-  if (state.plan_revision === null || state.ordered_tasks.length === 0) {
-    await ensureTruthListsBasis(projectPath, basisPath);
-    // Basis file may not exist yet for empty plans; only require path safety.
-    try {
-      await access(resolve(projectPath, ...basisPath.split("/")));
-    } catch {
-      // create empty structured template
-      await mkdir(resolve(projectPath, ".ohno"), { recursive: true });
-      await writeFile(
-        resolve(projectPath, ...basisPath.split("/")),
-        `${JSON.stringify({ schema_version: 1, tasks: [] }, null, 2)}\n`,
-        "utf8",
-      );
+  const hasAcceptedPlan = state.plan_revision !== null
+    && state.ordered_tasks.length > 0;
+  const hasPendingOnly = !hasAcceptedPlan && state.pending_plan !== null;
+
+  // Validate basis BEFORE any Truth mutation plan.
+  const orderedForBind = hasAcceptedPlan
+    ? state.ordered_tasks
+    : hasPendingOnly
+    ? state.pending_plan!.ordered_tasks
+    : [];
+  const loaded = await loadStructuredAcceptanceBasis(projectPath, basisPath);
+  if (orderedForBind.length > 0) {
+    assertFrozenTasksMatchBasis(orderedForBind, loaded.document);
+  }
+  const basisDigest = loaded.digest;
+
+  const previousTruth = await loadTruthStrict(projectPath);
+  const plannedTruth = truthWithBasisTarget(previousTruth, basisPath);
+  // Full rebuild as if Truth were on disk, plus AGENTS.md which apply-time
+  // projectors materialize (must be pre-classified so change begin does not
+  // self-lock on UNCLASSIFIED_HIGH_RISK).
+  const scannedInventory = await classifyWithTruthDocument(
+    projectPath,
+    plannedTruth.after,
+  );
+  const nextInventory = inventoryWithProjectedAgents(scannedInventory);
+
+  const head = readGitHead(projectPath);
+  const planRevision = orderedForBind.length > 0
+    ? planRevisionFor(orderedForBind, { path: basisPath, digest: basisDigest })
+    : null;
+
+  let nextPending: AnyPendingPlan | null = null;
+  let pendingDisposition:
+    | "none"
+    | "rebind_schema3"
+    | "clear_stale_alongside_accepted_plan" = "none";
+
+  if (hasAcceptedPlan) {
+    if (state.pending_plan !== null) {
+      pendingDisposition = "clear_stale_alongside_accepted_plan";
+      nextPending = null;
     }
-    const bumped: ProjectState = {
-      ...state,
-      schema_version: 3,
-      pending_plan: null,
-      active_task: null,
-      truth_inventory: inventoryWithBasisTarget(state.truth_inventory, basisPath),
-    };
-    if (!await compareAndSwapStateAtomic(projectPath, state, bumped)) {
-      throw new Error("state changed during schema bump");
-    }
-    return "MIGRATED: schema_version=3 (no plan to re-bind)\n";
+  } else if (hasPendingOnly && state.pending_plan !== null) {
+    pendingDisposition = "rebind_schema3";
+    nextPending = rebindLegacyPending(
+      state.pending_plan,
+      basisPath,
+      basisDigest,
+      head,
+    );
   }
 
-  // Ensure basis is registered even when old inventory had zero Truth targets.
-  await ensureTruthListsBasis(projectPath, basisPath);
-  const loaded = await loadStructuredAcceptanceBasis(projectPath, basisPath);
-  assertFrozenTasksMatchBasis(state.ordered_tasks, loaded.document);
+  const nextStatus: ProjectState["status"] =
+    state.document_sync.status === "PENDING_REVIEW"
+      ? "BLOCKED_DOC_SYNC"
+      : "IDLE";
 
-  const planRevision = planRevisionFor(state.ordered_tasks, {
-    path: loaded.path,
-    digest: loaded.digest,
-  });
-  const exactDiff = migrateExactDiff(
-    state,
-    planRevision,
-    loaded.path,
-    loaded.digest,
-  );
-  const diffDigest = sha256(exactDiff);
-  const now = new Date().toISOString();
-  const head = readGitHead(projectPath);
+  const nextPlanRevision = hasAcceptedPlan ? planRevision : state.plan_revision;
+  const nextOrdered = hasAcceptedPlan
+    ? state.ordered_tasks
+    : hasPendingOnly
+    ? []
+    : state.ordered_tasks;
 
-  const next: ProjectState = {
-    ...state,
-    schema_version: 3,
-    plan_revision: planRevision,
-    pending_plan: null,
+  const afterForDigest = {
+    schema_version: 3 as const,
+    status: nextStatus,
+    plan_revision: nextPlanRevision,
+    ordered_tasks: nextOrdered,
+    cursor: state.cursor,
+    completed: state.completed,
+    plan_review: hasAcceptedPlan && planRevision !== null
+      ? {
+        status: "LOCAL_REVIEW_RECORDED" as const,
+        plan_revision: planRevision,
+        head,
+        acceptance_source_path: basisPath,
+        acceptance_source_digest: basisDigest,
+      }
+      : null,
+    pending_plan: nextPending,
+    pending_disposition: pendingDisposition,
     active_task: null,
     last_verification: null,
-    truth_inventory: inventoryWithBasisTarget(state.truth_inventory, loaded.path),
-    status: state.document_sync.status === "PENDING_REVIEW"
-      ? "BLOCKED_DOC_SYNC"
-      : "IDLE",
-    plan_review: {
-      status: "LOCAL_REVIEW_RECORDED",
-      plan_revision: planRevision,
-      diff_digest: diffDigest,
-      head,
-      proposed_at: now,
-      recorded_at: now,
-      acceptance_source_path: loaded.path,
-      acceptance_source_digest: loaded.digest,
-    },
+    truth_inventory: nextInventory,
+    document_sync: state.document_sync,
   };
 
-  if (!await compareAndSwapStateAtomic(projectPath, state, next)) {
-    throw new Error("state changed during acceptance basis migration");
-  }
+  const exactDiff = buildExactMigrateDiff({
+    before: state,
+    after: afterForDigest,
+    plannedTruth,
+    head,
+    basisPath,
+    basisDigest,
+  });
+  const diffDigest = sha256(exactDiff);
 
+  const nextBase: ProjectState = {
+    ...state,
+    schema_version: 3,
+    status: nextStatus,
+    plan_revision: nextPlanRevision,
+    ordered_tasks: nextOrdered,
+    cursor: state.cursor,
+    completed: state.completed,
+    pending_plan: nextPending,
+    active_task: null,
+    last_verification: null,
+    truth_inventory: nextInventory,
+    plan_review: null,
+  };
+
+  return {
+    expectedState: state,
+    basisPath,
+    basisDigest,
+    head,
+    exactDiff,
+    diffDigest,
+    plannedTruth,
+    hasAcceptedPlan,
+    buildAppliedState(now: string, recordedDiffDigest: string): ProjectState {
+      if (!hasAcceptedPlan || planRevision === null) {
+        return nextBase;
+      }
+      return {
+        ...nextBase,
+        plan_review: {
+          status: "LOCAL_REVIEW_RECORDED",
+          plan_revision: planRevision,
+          diff_digest: recordedDiffDigest,
+          head,
+          proposed_at: now,
+          recorded_at: now,
+          acceptance_source_path: basisPath,
+          acceptance_source_digest: basisDigest,
+        },
+      };
+    },
+  };
+}
+
+function formatPreview(plan: MigratePlan): string {
   return [
-    "MIGRATED: schema_version=3",
-    `ACCEPTANCE_SOURCE: ${loaded.path}`,
-    `ACCEPTANCE_DIGEST: ${loaded.digest}`,
-    `PLAN_REVISION: ${planRevision}`,
-    `DIFF_DIGEST: ${diffDigest}`,
-    `HEAD: ${head}`,
-    `CURSOR: ${next.cursor}`,
-    `COMPLETED: ${next.completed.length}`,
-    "REVIEW: LOCAL_REVIEW_RECORDED for migrate exact diff "
-      + "(not recycled pre-basis evidence)",
-    "NOTE: active_task and last_verification cleared; re-run task start/verify",
+    "MIGRATE_PREVIEW: zero-write — no state or Truth written",
+    `ACCEPTANCE_SOURCE: ${plan.basisPath}`,
+    `ACCEPTANCE_DIGEST: ${plan.basisDigest}`,
+    `DIFF_DIGEST: ${plan.diffDigest}`,
+    `HEAD: ${plan.head}`,
+    `TRUTH_ACTION: ${plan.plannedTruth.action}`,
+    "APPLY: re-run with the same --file and returned digests:",
+    `  ohno migrate acceptance-basis --file ${plan.basisPath} `
+      + `--diff ${plan.diffDigest} --head ${plan.head}`,
+    "NOTE: apply re-validates basis, rebuilds full inventory, CAS-writes state;",
+    "      LOCAL_REVIEW_RECORDED is recorded only on successful apply.",
     "",
     "EXACT_MIGRATE_DIFF:",
-    exactDiff,
+    plan.exactDiff,
   ].join("\n");
+}
+
+function formatApplied(plan: MigratePlan, next: ProjectState): string {
+  return [
+    "MIGRATED: schema_version=3",
+    `ACCEPTANCE_SOURCE: ${plan.basisPath}`,
+    `ACCEPTANCE_DIGEST: ${plan.basisDigest}`,
+    `PLAN_REVISION: ${next.plan_revision ?? "null"}`,
+    `DIFF_DIGEST: ${plan.diffDigest}`,
+    `HEAD: ${plan.head}`,
+    `CURSOR: ${next.cursor}`,
+    `COMPLETED: ${next.completed.length}`,
+    `TRUTH_ACTION: ${plan.plannedTruth.action}`,
+    "REVIEW: LOCAL_REVIEW_RECORDED after Owner-returned digest/HEAD apply "
+      + "(not self-approved before display)",
+    "NOTE: active_task and last_verification cleared; inventory fully rebuilt",
+    "",
+  ].join("\n");
+}
+
+async function writePlannedTruth(
+  projectPath: string,
+  planned: PlannedTruth,
+): Promise<void> {
+  if (planned.action === "unchanged") {
+    return;
+  }
+  const truthPath = resolve(projectPath, ".ohno", "truth.json");
+  if (planned.action === "create") {
+    try {
+      await access(truthPath);
+      throw new Error(
+        "Truth appeared during migrate apply; refuse to overwrite — re-preview",
+      );
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+        throw error;
+      }
+    }
+    await mkdir(resolve(projectPath, ".ohno"), { recursive: true });
+    await writeFile(truthPath, planned.serialized, "utf8");
+    return;
+  }
+  // update: never create from this branch
+  try {
+    await access(truthPath);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      throw new Error(
+        "Truth disappeared during migrate apply; refuse create-via-update — re-preview",
+      );
+    }
+    throw error;
+  }
+  await writeFile(truthPath, planned.serialized, "utf8");
+}
+
+/**
+ * Two-phase migration schema 2 → 3:
+ * - Without --diff/--head: zero-write preview of full side-effect exact diff.
+ * - With --diff/--head: re-validate, write Truth only if planned, CAS state.
+ */
+export async function migrateAcceptanceBasis(
+  projectPath: string,
+  acceptanceSourcePath: string,
+  apply: MigrateApplyOptions | null = null,
+): Promise<string> {
+  const plan = await planMigration(projectPath, acceptanceSourcePath);
+
+  if (apply === null) {
+    return formatPreview(plan);
+  }
+
+  if (apply.diffDigest !== plan.diffDigest) {
+    throw new Error(
+      "migrate apply refused: DIFF_DIGEST does not match current zero-write "
+        + "preview (basis, Truth, inventory, HEAD, or state changed) — re-preview",
+    );
+  }
+  if (apply.head !== plan.head) {
+    throw new Error(
+      "migrate apply refused: HEAD does not match preview — re-preview",
+    );
+  }
+  const liveHead = readGitHead(projectPath);
+  if (liveHead !== plan.head) {
+    throw new Error(
+      "migrate apply refused: repository HEAD moved since preview — re-preview",
+    );
+  }
+
+  await writePlannedTruth(projectPath, plan.plannedTruth);
+
+  const liveInventory = inventoryWithProjectedAgents(
+    await classifyWithTruthDocument(projectPath, plan.plannedTruth.after),
+  );
+  const next = plan.buildAppliedState(new Date().toISOString(), plan.diffDigest);
+  if (liveInventory.inventory_digest !== next.truth_inventory.inventory_digest) {
+    throw new Error(
+      "migrate apply refused: inventory digest drifted during apply — re-preview",
+    );
+  }
+
+  if (!await compareAndSwapStateAtomic(projectPath, plan.expectedState, next)) {
+    throw new Error("state changed during acceptance basis migration apply");
+  }
+
+  return formatApplied(plan, next);
 }

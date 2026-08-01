@@ -226,13 +226,10 @@ export async function beginChange(
     options.concerns,
     options.candidates,
   );
-  // Always include structured acceptance basis Truth targets so requirement
-  // change stays coupled to the acceptance denominator.
+  // Always include acceptance-basis Truth targets (not every black-box path)
+  // so requirement change stays coupled to the acceptance denominator.
   const basisPaths = truth.targets
-    .filter((target) => (
-      target.concerns.includes("acceptance-basis")
-      || target.concerns.includes("black-box")
-    ))
+    .filter((target) => target.concerns.includes("acceptance-basis"))
     .map((target) => target.path);
   const currentBasisPath = state.plan_review !== null
     && "acceptance_source_path" in state.plan_review

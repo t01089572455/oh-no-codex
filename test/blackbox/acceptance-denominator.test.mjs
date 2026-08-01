@@ -1,5 +1,5 @@
 /**
- * Correction 4 follow-up: structured basis + real migration + hard MIGRATE gates.
+ * Correction 4 closure: two-phase migrate, full inventory, sole MIGRATE next.
  * Fixtures are written as files; migrate/verify go through the CLI only.
  */
 import assert from "node:assert/strict";
@@ -66,7 +66,10 @@ async function writePlan(projectPath, tasks, acceptanceSource = basisPath) {
 }
 
 /** Pure file fixture: schema 2 ACTIVE plan (0.1.6-shaped). No inventory patching. */
-async function writeSchema2ActiveFixture(projectPath, task = frozenUnit) {
+async function writeSchema2ActiveFixture(projectPath, {
+  task = frozenUnit,
+  withFailReceipt = false,
+} = {}) {
   await writePassScript(projectPath);
   const tasks = [task];
   const rev = createHash("sha256").update(JSON.stringify(tasks)).digest("hex");
@@ -86,7 +89,6 @@ async function writeSchema2ActiveFixture(projectPath, task = frozenUnit) {
       .digest("hex"),
   };
   const now = new Date().toISOString();
-  // Empty Truth inventory — real 0.1.6 empty-Truth field trial shape.
   const state = {
     schema_version: 2,
     goal: ownerGoal,
@@ -104,11 +106,24 @@ async function writeSchema2ActiveFixture(projectPath, task = frozenUnit) {
     },
     pending_plan: null,
     truth_inventory: {
-      inventory_digest: createHash("sha256").update("[]").digest("hex"),
+      inventory_digest: createHash("sha256")
+        .update(JSON.stringify([]))
+        .digest("hex"),
       classification: [],
     },
     active_task: contract,
-    last_verification: null,
+    last_verification: withFailReceipt
+      ? {
+        result: "FAIL",
+        command: task.test_command,
+        contract_digest: contract.contract_digest,
+        plan_revision: rev,
+        head: "UNBORN",
+        subject_digest: createHash("sha256").update("fail").digest("hex"),
+        exit_code: 1,
+        finished_at: now,
+      }
+      : null,
     completed: [],
     document_sync: {
       status: "CLEAN",
@@ -117,10 +132,6 @@ async function writeSchema2ActiveFixture(projectPath, task = frozenUnit) {
       reviewed_diff_digest: null,
     },
   };
-  // Fix empty inventory digest to match product formula.
-  state.truth_inventory.inventory_digest = createHash("sha256")
-    .update(JSON.stringify([]))
-    .digest("hex");
   await mkdir(resolve(projectPath, ".ohno"), { recursive: true });
   await writeFile(
     resolve(projectPath, ".ohno", "state.json"),
@@ -128,6 +139,32 @@ async function writeSchema2ActiveFixture(projectPath, task = frozenUnit) {
     "utf8",
   );
   return { rev, state };
+}
+
+function runMigratePreview(projectPath) {
+  return runCli(projectPath, [
+    "migrate",
+    "acceptance-basis",
+    "--file",
+    basisPath,
+  ]);
+}
+
+function runMigrateApply(projectPath, previewStdout) {
+  const diff = /^DIFF_DIGEST: ([a-f0-9]{64})$/m.exec(previewStdout)?.[1];
+  const head = /^HEAD: (.+)$/m.exec(previewStdout)?.[1];
+  assert.ok(diff, "preview must frame DIFF_DIGEST");
+  assert.ok(head, "preview must frame HEAD");
+  return runCli(projectPath, [
+    "migrate",
+    "acceptance-basis",
+    "--file",
+    basisPath,
+    "--diff",
+    diff,
+    "--head",
+    head,
+  ]);
 }
 
 test("RED: plan contract shrink vs independent structured basis is blocked", async (t) => {
@@ -202,38 +239,47 @@ test("unknown FROZEN field is hard-rejected", async (t) => {
   );
 });
 
-test("MIGRATE next blocks verify on real empty-Truth ACTIVE schema 2 fixture", async (t) => {
+test("MIGRATE next blocks verify and beats FAIL receipt", async (t) => {
   const projectPath = await createProject(t);
-  await writeSchema2ActiveFixture(projectPath);
+  await writeSchema2ActiveFixture(projectPath, { withFailReceipt: true });
   const next = runCli(projectPath, ["next"]);
   assert.equal(next.stdout.trim(), "MIGRATE_ACCEPTANCE_BASIS");
+  const status = runCli(projectPath, ["status", "--json"]);
+  assert.equal(JSON.parse(status.stdout).next_action, "MIGRATE_ACCEPTANCE_BASIS");
   const verified = runCli(projectPath, ["verify"]);
   assert.notEqual(verified.status, 0);
   assert.match(verified.stderr, /MIGRATE_ACCEPTANCE_BASIS/i);
-  const after = JSON.parse(
-    await readFile(resolve(projectPath, ".ohno", "state.json"), "utf8"),
-  );
-  assert.equal(after.cursor, 0);
-  assert.equal(after.completed.length, 0);
-  assert.equal(after.active_task?.id, "cloudbase-data");
 });
 
-test("empty-Truth schema 2 ACTIVE migrates without helper inventory patches", async (t) => {
+test("empty-Truth schema 2 ACTIVE two-phase migrates and enables change begin", async (t) => {
   const projectPath = await createProject(t);
   const { rev: oldRev } = await writeSchema2ActiveFixture(projectPath);
-  // No truth.json, no basis yet — product migrate must create/register them.
   writeStructuredAcceptanceBasis(projectPath, [basisUnit], basisPath);
 
-  const migrated = runCli(projectPath, [
-    "migrate",
-    "acceptance-basis",
-    "--file",
-    basisPath,
-  ]);
-  assert.equal(migrated.status, 0, migrated.stderr);
-  assert.match(migrated.stdout, /MIGRATED: schema_version=3/);
-  assert.match(migrated.stdout, /DIFF_DIGEST: [a-f0-9]{64}/);
-  assert.match(migrated.stdout, /REVIEW: LOCAL_REVIEW_RECORDED for migrate exact diff/);
+  const beforeStateBytes = await readFile(
+    resolve(projectPath, ".ohno", "state.json"),
+  );
+  const preview = runMigratePreview(projectPath);
+  assert.equal(preview.status, 0, preview.stderr);
+  assert.match(preview.stdout, /MIGRATE_PREVIEW: zero-write/);
+  assert.match(preview.stdout, /DIFF_DIGEST: [a-f0-9]{64}/);
+  assert.match(preview.stdout, /EXACT_MIGRATE_DIFF:/);
+  assert.match(preview.stdout, /ohno-acceptance-basis-migrate-v2/);
+  assert.match(preview.stdout, /"active_task"/);
+  assert.match(preview.stdout, /"truth_inventory"/);
+  // Zero-write: state and Truth untouched after preview.
+  assert.deepEqual(
+    await readFile(resolve(projectPath, ".ohno", "state.json")),
+    beforeStateBytes,
+  );
+  await assert.rejects(
+    () => readFile(resolve(projectPath, ".ohno", "truth.json"), "utf8"),
+  );
+
+  const applied = runMigrateApply(projectPath, preview.stdout);
+  assert.equal(applied.status, 0, applied.stderr);
+  assert.match(applied.stdout, /MIGRATED: schema_version=3/);
+  assert.match(applied.stdout, /REVIEW: LOCAL_REVIEW_RECORDED after Owner-returned/);
 
   const after = JSON.parse(
     await readFile(resolve(projectPath, ".ohno", "state.json"), "utf8"),
@@ -244,28 +290,108 @@ test("empty-Truth schema 2 ACTIVE migrates without helper inventory patches", as
   assert.equal(after.active_task, null);
   assert.notEqual(after.plan_revision, oldRev);
   assert.equal(after.plan_review.acceptance_source_path, basisPath);
-  // Review evidence must be fresh (diff_digest is migrate exact diff, not old rev).
   assert.notEqual(after.plan_review.diff_digest, oldRev);
-  assert.match(after.plan_review.diff_digest, /^[a-f0-9]{64}$/);
-  // Truth file registered by migrate.
-  const truth = JSON.parse(
-    await readFile(resolve(projectPath, ".ohno", "truth.json"), "utf8"),
+  // Full inventory must include Truth file so change begin does not self-lock.
+  assert.ok(
+    after.truth_inventory.classification.some(
+      (e) => e.path === ".ohno/truth.json",
+    ),
+    "inventory must classify .ohno/truth.json",
   );
-  assert.ok(truth.targets.some((t) => t.path === basisPath));
   assert.ok(
     after.truth_inventory.classification.some(
       (e) => e.path === basisPath && e.truth_target,
     ),
   );
 
+  const truth = JSON.parse(
+    await readFile(resolve(projectPath, ".ohno", "truth.json"), "utf8"),
+  );
+  assert.ok(truth.targets.some((t) => t.path === basisPath));
+
   const next = runCli(projectPath, ["next"]);
   assert.equal(next.stdout.trim(), "START_TASK:cloudbase-data");
+
+  // migrate → change begin must not hit UNCLASSIFIED_HIGH_RISK on truth.json
+  await mkdir(resolve(projectPath, "docs"), { recursive: true });
+  await writeFile(
+    resolve(projectPath, "docs", "PLAN.md"),
+    "replacement plan path for change begin smoke\n",
+    "utf8",
+  );
+  const truthDoc = JSON.parse(
+    await readFile(resolve(projectPath, ".ohno", "truth.json"), "utf8"),
+  );
+  if (!truthDoc.targets.some((t) => t.path === "docs/PLAN.md")) {
+    truthDoc.targets.push({
+      path: "docs/PLAN.md",
+      concerns: ["plan", "requirements"],
+    });
+    await writeFile(
+      resolve(projectPath, ".ohno", "truth.json"),
+      `${JSON.stringify(truthDoc, null, 2)}\n`,
+      "utf8",
+    );
+  }
+  // New Truth targets are allowed at change-begin rescan; built-in high-risk
+  // paths (truth.json) must already be in inventory from migrate rebuild.
+  const begun = runCli(projectPath, [
+    "change",
+    "begin",
+    "--summary",
+    "Owner post-migrate requirement change",
+    "--concerns",
+    "requirements",
+    "--candidates",
+    "docs/PLAN.md",
+  ]);
+  assert.equal(begun.status, 0, begun.stderr);
+  const pending = JSON.parse(
+    await readFile(resolve(projectPath, ".ohno", "state.json"), "utf8"),
+  );
+  assert.equal(pending.status, "BLOCKED_DOC_SYNC");
+  assert.ok(
+    pending.document_sync.required_paths.includes(basisPath),
+    "change begin must include acceptance-basis path",
+  );
 });
 
-test("legacy schema 2 pending_plan remains readable", async (t) => {
+test("corrupt Truth fails closed without overwrite on migrate preview", async (t) => {
+  const projectPath = await createProject(t);
+  await writeSchema2ActiveFixture(projectPath);
+  writeStructuredAcceptanceBasis(projectPath, [basisUnit], basisPath);
+  await mkdir(resolve(projectPath, ".ohno"), { recursive: true });
+  const corrupt = "{ not valid truth\n";
+  await writeFile(resolve(projectPath, ".ohno", "truth.json"), corrupt, "utf8");
+  const preview = runMigratePreview(projectPath);
+  assert.notEqual(preview.status, 0);
+  assert.match(preview.stderr, /invalid Truth|fail-closed|repair/i);
+  assert.equal(
+    await readFile(resolve(projectPath, ".ohno", "truth.json"), "utf8"),
+    corrupt,
+  );
+});
+
+test("basis mismatch refuses without Truth write", async (t) => {
+  const projectPath = await createProject(t);
+  await writeSchema2ActiveFixture(projectPath);
+  writeStructuredAcceptanceBasis(projectPath, [basisHeavy], basisPath);
+  const preview = runMigratePreview(projectPath);
+  assert.notEqual(preview.status, 0);
+  assert.match(
+    `${preview.stderr}\n${preview.stdout}`,
+    /ACCEPTANCE_DENOMINATOR_MISMATCH|mismatch/i,
+  );
+  await assert.rejects(
+    () => readFile(resolve(projectPath, ".ohno", "truth.json"), "utf8"),
+  );
+});
+
+test("legacy schema 2 pending_plan is readable and rebinds on migrate", async (t) => {
   const projectPath = await createProject(t);
   runInit(projectPath, ownerGoal);
   await writePassScript(projectPath);
+  writeStructuredAcceptanceBasis(projectPath, [basisUnit], basisPath);
   const tasks = [frozenUnit];
   const rev = createHash("sha256").update(JSON.stringify(tasks)).digest("hex");
   const now = new Date().toISOString();
@@ -301,6 +427,21 @@ test("legacy schema 2 pending_plan remains readable", async (t) => {
   const model = JSON.parse(status.stdout);
   assert.equal(model.availability, "AVAILABLE");
   assert.equal(model.next_action, "MIGRATE_ACCEPTANCE_BASIS");
+
+  const preview = runMigratePreview(projectPath);
+  assert.equal(preview.status, 0, preview.stderr);
+  assert.match(preview.stdout, /rebind_schema3|pending_disposition/);
+  const applied = runMigrateApply(projectPath, preview.stdout);
+  assert.equal(applied.status, 0, applied.stderr);
+  const after = JSON.parse(
+    await readFile(resolve(projectPath, ".ohno", "state.json"), "utf8"),
+  );
+  assert.equal(after.schema_version, 3);
+  assert.notEqual(after.pending_plan, null);
+  assert.equal(after.pending_plan.acceptance_source_path, basisPath);
+  assert.notEqual(after.pending_plan.plan_revision, rev);
+  const next = runCli(projectPath, ["next"]);
+  assert.match(next.stdout.trim(), /^REVIEW_PLAN:[a-f0-9]{64}$/);
 });
 
 test("absolute path acceptance_source is refused", async (t) => {

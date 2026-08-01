@@ -286,7 +286,7 @@ Shell details live inside each skill file for Codex; users need not memorize the
 
 | Piece | Role |
 | --- | --- |
-| CLI | `init` 路 `plan` 路 `task` 路 `verify` 路 `change` 路 `resume` 路 鈥?|
+| CLI | `init` · `plan` · `task` · `verify` · `change` · `migrate acceptance-basis` · `resume` · … |
 | 13 Codex skills | Day-to-day discoverable procedure (setup is CLI) |
 | Hooks + pre-commit | Capsule inject, scope guard |
 | Projectors | `PROGRESS.md`, REQUIREMENTS, short AGENTS capsule |
@@ -307,6 +307,7 @@ Shell details live inside each skill file for Codex; users need not memorize the
 | Cockpit = status JSON | `LOCAL_PASS` |
 | Disposable real copies | `HISTORICAL` (P01-P05 on 2026-07-31; not re-run for 0.1.7) |
 | npm | **`0.1.7` local / unpublished** (not public until Owner publishes) |
+| Schema 2 → 3 migrate | Two-phase: preview then `--diff`/`--head` apply (see DESIGN) |
 
 Contracts: [Product](./docs/PRODUCT-CONTRACT.md) 路 [Design](./docs/DESIGN.md) 路 [Acceptance](./docs/ACCEPTANCE.md) 路 [Sins](./docs/CODEX-SINS.md)
 
