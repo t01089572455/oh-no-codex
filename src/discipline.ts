@@ -117,6 +117,51 @@ export function weakBlackboxSummary(testCommand: string): string | null {
   return "test_command looks trivial (always-pass / non-behavioral)";
 }
 
+/**
+ * Soft warn when stop/expected language names a heavier user path than the
+ * frozen test_command (Task2-style denominator shrink / #7/#9). Cooperative
+ * only — does not hard-refuse; Owner may still accept intentionally narrow
+ * unit black boxes, but the shrink is not silent.
+ */
+const heavyPathSignals: Array<{ re: RegExp; label: string }> = [
+  { re: /微信开发者工具/u, label: "WeChat DevTools" },
+  { re: /devtools/iu, label: "devtools" },
+  { re: /\be2e\b/iu, label: "e2e" },
+  { re: /playwright|cypress|puppeteer/iu, label: "browser automation" },
+  { re: /manual\s+(qa|test|验收|smoke)/iu, label: "manual QA/smoke" },
+  { re: /multi[- ]?user|多用户/iu, label: "multi-user path" },
+  { re: /真实(设备|环境|路径)|real[- ]world/iu, label: "real-world path" },
+];
+
+export function denominatorShrinkSummary(task: {
+  id?: string;
+  expected_behavior?: string;
+  stop_condition?: string;
+  test_command?: string;
+}): string | null {
+  const test = task.test_command ?? "";
+  if (test.trim() === "") {
+    return null;
+  }
+  const prose = `${task.expected_behavior ?? ""}\n${task.stop_condition ?? ""}`;
+  const hits: string[] = [];
+  for (const signal of heavyPathSignals) {
+    if (signal.re.test(prose) && !signal.re.test(test)) {
+      hits.push(signal.label);
+    }
+  }
+  if (hits.length === 0) {
+    return null;
+  }
+  const who = task.id !== undefined ? `task ${task.id}: ` : "";
+  return (
+    `${who}stop/expected mentions ${hits.join(", ")} but frozen `
+    + "test_command does not — risk of silent acceptance-denominator shrink "
+    + "(#7/#9). Keep the heavier path in test_command, or reword stop/"
+    + "expected so the frozen black box is the full claim."
+  );
+}
+
 export interface PlanDisciplineViolation {
   code: "WEAK_BLACKBOX" | "COMMIT_LICENSE_MICRO_PLAN";
   message: string;
@@ -158,6 +203,41 @@ export function planDisciplineViolations(tasks: Array<{
     }
   }
   return out;
+}
+
+/** Soft warnings for propose (never hard-gate alone). */
+export function planSoftWarnings(tasks: Array<{
+  id: string;
+  title: string;
+  goal: string;
+  status: string;
+  expected_behavior?: string;
+  stop_condition?: string;
+  allowed_files?: string[];
+  test_command?: string;
+}>): string[] {
+  const warnings: string[] = [];
+  if (planLooksLikeCommitLicense(tasks)) {
+    warnings.push(
+      "WARN: plan looks like a commit-license / docs-only micro-plan "
+        + "(FT-05/14). Accepting will make cockpit show this plan as complete "
+        + "at 100% of plan tasks — not product done.",
+    );
+  }
+  for (const task of tasks) {
+    if (task.status !== "FROZEN") {
+      continue;
+    }
+    const weak = weakBlackboxSummary(task.test_command ?? "");
+    if (weak !== null) {
+      warnings.push(`WARN: task ${task.id}: ${weak}`);
+    }
+    const shrink = denominatorShrinkSummary(task);
+    if (shrink !== null) {
+      warnings.push(`WARN: ${shrink}`);
+    }
+  }
+  return warnings;
 }
 
 export function assertPlanDiscipline(

@@ -111,13 +111,18 @@ Expected:
 
 ## Completion language
 
-Public product status is earned only from the rows above and the ledger:
+Public product status is earned only from the rows above and the ledger.
+Core harness success and release readiness are named separately so a green
+harness label cannot paper over unfinished release evidence (#17).
 
-> **Current (earned):** `V1_TRIAL_ACCEPTED` — Codex-only cooperative harness
-> accepted on the named local black-box and disposable-project trials; no
-> hostile-agent, production authority, package publication, or universal speed
-> claim.
+> **Core harness (field):** `ANTI_DRIFT_CORE_WORKS` — cooperative Codex harness
+> (bounded plan, freeze, verify, resume, hooks, read-only Cockpit) works on
+> real multi-slice sessions. Not a coverage score over the eighteen sins.
 
-If any A/P row later fails or is withdrawn, status returns to
-`V1_CHANGES_REQUIRED` with the exact failing rows. Do not use older phrases
-such as “still PLANNED before Task 7” as current status.
+> **Release / public status:** `RELEASE_CHANGES_REQUIRED` — full A/P matrix,
+> performance budgets, package publication claims, and honest public surfaces
+> are not all green. Do not display `V1_TRIAL_ACCEPTED` until those close.
+
+If any A/P row later fails or is withdrawn, keep or return to
+`RELEASE_CHANGES_REQUIRED` with the exact failing rows. Do not use older
+phrases such as “still PLANNED before Task 7” as current status.

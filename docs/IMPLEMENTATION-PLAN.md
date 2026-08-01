@@ -1,11 +1,14 @@
 # Codex-only V1 implementation plan
 
-Status: **V1_TRIAL_ACCEPTED**
+Status: **RELEASE_CHANGES_REQUIRED** (core: **ANTI_DRIFT_CORE_WORKS**)
 
 Owner authorization: Tasks 1–7 below, including 6A–6C, were authorized as the
 complete V1 implementation scope on 2026-07-30. Correction 2 (audit F3/F4/F5/F8,
 gate truth, external-browser A14/P06) was authorized by Owner handoff on
-2026-07-31. Do not publish a package without new authorization.
+2026-07-31. Correction 3 (release honesty + ACTIVE next + Goal/Truth init +
+denominator warn + AGENTS-safe init) authorized by Owner on 2026-08-01 after
+Grok/Codex joint field judgment. Do not publish a package without new
+authorization.
 
 ## Ledger
 
@@ -22,6 +25,7 @@ gate truth, external-browser A14/P06) was authorized by Owner handoff on
 | Task 6C — browser visual and functional acceptance | LOCAL_PASS | A14 (system Chrome/Edge after Owner external-browser authorization) |
 | Task 7 — cross-project trials and final gate | LOCAL_PASS | A12, A15, A16, P01–P06 |
 | Correction 2 — bounded scope, Truth shrink, pending summary, package subject, gate truth | LOCAL_PASS | F3–F5, F8; honest A14/P06 |
+| Correction 3 — release honesty, CONTINUE_ACTIVE, goal surface, Truth seed, AGENTS-safe init, denominator warn | LOCAL_PASS | honest public status; ACTIVE next; Goal/Truth/Git handoff |
 
 ## Task 1 local evidence
 
@@ -877,6 +881,27 @@ release, or claim hostile-agent/full enforcement.
 **Stop:** clean worktree and either:
 
 - `V1_TRIAL_ACCEPTED` with every A/P row evidenced; or
-- `V1_CHANGES_REQUIRED` with exact failing rows and one next action.
+- `V1_CHANGES_REQUIRED` / `RELEASE_CHANGES_REQUIRED` with exact failing rows and one next action.
 
 No Task 8.
+
+## Correction 3 local evidence (2026-08-01)
+
+Recorded on HEAD of branch `fix/release-honesty-0.1.7` with Node.js v24:
+
+- **Public labels:** `ANTI_DRIFT_CORE_WORKS` + `RELEASE_CHANGES_REQUIRED`
+  (README badge/evidence, ACCEPTANCE completion language, plan status).
+  `V1_TRIAL_ACCEPTED` withdrawn from public surfaces until full release gate.
+- **Owning black box:** `node --test test/blackbox/release-honesty.test.mjs`
+  exited 0 (AGENTS preserve, Truth seed, CONTINUE_ACTIVE + task goal,
+  denominator shrink WARN).
+- **Read surfaces:** `node --test test/blackbox/resume-status-next.test.mjs`
+  exited 0 after ACTIVE `next` and effective-goal updates.
+- **Full suite:** `npm test` → 132/132 pass.
+- **Build:** `npm run build` and `npm run typecheck` exited 0.
+- Package version **0.1.7**; package subject digest refreshed in
+  `test/evidence/task7-real-project-trials.json`.
+
+**Next (not authorized as release):** keep `RELEASE_CHANGES_REQUIRED` until
+Owner authorizes publish; optional zh-CN README rewrite; existing field trials
+need manual Truth/handoff hygiene (not re-init overwrite).

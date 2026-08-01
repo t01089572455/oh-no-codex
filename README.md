@@ -29,7 +29,7 @@
 
 <p align="center">
   <a href="https://www.npmjs.com/package/oh-no-codex"><img alt="npm" src="https://img.shields.io/npm/v/oh-no-codex?style=flat-square&color=74D6B1&labelColor=202624&label=npm"></a>
-  <img alt="status" src="https://img.shields.io/badge/status-V1_TRIAL_ACCEPTED-74D6B1?style=flat-square&labelColor=202624">
+  <img alt="status" src="https://img.shields.io/badge/status-RELEASE_CHANGES_REQUIRED-E3B341?style=flat-square&labelColor=202624">
   <img alt="codex" src="https://img.shields.io/badge/for-Codex_CLI-FF4B35?style=flat-square&labelColor=202624">
   <img alt="skills" src="https://img.shields.io/badge/UX-13_Codex_skills-74D6B1?style=flat-square&labelColor=202624">
   <a href="./LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-FFF1CE?style=flat-square&labelColor=202624"></a>
@@ -301,11 +301,12 @@ Shell details live inside each skill file for Codex; users need not memorize the
 
 | Claim | Label |
 | --- | --- |
-| Product status | `V1_TRIAL_ACCEPTED` |
+| Core harness | `ANTI_DRIFT_CORE_WORKS` |
+| Release / public status | `RELEASE_CHANGES_REQUIRED` |
 | CLI / hooks / atomic state | `LOCAL_PASS` |
 | Cockpit = status JSON | `LOCAL_PASS` |
 | Disposable real copies | `TRIAL_PASS` (P01鈥揚06) |
-| npm | **`0.1.6`** (13 day-to-day skills; setup via CLI only) |
+| npm | **`0.1.7`** (13 day-to-day skills; setup via CLI only) |
 
 Contracts: [Product](./docs/PRODUCT-CONTRACT.md) 路 [Design](./docs/DESIGN.md) 路 [Acceptance](./docs/ACCEPTANCE.md) 路 [Sins](./docs/CODEX-SINS.md)
 

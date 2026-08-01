@@ -46,6 +46,18 @@ function honestyLines(model: ReadModel): string[] {
         + "propose next phase with ohno plan propose",
     );
   }
+  if (model.next_action.startsWith("CONTINUE_ACTIVE:")) {
+    lines.push(
+      "ACTIVE_NOTE: next means continue this task then ohno verify "
+        + "(not permission to start another task)",
+    );
+  }
+  if (model.next_action.startsWith("RUN_EXACT_TEST:")) {
+    lines.push(
+      "PROOF_NOTE: re-run ohno verify for the active contract "
+        + "(FAIL/UNKNOWN/STALE proof)",
+    );
+  }
   if (
     model.blocker === "STALE_PASS"
     && model.current_task === null

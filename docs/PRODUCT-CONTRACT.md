@@ -167,10 +167,11 @@ ready` unless a later Owner-approved contract defines and earns that term.
 - state-to-Cockpit reflection: below 250 ms.
 - normal paths read bounded state and named files only.
 
-Task 7 recorded measurements on three disposable project copies; public status
-is `V1_TRIAL_ACCEPTED` with exact p95 values in the implementation ledger and
-README evidence table. Those remain local trial results, not a universal speed
-guarantee.
+Task 7 recorded measurements on three disposable project copies. Public status
+is split: core harness `ANTI_DRIFT_CORE_WORKS` vs release
+`RELEASE_CHANGES_REQUIRED` until every A/P row and public surface is honest.
+Exact p95 values live in the implementation ledger and README evidence table.
+Those remain local trial results, not a universal speed guarantee.
 
 ## Authority order
 

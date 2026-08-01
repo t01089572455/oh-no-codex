@@ -83,6 +83,10 @@ export function renderProgressMarkdown(model: ReadModel): string {
     `- Next: \`${model.next_action}\`${
       model.next_action === "PROJECT_COMPLETE"
         ? " — this plan only; propose next phase with `ohno plan propose`"
+        : model.next_action.startsWith("CONTINUE_ACTIVE:")
+        ? " — stay on the active task; prove with `ohno verify`"
+        : model.next_action.startsWith("RUN_EXACT_TEST:")
+        ? " — re-run the frozen black box with `ohno verify`"
         : ""
     }`,
     "",
@@ -151,6 +155,14 @@ export function renderAgentsManagedBlock(
     model.next_action === "PROJECT_COMPLETE"
       ? "\n**This linear plan is done** (not product-finished). "
         + "Propose the next phase with `ohno plan propose`."
+      : "",
+    model.next_action.startsWith("CONTINUE_ACTIVE:")
+      ? "\n**Continue the active task only.** Do not start the next slice. "
+        + "When done: `ohno verify`."
+      : "",
+    model.next_action.startsWith("RUN_EXACT_TEST:")
+      ? "\n**Proof is FAIL/UNKNOWN/STALE.** Re-run `ohno verify` on the "
+        + "active contract; do not advance the plan cursor by hand."
       : "",
     "",
     "### Plan board (done / half / ready / outline)",

@@ -1,5 +1,12 @@
 #!/usr/bin/env node
 
+import { realpathSync } from "node:fs";
+import {
+  access,
+  writeFile,
+} from "node:fs/promises";
+import { resolve } from "node:path";
+
 import {
   displayFieldByteLimits,
   displayTextIssue,
@@ -13,6 +20,10 @@ import {
 } from "./plan.js";
 import { parseCockpitCliArgs } from "./cockpit/lifecycle.js";
 import { runCockpit, runCockpitStop } from "./cockpit/server.js";
+import {
+  ensureDefaultTruth,
+  ensureOhnoRuntimeGitignore,
+} from "./truth.js";
 import { classifyTruthAtInit } from "./truth-inventory.js";
 import {
   acceptChange,
@@ -43,7 +54,6 @@ import {
   agentsBeginMarker,
   agentsEndMarker,
   refreshProjectors,
-  renderAgentsManagedBlock,
 } from "./projectors.js";
 import { readModel } from "./read-model.js";
 import {
@@ -64,9 +74,6 @@ import { serializeStatus } from "./status.js";
 import { startTask } from "./task-start.js";
 import { reopenLastCompletedTask } from "./task-reopen.js";
 import { verifyTask } from "./verify.js";
-import { realpathSync } from "node:fs";
-import { writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
 
 const usageText = [
   "usage:",
@@ -123,6 +130,29 @@ function boundedDisplayValue(
   return value;
 }
 
+async function ensureAgentsShell(projectPath: string): Promise<"created" | "preserved"> {
+  const agentsPath = resolve(projectPath, "AGENTS.md");
+  try {
+    await access(agentsPath);
+    return "preserved";
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+      throw error;
+    }
+  }
+  await writeFile(
+    agentsPath,
+    [
+      "# Agent instructions",
+      "",
+      "Owner rules live outside the Oh No managed block below.",
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+  return "created";
+}
+
 async function initialize(projectPath: string, args: string[]): Promise<void> {
   // Project-level slogans removed from UX. Scope lives in plan tasks + notes.
   if (args.includes("--goal")) {
@@ -138,22 +168,13 @@ async function initialize(projectPath: string, args: string[]): Promise<void> {
     throw new Error("project is already initialized");
   }
 
+  // AGENTS shell before default Truth (targets must exist when classified).
+  const agentsMode = await ensureAgentsShell(projectPath);
+  await ensureOhnoRuntimeGitignore(projectPath);
+  const truthSeeded = await ensureDefaultTruth(projectPath);
   const truthInventory = await classifyTruthAtInit(projectPath);
   await writeStateAtomic(projectPath, initialState("", truthInventory));
-  const prefs = await ensurePreferences(projectPath);
-  const model = await readModel(projectPath);
-  await writeFile(
-    resolve(projectPath, "AGENTS.md"),
-    [
-      "# Agent instructions",
-      "",
-      "Owner rules live outside the Oh No managed block below.",
-      "",
-      renderAgentsManagedBlock(model, prefs),
-      "",
-    ].join("\n"),
-    "utf8",
-  );
+  await ensurePreferences(projectPath);
   await appendRequirementsNote(
     projectPath,
     "Project initialized. Capture Owner intent with plan tasks and "
@@ -166,13 +187,21 @@ async function initialize(projectPath: string, args: string[]): Promise<void> {
     + "frontend adapt-not-invent. Configure: ohno preferences show|set|reset",
     "init-preferences",
   ).catch(() => undefined);
+  // Upserts managed block; never wipes Owner prose outside markers.
   await refreshProjectors(projectPath).catch(() => undefined);
   process.stdout.write(
     "Initialized\n"
-    + `AGENTS: managed block ${agentsBeginMarker} … ${agentsEndMarker}\n`
+    + `AGENTS: ${agentsMode === "preserved" ? "preserved existing file; " : ""}`
+    + `managed block ${agentsBeginMarker} … ${agentsEndMarker}\n`
     + "REQUIREMENTS: .ohno/REQUIREMENTS.md\n"
     + "PREFERENCES: .ohno/preferences.json\n"
-    + "TIP: git add .ohno AGENTS.md so authority travels with the repo (FT-07)\n"
+    + `TRUTH: ${truthSeeded ? "seeded .ohno/truth.json (AGENTS.md target)" : "kept existing .ohno/truth.json"}\n`
+    + "RUNTIME_GITIGNORE: .ohno/.gitignore (locks/cockpit runtime)\n"
+    + "TIP: commit canonical harness only:\n"
+    + "  git add AGENTS.md .ohno/state.json .ohno/truth.json "
+    + ".ohno/REQUIREMENTS.md .ohno/preferences.json .ohno/PROGRESS.md "
+    + ".ohno/.gitignore\n"
+    + "  (do not commit verify.lock / cockpit-runtime.json)\n"
     + "Next: ohno install  (hooks + skills), then ohno cockpit when you want the board\n",
   );
 }

@@ -209,9 +209,37 @@ function nextActionFor(
     || freshness === "UNKNOWN"
     || freshness === "STALE"
   ) {
+    // Still one active contract: re-run its exact black box (not next task).
+    if (state.active_task !== null) {
+      return `RUN_EXACT_TEST:${state.active_task.id}`;
+    }
     return "NONE";
   }
   return nextActionFromPlan(state);
+}
+
+/**
+ * Project goal if set; otherwise the cursor/active plan task goal.
+ * Empty project goal alone must not blank every read surface when the
+ * frozen slice still names an Owner-facing task goal.
+ */
+export function effectiveGoal(state: ProjectState): string | null {
+  if (state.goal !== "") {
+    return state.goal;
+  }
+  if (state.active_task !== null) {
+    const match = state.ordered_tasks.find(
+      (task) => task.id === state.active_task!.id,
+    );
+    if (match !== undefined && match.goal !== "") {
+      return match.goal;
+    }
+  }
+  const cursorTask = state.ordered_tasks[state.cursor];
+  if (cursorTask !== undefined && cursorTask.goal !== "") {
+    return cursorTask.goal;
+  }
+  return null;
 }
 
 function planBoardFor(
@@ -337,7 +365,7 @@ export async function readModel(projectPath: string): Promise<ReadModel> {
   return {
     schema_version: 2,
     availability: "AVAILABLE",
-    goal: state.goal === "" ? null : state.goal,
+    goal: effectiveGoal(state),
     status: state.status,
     plan_revision: state.plan_revision,
     cursor: state.cursor,

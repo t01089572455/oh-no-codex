@@ -336,7 +336,7 @@ test("active read surfaces expose the exact contract without running its test", 
   assert.deepEqual(model, {
     schema_version: 2,
     availability: "AVAILABLE",
-    goal: null,
+    goal: "Keep read surfaces aligned",
     status: "ACTIVE",
     plan_revision: model.plan_revision,
     cursor: 0,
@@ -347,7 +347,7 @@ test("active read surfaces expose the exact contract without running its test", 
     plan_board: model.plan_board,
     proof_freshness: "NONE",
     blocker: "NONE",
-    next_action: "NONE",
+    next_action: `CONTINUE_ACTIVE:${taskId}`,
     truth_target_count: model.truth_target_count,
     truth_targets: model.truth_targets,
     document_sync_status: "CLEAN",
@@ -404,7 +404,8 @@ test("a prior PASS is historical when a different task becomes active", async (t
   }));
   assert.equal(model.proof_freshness, "NONE");
   assert.equal(model.blocker, "NONE");
-  assert.equal(model.next_action, "NONE");
+  assert.equal(model.next_action, "CONTINUE_ACTIVE:task-b");
+  assert.equal(model.goal, "Keep read surfaces aligned");
   assertAllSurfacesAgree(projectPath, model);
 });
 
@@ -567,7 +568,7 @@ test("manually oversized display fields make state UNAVAILABLE without overwrite
   }
 });
 
-test("a failed exact command is projected as the current blocker with no invented next", async (t) => {
+test("a failed exact command is projected as blocker with RUN_EXACT_TEST next", async (t) => {
   const projectPath = await createProject(t);
   await initialize(projectPath);
   await writeFile(resolve(projectPath, "subject.txt"), "failing subject\n", "utf8");
@@ -585,7 +586,8 @@ test("a failed exact command is projected as the current blocker with no invente
   assert.deepEqual(model.current_task, expectedCurrentTask({ command }));
   assert.equal(model.proof_freshness, "FAIL");
   assert.equal(model.blocker, "EXACT_TEST_FAILED");
-  assert.equal(model.next_action, "NONE");
+  assert.equal(model.next_action, `RUN_EXACT_TEST:${taskId}`);
+  assert.equal(model.goal, "Keep read surfaces aligned");
   assertAllSurfacesAgree(projectPath, model);
 });
 
@@ -604,7 +606,7 @@ test("a completed fresh PASS exposes only its plan-derived next action", async (
   assert.deepEqual(model, {
     schema_version: 2,
     availability: "AVAILABLE",
-    goal: null,
+    goal: `Future goal ${nextTaskId}`,
     status: "IDLE",
     plan_revision: model.plan_revision,
     cursor: 1,
@@ -656,13 +658,16 @@ test("a maximum stable next task id remains exact in a bounded resume", async (t
   assert.equal(verified.stdout, `${maximumNext}\n`);
 
   const model = statusJson(projectPath);
-  assert.equal(model.goal, null);
+  assert.equal(model.goal, `Future goal ${maximumNextId}`);
   assert.equal(model.proof_freshness, "FRESH");
   assert.equal(model.next_action, maximumNext);
   const resumed = runCli(projectPath, ["resume"]);
   assert.equal(resumed.status, 0, resumed.stderr);
   assert.ok(Buffer.byteLength(resumed.stdout, "utf8") < 4_096);
-  assert.match(resumed.stdout, /^GOAL: NONE$/m);
+  assert.match(
+    resumed.stdout,
+    new RegExp(`^GOAL: ${escapeRegExp(`Future goal ${maximumNextId}`)}$`, "m"),
+  );
   assert.ok(resumed.stdout.includes(`NEXT: ${maximumNext}\n`));
   assertAllSurfacesAgree(projectPath, model);
 });
@@ -786,7 +791,7 @@ test("resume stays below 4096 UTF-8 bytes and prioritizes the current contract a
     id: maximumId,
   }));
   assert.equal(model.blocker, "EXACT_TEST_FAILED");
-  assert.equal(model.next_action, "NONE");
+  assert.equal(model.next_action, `RUN_EXACT_TEST:${maximumId}`);
 
   const resumed = runCli(projectPath, ["resume"]);
   assert.equal(resumed.status, 0, resumed.stderr);
@@ -794,12 +799,13 @@ test("resume stays below 4096 UTF-8 bytes and prioritizes the current contract a
     Buffer.byteLength(resumed.stdout, "utf8") < 4_096,
     `resume capsule was ${Buffer.byteLength(resumed.stdout, "utf8")} bytes`,
   );
-  assert.match(resumed.stdout, /^GOAL: NONE$/m);
+  // Project goal empty → effective goal is the active plan-task goal.
+  assert.match(resumed.stdout, /^GOAL: Keep read surfaces aligned$/m);
   assert.ok(resumed.stdout.includes(`TASK: ${maximumId}\n`));
   assert.ok(resumed.stdout.includes(`EXPECTED: ${maximumExpected}\n`));
   assert.ok(resumed.stdout.includes(`TEST: ${command}\n`));
   assert.match(resumed.stdout, /^BLOCKER: EXACT_TEST_FAILED$/m);
-  assert.match(resumed.stdout, /^NEXT: NONE$/m);
+  assert.match(resumed.stdout, new RegExp(`^NEXT: RUN_EXACT_TEST:${maximumId}$`, "m"));
   assert.doesNotMatch(resumed.stdout, /completed-000/);
 });
 

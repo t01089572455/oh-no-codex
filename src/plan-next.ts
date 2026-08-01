@@ -4,8 +4,10 @@ export function nextActionFromPlan(state: ProjectState): string {
   if (state.document_sync.status === "PENDING_REVIEW") {
     return "SYNC_GOVERNING_DOCUMENTS";
   }
+  // ACTIVE work is not "no next action". NONE was a protocol gap that read
+  // like completion or idle; it must not license the next plan task.
   if (state.active_task !== null) {
-    return "NONE";
+    return `CONTINUE_ACTIVE:${state.active_task.id}`;
   }
   if (state.plan_revision === null) {
     return state.pending_plan === null

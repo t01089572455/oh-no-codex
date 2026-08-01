@@ -25,6 +25,11 @@ test("projectors write PROGRESS.md and AGENTS managed block from state", async (
     "# Owner rules\n\nDo not invent architecture.\n",
     "utf8",
   );
+  await writeFile(
+    resolve(projectPath, "board-active.test.mjs"),
+    "import test from \"node:test\";\ntest(\"board\", () => {});\n",
+    "utf8",
+  );
 
   reviewPlan(projectPath, {
     tasks: [
@@ -33,9 +38,9 @@ test("projectors write PROGRESS.md and AGENTS managed block from state", async (
         title: "Active board row",
         goal: "Show ACTIVE phase",
         expected_behavior: "Board marks the active task",
-        test_command: `"${process.execPath}" -e "process.exit(0)"`,
+        test_command: "node --test board-active.test.mjs",
         stop_condition: "Stop after green",
-        allowed_files: ["subject.txt"],
+        allowed_files: ["subject.txt", "board-active.test.mjs"],
         time_budget_minutes: 20,
       }),
       {

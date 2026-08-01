@@ -1,4 +1,9 @@
-import { readFile } from "node:fs/promises";
+import {
+  access,
+  mkdir,
+  readFile,
+  writeFile,
+} from "node:fs/promises";
 import { posix, resolve } from "node:path";
 
 export interface TruthTarget {
@@ -101,6 +106,68 @@ export async function readTruth(projectPath: string): Promise<TruthDocument> {
     const message = error instanceof Error ? error.message : String(error);
     throw new Error(`invalid Truth: ${message}`);
   }
+}
+
+/**
+ * Default Truth so init is not a zero-target dead end. Owner may expand
+ * targets later; change-begin still requires review of the sync set.
+ */
+export function defaultInitTruthDocument(): TruthDocument {
+  return {
+    schema_version: 1,
+    targets: [
+      {
+        path: "AGENTS.md",
+        concerns: ["agent-instructions", "workflow"],
+      },
+    ],
+  };
+}
+
+/** Write `.ohno/truth.json` only when absent. Returns whether a file was created. */
+export async function ensureDefaultTruth(
+  projectPath: string,
+): Promise<boolean> {
+  const path = resolve(projectPath, ".ohno", "truth.json");
+  try {
+    await access(path);
+    return false;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+      throw error;
+    }
+  }
+  await mkdir(resolve(projectPath, ".ohno"), { recursive: true });
+  const doc = defaultInitTruthDocument();
+  await writeFile(path, `${JSON.stringify(doc, null, 2)}\n`, "utf8");
+  return true;
+}
+
+/** Runtime/transient Oh No files — not canonical harness assets for Git handoff. */
+export const ohnoRuntimeGitignore = [
+  "# Oh No: runtime / machine-local (do not commit)",
+  "verify.lock",
+  "*.lock",
+  "cockpit-runtime.json",
+  "cockpit-port",
+  "*.pid",
+  "",
+].join("\n");
+
+export async function ensureOhnoRuntimeGitignore(
+  projectPath: string,
+): Promise<void> {
+  const path = resolve(projectPath, ".ohno", ".gitignore");
+  try {
+    await access(path);
+    return;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+      throw error;
+    }
+  }
+  await mkdir(resolve(projectPath, ".ohno"), { recursive: true });
+  await writeFile(path, ohnoRuntimeGitignore, "utf8");
 }
 
 export function selectRequiredPaths(

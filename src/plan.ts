@@ -4,8 +4,7 @@ import { relative, resolve } from "node:path";
 
 import {
   assertPlanDiscipline,
-  planLooksLikeCommitLicense,
-  weakBlackboxSummary,
+  planSoftWarnings,
 } from "./discipline.js";
 import { readGitHead } from "./subject-digest.js";
 import {
@@ -234,24 +233,8 @@ export async function proposePlan(
     throw new Error("current state changed while recording the plan proposal");
   }
 
-  // Soft discipline warnings (FT-02/05/14) — cooperative, not reject.
-  const warnings: string[] = [];
-  if (planLooksLikeCommitLicense(source.proposal.ordered_tasks)) {
-    warnings.push(
-      "WARN: plan looks like a commit-license / docs-only micro-plan "
-        + "(FT-05/14). Accepting will make cockpit show this plan as complete "
-        + "at 100% of plan tasks — not product done.",
-    );
-  }
-  for (const task of source.proposal.ordered_tasks) {
-    if (task.status !== "FROZEN") {
-      continue;
-    }
-    const weak = weakBlackboxSummary(task.test_command);
-    if (weak !== null) {
-      warnings.push(`WARN: task ${task.id}: ${weak}`);
-    }
-  }
+  // Soft discipline warnings (FT-02/05/14 + denominator shrink) — cooperative.
+  const warnings = planSoftWarnings(source.proposal.ordered_tasks);
 
   return {
     planRevision,
