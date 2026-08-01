@@ -174,8 +174,8 @@ function missionCenter(model) {
   }
   if (model.next_action === "PROJECT_COMPLETE") {
     return {
-      label: "DONE",
-      sub: "Project complete",
+      label: "PLAN DONE",
+      sub: "This linear plan is complete — not product-finished. Propose next phase.",
     };
   }
   if (model.plan_revision === null) {
@@ -331,7 +331,14 @@ function render(model) {
   const task = model.current_task;
   const ratio = progressRatio(model);
   const percent = `${Math.round(ratio * 100)}%`;
+  // FT-01: never bare "100%" as product complete — always plan-cursor framing.
+  const progressLabel = model.task_count > 0
+    ? `${model.cursor}/${model.task_count} plan · ${percent}`
+    : "0/0 plan";
   const mission = missionCenter(model);
+  const nextDisplay = model.next_action === "PROJECT_COMPLETE"
+    ? "PROJECT_COMPLETE (this plan only — propose next phase)"
+    : model.next_action;
 
   document.body.dataset.tone = stateTone(model);
   document.documentElement.style.setProperty("--progress", percent);
@@ -350,14 +357,17 @@ function render(model) {
   );
   elements.behavior.textContent = task?.expected_behavior ?? (
     available
-      ? "No active task is recorded in the canonical read model."
+      ? model.next_action === "PROJECT_COMPLETE"
+        ? "This linear plan cursor is complete. That is not product completion. "
+          + "Run ohno plan propose for the next phase."
+        : "No active task is recorded in the canonical read model."
       : "Canonical project state is unavailable."
   );
   elements.testWell.hidden = task === null;
   elements.test.textContent = task?.test_command ?? "NONE";
   elements.proof.textContent = model.proof_freshness;
   elements.blocker.textContent = model.blocker;
-  elements.next.textContent = model.next_action;
+  elements.next.textContent = nextDisplay;
   elements.completedCount.textContent = String(model.completed_count);
   elements.taskCountDisp.textContent = String(model.task_count);
   elements.cursorDisp.textContent = String(model.cursor);
@@ -365,25 +375,43 @@ function render(model) {
   elements.doneDisp.textContent = String(model.completed_count);
   elements.planRevision.textContent = model.plan_revision ?? "NONE";
   elements.planRevision.title = model.plan_revision ?? "No reviewed plan";
-  elements.progressLabel.textContent = percent;
+  elements.progressLabel.textContent = progressLabel;
+  elements.progressLabel.title =
+    "Plan cursor progress only (cursor/task_count). Not product completion.";
   elements.progressFill.style.width = percent;
   elements.progressAria.setAttribute(
     "aria-valuenow",
     String(Math.round(ratio * 100)),
+  );
+  elements.progressAria.setAttribute(
+    "aria-label",
+    `Plan progress ${model.cursor} of ${model.task_count} tasks`,
   );
   elements.missionLabel.textContent = mission.label;
   elements.missionSub.textContent = mission.sub;
   elements.railSummary.textContent = model.plan_revision === null
     ? "NO REVIEWED PLAN"
     : model.cursor >= model.task_count && model.task_count > 0
-    ? "PROJECT COMPLETE"
+    ? "THIS PLAN COMPLETE"
     : `CURSOR ${model.cursor} OF ${model.task_count} · ${model.status}`;
   elements.rail.setAttribute(
     "aria-label",
-    `Cursor ${model.cursor} of ${model.task_count}. `
+    `Plan cursor ${model.cursor} of ${model.task_count}. `
       + `Status ${model.status}. Proof ${model.proof_freshness}. `
-      + `Blocker ${model.blocker}.`,
+      + `Blocker ${model.blocker}. Authority path ${model.handoff?.path ?? "cwd"}.`,
   );
+
+  // FT-13/17: show which tree's state we are projecting.
+  if (elements.handoffLine) {
+    const h = model.handoff;
+    elements.handoffLine.textContent = h
+      ? `AUTHORITY CWD: ${h.path} · ${h.branch ?? "NO-BRANCH"} · ${
+        h.head ?? "NO-HEAD"
+      }${h.dirty ? " · DIRTY" : ""}`
+      : "AUTHORITY CWD: UNKNOWN";
+    elements.handoffLine.title =
+      "Cockpit reads only this path's .ohno/state.json. Other git worktrees may differ.";
+  }
 
   if (elements.truthTargetCount) {
     elements.truthTargetCount.textContent = String(
@@ -409,13 +437,6 @@ function render(model) {
         elements.truthTargetsList.append(item);
       }
     }
-  }
-  if (elements.handoffLine) {
-    const handoff = model.handoff ?? {};
-    elements.handoffLine.textContent =
-      `Handoff: ${(handoff.branch ?? "DETACHED")} @ `
-      + `${(handoff.head ?? "NONE").slice(0, 12)}`
-      + `${handoff.dirty ? " (dirty)" : " (clean)"}`;
   }
   renderRecent(model);
   renderPlanBoard(model);

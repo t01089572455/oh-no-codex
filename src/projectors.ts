@@ -69,11 +69,22 @@ export function renderProgressMarkdown(model: ReadModel): string {
     `- Status: ${model.status}`,
     `- Plan revision: ${model.plan_revision ?? "NONE"}`,
     `- Cursor: ${model.cursor} / ${model.task_count}`,
+    `- Plan progress: ${
+      model.task_count > 0
+        ? `${model.cursor}/${model.task_count} of THIS linear plan `
+          + `(not product completion)`
+        : "no reviewed plan"
+    }`,
     `- Proof: ${model.proof_freshness}`,
     `- Blocker: ${model.blocker}`,
     `- Document sync: ${model.document_sync_status}`,
     `- Truth targets: ${model.truth_target_count}`,
-    `- Next: \`${model.next_action}\``,
+    `- Authority cwd: \`${model.handoff.path}\``,
+    `- Next: \`${model.next_action}\`${
+      model.next_action === "PROJECT_COMPLETE"
+        ? " — this plan only; propose next phase with `ohno plan propose`"
+        : ""
+    }`,
     "",
     "## Phase counts",
     "",
@@ -132,6 +143,15 @@ export function renderAgentsManagedBlock(
     `- **Blocker:** ${model.blocker}`,
     `- **Doc sync:** ${model.document_sync_status}`,
     `- **Next:** \`${model.next_action}\``,
+    model.next_action === "PROPOSE_PLAN"
+      ? "\n**STOP free-build:** capture Owner decisions with "
+        + "`ohno requirements note`, then multi-slice `ohno plan propose` "
+        + "(not brainstorm-only). Weak micro-plans are refused on accept."
+      : "",
+    model.next_action === "PROJECT_COMPLETE"
+      ? "\n**This linear plan is done** (not product-finished). "
+        + "Propose the next phase with `ohno plan propose`."
+      : "",
     "",
     "### Plan board (done / half / ready / outline)",
     "",

@@ -148,13 +148,14 @@ export async function appendRequirementsNote(
   text: string,
   source = "owner-note",
 ): Promise<string> {
-  const issue = displayTextIssue(text, displayFieldByteLimits.changeSummary);
+  const issue = displayTextIssue(text, displayFieldByteLimits.ownerNote);
   if (issue === "LINE_BREAK") {
     throw new Error("--text must be a single line");
   }
   if (issue === "TOO_LARGE") {
     throw new Error(
-      `--text exceeds ${displayFieldByteLimits.changeSummary} UTF-8 bytes`,
+      `--text exceeds ${displayFieldByteLimits.ownerNote} UTF-8 bytes `
+        + `(owner notes; use a research file for longer prose)`,
     );
   }
   const trimmed = text.trim();

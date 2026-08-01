@@ -55,9 +55,13 @@ import {
   appendRequirementsNote,
   showRequirements,
 } from "./requirements.js";
-import { serializeResume } from "./resume.js";
+import {
+  serializeResume,
+  serializeResumeWithWorktrees,
+} from "./resume.js";
 import { serializeStatus } from "./status.js";
 import { startTask } from "./task-start.js";
+import { reopenLastCompletedTask } from "./task-reopen.js";
 import { verifyTask } from "./verify.js";
 import { realpathSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
@@ -67,8 +71,8 @@ const usageText = [
   "usage:",
   "  ohno init",
   "  ohno plan propose --file <review.json>",
-  "  ohno plan accept --revision <sha256> --diff <sha256>",
-  "  ohno task start",
+  "  ohno plan accept --revision <sha256> --diff <sha256> [--allow-weak-plan]",
+  "  ohno task start | ohno task reopen",
   "  ohno verify | ohno status [--json] | ohno resume | ohno next",
   "  ohno cockpit",
   "  ohno projectors refresh [--no-agents]",
@@ -166,6 +170,7 @@ async function initialize(projectPath: string, args: string[]): Promise<void> {
     + `AGENTS: managed block ${agentsBeginMarker} … ${agentsEndMarker}\n`
     + "REQUIREMENTS: .ohno/REQUIREMENTS.md\n"
     + "PREFERENCES: .ohno/preferences.json\n"
+    + "TIP: git add .ohno AGENTS.md so authority travels with the repo (FT-07)\n"
     + "Next: ohno install  (hooks + skills), then ohno cockpit when you want the board\n",
   );
 }
@@ -179,7 +184,9 @@ async function writeReadSurface(
   if (surface === "status") {
     process.stdout.write(serializeStatus(model, json));
   } else if (surface === "resume") {
-    process.stdout.write(serializeResume(model));
+    process.stdout.write(
+      await serializeResumeWithWorktrees(model, projectPath),
+    );
   } else {
     process.stdout.write(serializeNext(model));
   }
@@ -192,7 +199,20 @@ async function writeReadSurface(
   }
 }
 
+function ensureCliUtf8(): void {
+  // FT-19/33: best-effort UTF-8 on Windows consoles that default to legacy CP.
+  try {
+    if (process.platform === "win32") {
+      process.stdout.setDefaultEncoding?.("utf8");
+      process.stderr.setDefaultEncoding?.("utf8");
+    }
+  } catch {
+    // ignore
+  }
+}
+
 async function main(): Promise<void> {
+  ensureCliUtf8();
   const [command, subcommand, ...args] = process.argv.slice(2);
   let projectPath = process.cwd();
   try {
@@ -285,6 +305,20 @@ async function main(): Promise<void> {
     return;
   }
 
+  if (command === "task" && subcommand === "reopen" && args.length === 0) {
+    const result = await reopenLastCompletedTask(projectPath);
+    await refreshProjectors(projectPath).catch(() => undefined);
+    process.stdout.write(
+      [
+        `TASK: ${result.task_id}`,
+        `TEST: ${result.test_command}`,
+        result.message,
+        "",
+      ].join("\n"),
+    );
+    return;
+  }
+
   if (
     command === "plan"
     && subcommand === "propose"
@@ -301,32 +335,37 @@ async function main(): Promise<void> {
       `EXACT_PLAN_DIFF_BYTES: ${
         Buffer.byteLength(proposal.exactDiff, "utf8")
       }`,
+      ...(proposal.warnings ?? []).map((line) => line),
       "",
       proposal.exactDiff,
     ].join("\n"));
     return;
   }
 
-  if (
-    command === "plan"
-    && subcommand === "accept"
-    && args.length === 4
-    && args[0] === "--revision"
-    && args[2] === "--diff"
-  ) {
-    const message = await acceptPlan(
-      projectPath,
-      requiredValue(args, "--revision"),
-      requiredValue(args, "--diff"),
-    );
-    await appendRequirementsNote(
-      projectPath,
-      `Plan accepted revision=${requiredValue(args, "--revision").slice(0, 12)}…`,
-      "plan-accept",
-    ).catch(() => undefined);
-    await refreshProjectors(projectPath).catch(() => undefined);
-    process.stdout.write(message);
-    return;
+  if (command === "plan" && subcommand === "accept") {
+    const allowWeakPlan = args.includes("--allow-weak-plan");
+    const filtered = args.filter((a) => a !== "--allow-weak-plan");
+    if (
+      filtered.length === 4
+      && filtered[0] === "--revision"
+      && filtered[2] === "--diff"
+    ) {
+      const message = await acceptPlan(
+        projectPath,
+        requiredValue(filtered, "--revision"),
+        requiredValue(filtered, "--diff"),
+        { allowWeakPlan },
+      );
+      await appendRequirementsNote(
+        projectPath,
+        `Plan accepted revision=${requiredValue(filtered, "--revision")}`
+          + (allowWeakPlan ? " allow_weak_plan=true" : ""),
+        "plan-accept",
+      ).catch(() => undefined);
+      await refreshProjectors(projectPath).catch(() => undefined);
+      process.stdout.write(message);
+      return;
+    }
   }
 
   if (command === "verify" && subcommand === undefined) {

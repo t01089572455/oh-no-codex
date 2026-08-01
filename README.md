@@ -133,6 +133,12 @@ ohno skill status
 
 Node.js **≥ 22.20**. Package: [oh-no-codex](https://www.npmjs.com/package/oh-no-codex) (`0.1.3`).
 
+### Windows notes
+
+- Put npm’s global bin on **PATH** (often `…\nodejs\node_global`) so Codex shells find `ohno`.
+- Use the `ohno` / `ohno.cmd` shim — **do not** double-click `node_modules\oh-no-codex\dist\cli.js` (Windows Script Host cannot run that ESM file).
+- Progress % in the cockpit is **plan cursor** (`cursor/task_count`), not “product finished.”
+
 ---
 
 ## Cockpit (how to start)
@@ -141,6 +147,7 @@ Local **read-only** glass board. Same data as `ohno status --json`.
 
 ```bash
 cd your-git-repo          # must already have run ohno init
+# If you use a git worktree, cd into THAT worktree — each tree has its own .ohno/
 ohno cockpit
 ```
 
@@ -238,7 +245,7 @@ Shell details live inside each skill file for Codex; users need not memorize the
 | Skill | You mean |
 | --- | --- |
 | `oh-no-plan` | plan / accept plan |
-| `oh-no-task` | start this slice |
+| `oh-no-task` | start / reopen this slice |
 | `oh-no-verify` | done / verify |
 | `oh-no-resume` | where are we |
 | `oh-no-status` | status |
