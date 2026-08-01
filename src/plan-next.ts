@@ -1,6 +1,12 @@
-import type { ProjectState } from "./state.js";
+import {
+  needsAcceptanceBasisMigration,
+  type ProjectState,
+} from "./state.js";
 
 export function nextActionFromPlan(state: ProjectState): string {
+  if (needsAcceptanceBasisMigration(state)) {
+    return "MIGRATE_ACCEPTANCE_BASIS";
+  }
   if (state.document_sync.status === "PENDING_REVIEW") {
     return "SYNC_GOVERNING_DOCUMENTS";
   }

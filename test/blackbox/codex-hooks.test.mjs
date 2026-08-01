@@ -313,14 +313,18 @@ test("PreToolUse allows .ohno plan JSON when next is FREEZE_TASK", async (t) => 
       status: "OUTLINE",
     },
   ];
-  const { writeDefaultAcceptanceBasis } = await import("../helpers/blackbox.mjs");
-  writeDefaultAcceptanceBasis(projectPath, tasks, ".ohno/acceptance-basis.md");
+  const {
+    writeDefaultAcceptanceBasis,
+    syncTruthInventoryForBasis,
+  } = await import("../helpers/blackbox.mjs");
+  writeDefaultAcceptanceBasis(projectPath, tasks, ".ohno/acceptance-basis.json");
+  syncTruthInventoryForBasis(projectPath, ".ohno/acceptance-basis.json");
   await writeFile(
     resolve(projectPath, planPath),
     `${JSON.stringify({
       cursor: 0,
       ordered_tasks: tasks,
-      acceptance_source: ".ohno/acceptance-basis.md",
+      acceptance_source: ".ohno/acceptance-basis.json",
     }, null, 2)}\n`,
     "utf8",
   );

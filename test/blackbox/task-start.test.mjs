@@ -16,6 +16,7 @@ import {
   spawnCli,
   runInit,
   writeDefaultAcceptanceBasis,
+  syncTruthInventoryForBasis,
 } from "../helpers/blackbox.mjs";
 
 const requiredFrozenFields = [
@@ -33,13 +34,14 @@ async function initialize(projectPath, projectGoal = "Ship one bounded change") 
 }
 
 async function writeProposal(projectPath, task) {
-  writeDefaultAcceptanceBasis(projectPath, [task], ".ohno/acceptance-basis.md");
+  writeDefaultAcceptanceBasis(projectPath, [task], ".ohno/acceptance-basis.json");
+  syncTruthInventoryForBasis(projectPath, ".ohno/acceptance-basis.json");
   await writeFile(
     resolve(projectPath, ".ohno", "test-plan.json"),
     `${JSON.stringify({
       cursor: 0,
       ordered_tasks: [task],
-      acceptance_source: ".ohno/acceptance-basis.md",
+      acceptance_source: ".ohno/acceptance-basis.json",
     }, null, 2)}\n`,
     "utf8",
   );
@@ -158,7 +160,7 @@ test("a complete reviewed bounded contract creates exactly one active task", asy
   assert.match(result.stdout, /task-001/);
 
   const state = await readState(projectPath);
-  assert.equal(state.schema_version, 2);
+  assert.equal(state.schema_version, 3);
   assert.equal(state.status, "ACTIVE");
   assert.equal(state.goal, "Ship one bounded change");
   assert.equal(state.plan_revision, review.revision);

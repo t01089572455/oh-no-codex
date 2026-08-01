@@ -112,14 +112,18 @@ async function startTask(projectPath, {
 
 async function proposeTask(projectPath, options) {
   const task = taskDefinition(options);
-  const { writeDefaultAcceptanceBasis } = await import("../helpers/blackbox.mjs");
-  writeDefaultAcceptanceBasis(projectPath, [task], ".ohno/acceptance-basis.md");
+  const {
+    writeDefaultAcceptanceBasis,
+    syncTruthInventoryForBasis,
+  } = await import("../helpers/blackbox.mjs");
+  writeDefaultAcceptanceBasis(projectPath, [task], ".ohno/acceptance-basis.json");
+  syncTruthInventoryForBasis(projectPath, ".ohno/acceptance-basis.json");
   await writeFile(
     resolve(projectPath, ".ohno", "invalid-plan.json"),
     `${JSON.stringify({
       cursor: 0,
       ordered_tasks: [task],
-      acceptance_source: ".ohno/acceptance-basis.md",
+      acceptance_source: ".ohno/acceptance-basis.json",
     }, null, 2)}\n`,
     "utf8",
   );

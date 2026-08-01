@@ -79,6 +79,13 @@ function honestyLines(model: ReadModel): string[] {
         + "new projects require ohno init --goal (A01)",
     );
   }
+  if (model.next_action === "MIGRATE_ACCEPTANCE_BASIS") {
+    lines.push(
+      "MIGRATE_NOTE: schema predates structured acceptance basis — "
+        + "run ohno migrate acceptance-basis --file <Truth-listed basis.json> "
+        + "before task start (cursor/completed preserved)",
+    );
+  }
   return lines;
 }
 

@@ -176,17 +176,46 @@ function trialTask({
 
 async function reviewPlan(cwd, tasks, fileName) {
   const planPath = resolve(cwd, fileName);
-  const basis = ".ohno/acceptance-basis.md";
-  const lines = [
-    "# Trial acceptance basis",
-    "",
-    "Claims only the frozen black-box commands in this trial plan.",
-    "",
-  ];
-  for (const task of tasks.filter((t) => t.status === "FROZEN")) {
-    lines.push(`## ${task.id}`, "", `- test: \`${task.test_command}\``, "");
+  const basis = ".ohno/acceptance-basis.json";
+  const frozen = tasks.filter((t) => t.status === "FROZEN");
+  await writeFile(
+    resolve(cwd, basis),
+    `${JSON.stringify({
+      schema_version: 1,
+      tasks: frozen.map((task) => ({
+        id: task.id,
+        expected_behavior: task.expected_behavior,
+        test_command: task.test_command,
+        stop_condition: task.stop_condition,
+      })),
+    }, null, 2)}\n`,
+    "utf8",
+  );
+  // Patch truth inventory so basis is a Truth target.
+  const statePath = resolve(cwd, ".ohno", "state.json");
+  const state = JSON.parse(await readFile(statePath, "utf8"));
+  const classification = [...(state.truth_inventory?.classification ?? [])];
+  if (!classification.some((e) => e.path === basis)) {
+    classification.push({
+      path: basis,
+      classification: "TRUTH_TARGET",
+      governing: true,
+      truth_target: true,
+    });
+    classification.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+    const { createHash } = await import("node:crypto");
+    state.truth_inventory = {
+      inventory_digest: createHash("sha256")
+        .update(JSON.stringify(classification.map(({
+          path,
+          classification: kind,
+          truth_target,
+        }) => ({ path, classification: kind, truth_target }))))
+        .digest("hex"),
+      classification,
+    };
+    await writeFile(statePath, `${JSON.stringify(state, null, 2)}\n`, "utf8");
   }
-  await writeFile(resolve(cwd, basis), `${lines.join("\n")}`, "utf8");
   await writeFile(
     planPath,
     `${JSON.stringify({

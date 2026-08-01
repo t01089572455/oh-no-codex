@@ -26,7 +26,7 @@ authorization.
 | Task 7 — cross-project trials and final gate | LOCAL_PASS | A12, A15, A16, P01–P06 |
 | Correction 2 — bounded scope, Truth shrink, pending summary, package subject, gate truth | LOCAL_PASS | F3–F5, F8; honest A14/P06 |
 | Correction 3 — release honesty, CONTINUE_ACTIVE, goal surface, Truth seed, AGENTS-safe init, denominator warn | LOCAL_PASS | honest public status; ACTIVE next; Goal/Truth/Git handoff |
-| Correction 4 — acceptance denominator hard gate (path+digest+revision; Task2 RED) | LOCAL_PASS | #7/#9 external basis cannot shrink |
+| Correction 4 — acceptance denominator hard gate (path+digest+revision; Task2 RED) | CHANGES_REQUIRED then REPAIR_PASS | structured basis + migrate; keywords retired |
 
 ## Task 1 local evidence
 
@@ -911,15 +911,22 @@ unless Owner explicitly accepts HISTORICAL-only.
 
 ## Correction 4 local evidence (2026-08-01)
 
-Acceptance denominator hard gate (Codex-agreed minimal slice):
+First landing `4f316d9` used keyword detectors and broke schema-2 read → marked
+`CHANGES_REQUIRED` (kept as failed checkpoint).
 
-- Plan JSON **requires** `acceptance_source` (project-relative path).
-- Content **digest** + path bind into `plan_revision` (`ohno-plan-revision-v2`).
-- Propose/accept **hard-block** `ACCEPTANCE_DENOMINATOR_SHRINK` (not overridable
-  by `--allow-weak-plan`).
-- Accept **re-reads** basis; content drift → `ACCEPTANCE_BASIS_DRIFT`.
-- Owning public black box:
-  `node --test test/blackbox/acceptance-denominator.test.mjs` (Task2 RED/PASS).
-- Full suite: `npm test` → 138/138 pass on this branch after Correction 4.
-- Still **not** a release: performance evidence remains HISTORICAL; Truth/Git
-  handoff and PASS receipt history remain later slices.
+**Repair (structured basis, this commit):**
+
+- Structured basis JSON: `{ schema_version:1, tasks:[{id, expected_behavior,
+  test_command, stop_condition}] }` — exact string match per FROZEN id.
+- `acceptance_source` must be a **Truth target**; path uses unified
+  project-relative validator (`src/paths.ts`).
+- `plan_revision` format `ohno-plan-revision-v3` binds path+digest.
+- Propose/accept re-read; mismatch → `ACCEPTANCE_DENOMINATOR_MISMATCH` /
+  `ACCEPTANCE_BASIS_DRIFT` (not overridable by `--allow-weak-plan`).
+- Schema **2** legacy plans remain readable; `next=MIGRATE_ACCEPTANCE_BASIS`;
+  `ohno migrate acceptance-basis --file …` upgrades to schema **3** without
+  dropping cursor/completed.
+- Keyword regex detector retired as product authority.
+- Owning black box: `node --test test/blackbox/acceptance-denominator.test.mjs`.
+- Full suite: `npm test` → 139/139.
+- Still **not** a release (HISTORICAL perf; no push/publish in this slice).

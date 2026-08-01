@@ -21,8 +21,9 @@ Package: oh-no-codex@0.1.7
 | CORR3-04 | init overwrote Owner `AGENTS.md` | Preserve file; upsert managed block only |
 | CORR3-05 | Truth zero-target / AGENTS-only seed | Seed all *present* high-risk paths (README, docs contracts, AGENTS, …) |
 | CORR3-06 | Git handoff + wrong runtime name | Ignore `cockpit.runtime.json`; init tip lists canonical files |
-| CORR3-07 | Denominator shrink | Contract-internal WARN + optional `acceptance_source` for external plan (Task2) |
+| CORR3-07 | Denominator shrink | **Repaired:** structured acceptance basis (exact task match); keywords retired |
 | CORR3-08 | Mixed performance receipt | Evidence marked `HISTORICAL`; not rebased for 0.1.7 |
+| CORR4-01 | Keyword gate false “hard close” | Replaced by structured basis + schema 2→3 migrate |
 
 ## Still open
 

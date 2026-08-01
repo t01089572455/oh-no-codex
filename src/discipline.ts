@@ -275,29 +275,21 @@ export function planSoftWarnings(
 }
 
 /**
- * Hard gate: frozen tasks must not shrink the acceptance denominator relative
- * to freeze-contract prose or the external acceptance basis. Not overridable
- * by --allow-weak-plan.
+ * @deprecated Keyword detector is not the Correction 4 hard gate.
+ * Structured acceptance basis exact-match is authoritative (acceptance-basis.ts).
+ * Kept only for diagnostic reference; do not use as a product gate.
  */
 export function assertAcceptanceDenominator(
-  tasks: Array<{
+  _tasks: Array<{
     id?: string;
     status?: string;
     expected_behavior?: string;
     stop_condition?: string;
     test_command?: string;
   }>,
-  externalAcceptanceProse: string,
+  _externalAcceptanceProse: string,
 ): void {
-  for (const task of tasks) {
-    if (task.status !== undefined && task.status !== "FROZEN") {
-      continue;
-    }
-    const shrink = denominatorShrinkSummary(task, externalAcceptanceProse);
-    if (shrink !== null) {
-      throw new Error(`ACCEPTANCE_DENOMINATOR_SHRINK: ${shrink}`);
-    }
-  }
+  // no-op: keyword model intentionally retired as denominator authority
 }
 
 export function assertPlanDiscipline(

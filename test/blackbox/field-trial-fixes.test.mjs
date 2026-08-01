@@ -10,6 +10,7 @@ import {
   runCli,
   runInit,
   writeDefaultAcceptanceBasis,
+  syncTruthInventoryForBasis,
 } from "../helpers/blackbox.mjs";
 
 test("field trial: plan propose warns and accept refuses micro-plan without override", async (t) => {
@@ -27,14 +28,15 @@ test("field trial: plan propose warns and accept refuses micro-plan without over
       time_budget_minutes: 15,
     }),
   ];
-  writeDefaultAcceptanceBasis(projectPath, tasks, ".ohno/acceptance-basis.md");
+  writeDefaultAcceptanceBasis(projectPath, tasks, ".ohno/acceptance-basis.json");
+  syncTruthInventoryForBasis(projectPath, ".ohno/acceptance-basis.json");
   const planPath = resolve(projectPath, ".ohno", "toy-plan.json");
   await writeFile(
     planPath,
     JSON.stringify({
       cursor: 0,
       ordered_tasks: tasks,
-      acceptance_source: ".ohno/acceptance-basis.md",
+      acceptance_source: ".ohno/acceptance-basis.json",
     }, null, 2),
     "utf8",
   );
@@ -111,14 +113,15 @@ test("field trial: doctor warns on weak blackbox when weak plan forced", async (
       stop_condition: "Only the design doc",
     }),
   ];
-  writeDefaultAcceptanceBasis(projectPath, tasks, ".ohno/acceptance-basis.md");
+  writeDefaultAcceptanceBasis(projectPath, tasks, ".ohno/acceptance-basis.json");
+  syncTruthInventoryForBasis(projectPath, ".ohno/acceptance-basis.json");
   const planPath = resolve(projectPath, ".ohno", "toy-plan.json");
   await writeFile(
     planPath,
     JSON.stringify({
       cursor: 0,
       ordered_tasks: tasks,
-      acceptance_source: ".ohno/acceptance-basis.md",
+      acceptance_source: ".ohno/acceptance-basis.json",
     }, null, 2),
     "utf8",
   );

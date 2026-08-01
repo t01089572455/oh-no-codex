@@ -170,6 +170,10 @@ export const defaultTruthCandidates: readonly TruthTarget[] = [
     path: ".ohno/REQUIREMENTS.md",
     concerns: ["owner-requirements"],
   },
+  {
+    path: ".ohno/acceptance-basis.json",
+    concerns: ["acceptance-basis", "black-box"],
+  },
 ];
 
 async function pathExistsAsFile(
@@ -213,13 +217,69 @@ export async function buildDefaultInitTruthDocument(
   };
 }
 
+/** Seed empty structured acceptance basis so Truth can list it at init. */
+export async function ensureEmptyAcceptanceBasisTemplate(
+  projectPath: string,
+): Promise<void> {
+  const path = resolve(projectPath, ".ohno", "acceptance-basis.json");
+  try {
+    await access(path);
+    return;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+      throw error;
+    }
+  }
+  await mkdir(resolve(projectPath, ".ohno"), { recursive: true });
+  await writeFile(
+    path,
+    `${JSON.stringify({
+      schema_version: 1,
+      tasks: [],
+    }, null, 2)}\n`,
+    "utf8",
+  );
+}
+
+const defaultAcceptanceBasisTarget: TruthTarget = {
+  path: ".ohno/acceptance-basis.json",
+  concerns: ["acceptance-basis", "black-box"],
+};
+
+/**
+ * Ensure structured acceptance basis path is always a Truth target so plan
+ * propose can bind it without test helpers patching inventory mid-change.
+ */
+export async function ensureAcceptanceBasisTruthTarget(
+  projectPath: string,
+): Promise<void> {
+  await ensureEmptyAcceptanceBasisTemplate(projectPath);
+  const path = resolve(projectPath, ".ohno", "truth.json");
+  let doc: TruthDocument;
+  try {
+    doc = await readTruth(projectPath);
+  } catch {
+    return;
+  }
+  if (doc.targets.some((t) => t.path === defaultAcceptanceBasisTarget.path)) {
+    return;
+  }
+  const next: TruthDocument = {
+    schema_version: 1,
+    targets: [...doc.targets, defaultAcceptanceBasisTarget],
+  };
+  await writeFile(path, `${JSON.stringify(next, null, 2)}\n`, "utf8");
+}
+
 /** Write `.ohno/truth.json` only when absent. Returns whether a file was created. */
 export async function ensureDefaultTruth(
   projectPath: string,
 ): Promise<boolean> {
+  await ensureEmptyAcceptanceBasisTemplate(projectPath);
   const path = resolve(projectPath, ".ohno", "truth.json");
   try {
     await access(path);
+    await ensureAcceptanceBasisTruthTarget(projectPath);
     return false;
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
@@ -228,6 +288,10 @@ export async function ensureDefaultTruth(
   }
   await mkdir(resolve(projectPath, ".ohno"), { recursive: true });
   const doc = await buildDefaultInitTruthDocument(projectPath);
+  // Always register structured acceptance basis as a Truth target.
+  if (!doc.targets.some((t) => t.path === defaultAcceptanceBasisTarget.path)) {
+    doc.targets.push(defaultAcceptanceBasisTarget);
+  }
   await writeFile(path, `${JSON.stringify(doc, null, 2)}\n`, "utf8");
   return true;
 }

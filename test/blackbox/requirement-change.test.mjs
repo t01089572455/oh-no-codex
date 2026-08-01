@@ -42,6 +42,11 @@ const truthTargets = Object.freeze([
   },
 ]);
 const allTargetPaths = truthTargets.map((target) => target.path);
+/** After init, Truth always also lists the structured acceptance basis. */
+const allRequiredPathsAfterInit = [
+  ...allTargetPaths,
+  ".ohno/acceptance-basis.json",
+];
 const requirementPaths = ["docs/PRODUCT.md", "docs/PLAN.md"];
 
 function runGit(cwd, args) {
@@ -436,7 +441,7 @@ test("mixed unknown, empty, and omitted concerns conservatively select every tar
     beginChange(projectPath, variant.options);
     assert.deepEqual(
       (await readState(projectPath)).document_sync.required_paths,
-      allTargetPaths,
+      allRequiredPathsAfterInit,
       variant.name,
     );
   }

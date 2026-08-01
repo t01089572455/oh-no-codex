@@ -168,11 +168,38 @@ ohno plan accept --revision <sha256> --diff <sha256>
 ohno task start
 ```
 
-The proposal is a minimal linear plan: a revision over `ordered_tasks`, a
-runtime cursor, and unique stable ids. The cursor task must be `FROZEN` with
-behavior, exact test, file scope, stop condition, and budget. Later tasks may
-be `OUTLINE` with only id, title, and goal. Reordering, deletion, editing, or
-freezing changes the revision.
+The proposal is a minimal linear plan: a revision over `ordered_tasks` **and**
+the structured acceptance basis (path + content digest), a runtime cursor, and
+unique stable ids. Plan JSON requires `acceptance_source` pointing at a Truth
+target that holds structured basis JSON:
+
+```json
+{
+  "schema_version": 1,
+  "tasks": [
+    {
+      "id": "stable-task-id",
+      "expected_behavior": "exact user-visible behavior",
+      "test_command": "exact black-box command",
+      "stop_condition": "exact stop boundary"
+    }
+  ]
+}
+```
+
+Every `FROZEN` task id must appear exactly once in the basis with **identical**
+`expected_behavior`, `test_command`, and `stop_condition` strings (no regex or
+NLP). `OUTLINE` tasks must not carry full basis contracts until frozen.
+Propose and accept both re-read the basis; path/content drift or mismatch
+refuses the operation.
+
+Schema 2 projects that still lack structured basis remain readable; `next` is
+`MIGRATE_ACCEPTANCE_BASIS` until `ohno migrate acceptance-basis --file …`
+upgrades them to schema 3 without dropping cursor or completed history.
+
+The cursor task must be `FROZEN` with behavior, exact test, file scope, stop
+condition, and budget. Later tasks may be `OUTLINE` with only id, title, and
+goal. Reordering, deletion, editing, or freezing changes the revision.
 
 Proposal output frames the exact plan diff and binds its digest, revision, Git
 HEAD, and time. Acceptance records only `LOCAL_REVIEW_RECORDED`; it is local

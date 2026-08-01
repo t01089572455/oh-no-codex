@@ -10,11 +10,28 @@ description: >
 
 ## Propose
 
-Write a review JSON under **`.ohno/`** with:
+Write a **structured acceptance basis** first (Truth target, usually
+`.ohno/acceptance-basis.json`):
+
+```json
+{
+  "schema_version": 1,
+  "tasks": [
+    {
+      "id": "task-id",
+      "expected_behavior": "exact user-visible behavior",
+      "test_command": "exact black-box command",
+      "stop_condition": "exact stop"
+    }
+  ]
+}
+```
+
+Then write plan JSON under **`.ohno/`** with:
 
 - `cursor`, `ordered_tasks`
-- **`acceptance_source`**: project-relative path to the external acceptance basis
-  (detailed plan / checklist). Required. Content digest binds into `plan_revision`.
+- **`acceptance_source`**: project-relative path to that basis (must be a Truth
+  target). Required. Path + content digest bind into `plan_revision`.
 
 ```bash
 ohno plan propose --file .ohno/review-plan.json
@@ -22,12 +39,14 @@ ohno plan propose --file .ohno/review-plan.json
 
 ### Acceptance denominator hard gate (#7/#9)
 
-- Frozen `test_command` / stop / expected **must not shrink** heavy paths claimed
-  by the acceptance basis (e.g. 微信开发者工具 / multi-user smoke vs unit-only Vitest).
-- Missing, empty, or unreadable `acceptance_source` → refuse propose.
-- After propose, if basis **content** changes → accept refuses (`ACCEPTANCE_BASIS_DRIFT`).
-- Shrink → refuse with `ACCEPTANCE_DENOMINATOR_SHRINK` (not overridable by
-  `--allow-weak-plan`).
+- Every `FROZEN` task must **exactly match** the basis entry with the same `id`
+  (`expected_behavior` / `test_command` / `stop_condition` string equality).
+- No regex, synonyms, or comment tricks. Mismatch →
+  `ACCEPTANCE_DENOMINATOR_MISMATCH` (not overridable by `--allow-weak-plan`).
+- Missing / unreadable basis, or path not in Truth → refuse.
+- After propose, basis content drift → `ACCEPTANCE_BASIS_DRIFT`.
+- If `next` is `MIGRATE_ACCEPTANCE_BASIS`:  
+  `ohno migrate acceptance-basis --file .ohno/acceptance-basis.json`
 
 ### FREEZE / no-ACTIVE write path (0.1.6)
 

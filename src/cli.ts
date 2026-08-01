@@ -74,6 +74,7 @@ import { serializeStatus } from "./status.js";
 import { startTask } from "./task-start.js";
 import { reopenLastCompletedTask } from "./task-reopen.js";
 import { verifyTask } from "./verify.js";
+import { migrateAcceptanceBasis } from "./migrate-acceptance.js";
 
 const usageText = [
   "usage:",
@@ -95,6 +96,7 @@ const usageText = [
   "  ohno change diff | ohno change accept --change <id> --diff <displayed digest>",
   "  ohno install | ohno hooks status --json",
   "  ohno skill install | ohno skill status",
+  "  ohno migrate acceptance-basis --file <structured-basis.json>",
   "  ohno hook | ohno git pre-commit",
   "",
   "Hook classification: COOPERATIVE_GUARDRAIL.",
@@ -347,6 +349,31 @@ async function main(): Promise<void> {
     await initialize(projectPath, [subcommand, ...args].filter(
       (value): value is string => value !== undefined,
     ));
+    return;
+  }
+
+  if (
+    command === "migrate"
+    && subcommand === "acceptance-basis"
+  ) {
+    const file = requiredValue(args, "--file");
+    const leftover = args.filter((arg, index) => {
+      if (arg === "--file") {
+        return false;
+      }
+      if (index > 0 && args[index - 1] === "--file") {
+        return false;
+      }
+      return true;
+    });
+    if (leftover.length > 0) {
+      throw new Error(
+        "usage: ohno migrate acceptance-basis --file <structured-basis.json>",
+      );
+    }
+    const message = await migrateAcceptanceBasis(projectPath, file);
+    await refreshProjectors(projectPath).catch(() => undefined);
+    process.stdout.write(message);
     return;
   }
 
