@@ -1,8 +1,8 @@
-<a id="readme-top"></a>
+﻿<a id="readme-top"></a>
 
 <div align="center">
 
-[**English**](./README.md) · [简体中文](./README.zh-CN.md)
+[**English**](./README.md) 路 [绠€浣撲腑鏂嘳(./README.zh-CN.md)
 
 </div>
 
@@ -12,19 +12,19 @@
   <img
     src="./assets/brand/oh-no-codex-lockup.png"
     width="920"
-    alt="Oh No, Codex! — a mischievous blue coding plush stopped mid-run by a clear red cross"
+    alt="Oh No, Codex! 鈥?a mischievous blue coding plush stopped mid-run by a clear red cross"
   >
 </p>
 
 <p align="center">
   <strong>Codex can write great code and still make the project worse.</strong><br>
   Oh No is a local harness for vibe coding: freeze one task, prove it with a<br>
-  user-visible black box, recover state without chat archaeology — and close<br>
+  user-visible black box, recover state without chat archaeology 鈥?and close<br>
   <em>that slice</em> cleanly (it does not shut down the Codex app).
 </p>
 
 <p align="center">
-  <code>bound</code>&nbsp;&nbsp;·&nbsp;&nbsp;<code>prove</code>&nbsp;&nbsp;·&nbsp;&nbsp;<code>recover</code>&nbsp;&nbsp;·&nbsp;&nbsp;<code>stop the slice</code>
+  <code>bound</code>&nbsp;&nbsp;路&nbsp;&nbsp;<code>prove</code>&nbsp;&nbsp;路&nbsp;&nbsp;<code>recover</code>&nbsp;&nbsp;路&nbsp;&nbsp;<code>stop the slice</code>
 </p>
 
 <p align="center">
@@ -36,11 +36,11 @@
 </p>
 
 <p align="center">
-  <a href="#the-problem">Problem</a> ·
-  <a href="#eighteen-sins">18 sins</a> ·
-  <a href="#what-it-does">What it does</a> ·
-  <a href="#install">Install</a> ·
-  <a href="#use-it-like-skills">Skills</a> ·
+  <a href="#the-problem">Problem</a> 路
+  <a href="#eighteen-sins">18 sins</a> 路
+  <a href="#what-it-does">What it does</a> 路
+  <a href="#install">Install</a> 路
+  <a href="#use-it-like-skills">Skills</a> 路
   <a href="#evidence">Evidence</a>
 </p>
 
@@ -48,14 +48,14 @@
 
 ## The problem
 
-Codex stays “busy” while the repo drifts:
+Codex stays 鈥渂usy鈥?while the repo drifts:
 
 | # | Failure | Example |
 | ---: | --- | --- |
-| 1 | **Scope & meaning** | “Foreign-trade system” quietly becomes a platform rewrite |
+| 1 | **Scope & meaning** | 鈥淔oreign-trade system鈥?quietly becomes a platform rewrite |
 | 2 | **Fake done** | Mocks are green; the user-visible path still breaks |
 | 3 | **Lost truth** | Chat / old plans beat project state next session |
-| 4 | **Slice won’t close** | After a real pass, “next” is treated as a blank cheque |
+| 4 | **Slice won鈥檛 close** | After a real pass, 鈥渘ext鈥?is treated as a blank cheque |
 
 Oh No optimises for answers from **project files**, not memory:
 
@@ -71,17 +71,17 @@ There is **no project-level goal flag**. Product intent lives in **plan tasks** 
 
 ## Eighteen sins
 
-Enemy list from a long session audit — not eighteen features. Full text: [`docs/CODEX-SINS.md`](./docs/CODEX-SINS.md).
+Enemy list from a long session audit 鈥?not eighteen features. Full text: [`docs/CODEX-SINS.md`](./docs/CODEX-SINS.md).
 
 | # | Sin | One line |
 | ---: | --- | --- |
 | 1 | Semantic usurpation | You asked for a door; it built a castle. |
-| 2 | Maximum interpretation | “Control” becomes a platform. |
+| 2 | Maximum interpretation | 鈥淐ontrol鈥?becomes a platform. |
 | 3 | Never stopping | Slice accepted; sprawl continues anyway. |
-| 4 | Review as edit rights | “Inspect” becomes silent rewrite. |
+| 4 | Review as edit rights | 鈥淚nspect鈥?becomes silent rewrite. |
 | 5 | Zombie authority | Old plan beats your latest decision. |
 | 6 | Summary as truth | Compaction hardens into false history. |
-| 7 | Local green = complete | One mock ships as “done.” |
+| 7 | Local green = complete | One mock ships as 鈥渄one.鈥?|
 | 8 | Self-certified closure | Same agent writes claim and applause. |
 | 9 | Test theatre | Internal green; user path broken. |
 | 10 | Proxy goals | Coverage beats your outcome. |
@@ -99,7 +99,7 @@ Enemy list from a long session audit — not eighteen features. Full text: [`doc
 ## What it does
 
 <p align="center">
-  <img src="./assets/brand/oh-no-loop.png" width="880" alt="Task → Prove → Close the slice">
+  <img src="./assets/brand/oh-no-loop.png" width="880" alt="Task 鈫?Prove 鈫?Close the slice">
 </p>
 
 | Job | Meaning |
@@ -107,7 +107,7 @@ Enemy list from a long session audit — not eighteen features. Full text: [`doc
 | **Freeze a task** | Behaviour, one black-box command, allowed files, budget, stop condition |
 | **Prove** | `ohno verify` runs that exact command |
 | **Close the slice** | Fresh PASS advances the plan cursor; `next` only **points** |
-| **Recover** | `ohno resume` / cockpit ← `.ohno/state.json` (sole authority) |
+| **Recover** | `ohno resume` / cockpit 鈫?`.ohno/state.json` (sole authority) |
 
 **Cooperative** hooks (SessionStart / PreToolUse / Stop + Git pre-commit) inject the capsule and scope writes. Not a hostile security sandbox.
 
@@ -121,7 +121,7 @@ Enemy list from a long session audit — not eighteen features. Full text: [`doc
 ```bash
 npm install -g oh-no-codex
 cd your-git-repo
-ohno init                 # creates .ohno/ — no --goal
+ohno init                 # creates .ohno/ 鈥?no --goal
 ohno install              # hooks + day-to-day oh-no-* skills
 ```
 
@@ -131,8 +131,13 @@ ohno skill status
 # open a new Codex session so discovery picks them up
 ```
 
-Node.js **≥ 22.20**. Package: [oh-no-codex](https://www.npmjs.com/package/oh-no-codex) (`0.1.3`).
+Node.js **鈮?22.20**. Package: [oh-no-codex](https://www.npmjs.com/package/oh-no-codex) (`0.1.4`).
 
+### Windows notes
+
+- Put npm鈥檚 global bin on **PATH** (often `鈥nodejs\node_global`) so Codex shells find `ohno`.
+- Use the `ohno` / `ohno.cmd` shim 鈥?**do not** double-click `node_modules\oh-no-codex\dist\cli.js` (Windows Script Host cannot run that ESM file).
+- Progress % in the cockpit is **plan cursor** (`cursor/task_count`), not 鈥減roduct finished.鈥?
 ---
 
 ## Cockpit (how to start)
@@ -141,6 +146,7 @@ Local **read-only** glass board. Same data as `ohno status --json`.
 
 ```bash
 cd your-git-repo          # must already have run ohno init
+# If you use a git worktree, cd into THAT worktree 鈥?each tree has its own .ohno/
 ohno cockpit
 ```
 
@@ -158,21 +164,20 @@ Cockpit: http://127.0.0.1:53123/
 ### Where cockpit data comes from
 
 ```text
-plan accept / task start / verify …
-        ↓ write
-  .ohno/state.json          ← sole authority
-        ↓ readModel()
-  GET /api/state            ← same as status --json
-        ↓ browser poll
+plan accept / task start / verify 鈥?        鈫?write
+  .ohno/state.json          鈫?sole authority
+        鈫?readModel()
+  GET /api/state            鈫?same as status --json
+        鈫?browser poll
   cockpit UI
 ```
 
 | On screen | Source |
 | --- | --- |
-| How many tasks | `ordered_tasks.length` → `task_count` |
+| How many tasks | `ordered_tasks.length` 鈫?`task_count` |
 | How far along | `cursor` + `active_task` |
 | Progress bar | **`cursor / task_count`** only (no fake trust %) |
-| Board phases | Derived from cursor / proof — not a second store |
+| Board phases | Derived from cursor / proof 鈥?not a second store |
 
 The cockpit **never** advances work. CLI/skills mutate state; the UI only reads.
 
@@ -188,8 +193,8 @@ acceptance still requires a real `ohno verify`.
 
 | Who | What happens |
 | --- | --- |
-| **Automatic (hooks)** | Session start / compact → inject resume capsule; scoped writes may be denied |
-| **You speak → Codex uses skill** | “start / done / where are we / open cockpit…” → model runs `ohno …` |
+| **Automatic (hooks)** | Session start / compact 鈫?inject resume capsule; scoped writes may be denied |
+| **You speak 鈫?Codex uses skill** | 鈥渟tart / done / where are we / open cockpit鈥︹€?鈫?model runs `ohno 鈥 |
 | **You run CLI yourself** | Setup once; or when the model forgets verify / you want certainty |
 
 ### Setup once (you, terminal)
@@ -202,35 +207,35 @@ ohno install
 # new Codex session
 ```
 
-### Everyday examples (you → expected Codex behavior)
+### Everyday examples (you 鈫?expected Codex behavior)
 
-**Example A — first slice**
-
-| You say | Codex should |
-| --- | --- |
-| “This is a foreign-trade app. Draft a linear plan; first slice = customer CRUD.” | Use **`oh-no-plan`**: write plan JSON, `ohno plan propose`, wait for your review, then `accept` |
-| “Start work.” | **`oh-no-task`** → `ohno task start`, then edit only allowed files |
-| “Done, verify.” | **`oh-no-verify`** → `ohno verify`; report PASS/FAIL honestly |
-
-**Example B — mid project**
+**Example A 鈥?first slice**
 
 | You say | Codex should |
 | --- | --- |
-| “Where are we?” | **`oh-no-resume`** (or status) |
-| “Remember: no multi-tenant yet.” | **`oh-no-requirements`** → `ohno requirements note --text "…"` |
-| “Requirements changed: export PDF first.” | **`oh-no-change`** then a replacement plan |
-| “Open the board.” | **`oh-no-cockpit`** → `ohno cockpit`, tell you the `http://127.0.0.1:…/` URL |
+| 鈥淭his is a foreign-trade app. Draft a linear plan; first slice = customer CRUD.鈥?| Use **`oh-no-plan`**: write plan JSON, `ohno plan propose`, wait for your review, then `accept` |
+| 鈥淪tart work.鈥?| **`oh-no-task`** 鈫?`ohno task start`, then edit only allowed files |
+| 鈥淒one, verify.鈥?| **`oh-no-verify`** 鈫?`ohno verify`; report PASS/FAIL honestly |
 
-**Example C — when you should act yourself**
+**Example B 鈥?mid project**
+
+| You say | Codex should |
+| --- | --- |
+| 鈥淲here are we?鈥?| **`oh-no-resume`** (or status) |
+| 鈥淩emember: no multi-tenant yet.鈥?| **`oh-no-requirements`** 鈫?`ohno requirements note --text "鈥?` |
+| 鈥淩equirements changed: export PDF first.鈥?| **`oh-no-change`** then a replacement plan |
+| 鈥淥pen the board.鈥?| **`oh-no-cockpit`** 鈫?`ohno cockpit`, tell you the `http://127.0.0.1:鈥?` URL |
+
+**Example C 鈥?when you should act yourself**
 
 | Situation | You do |
 | --- | --- |
 | First time in a repo | Terminal: `ohno init` + `ohno install` |
-| Model says “done” without running verify | Say “run ohno verify” **or** run `ohno verify` in the terminal |
-| Want a dashboard | Terminal or chat: `ohno cockpit` / “open cockpit” |
+| Model says 鈥渄one鈥?without running verify | Say 鈥渞un ohno verify鈥?**or** run `ohno verify` in the terminal |
+| Want a dashboard | Terminal or chat: `ohno cockpit` / 鈥渙pen cockpit鈥?|
 | Skill missing after upgrade | `ohno skill install`, new Codex session |
 
-### Day-to-day skills (reference — not a checklist)
+### Day-to-day skills (reference 鈥?not a checklist)
 
 Setup (`ohno init` / `ohno install`) is **terminal-only**, not a skill.  
 Shell details live inside each skill file for Codex; users need not memorize them.
@@ -238,7 +243,7 @@ Shell details live inside each skill file for Codex; users need not memorize the
 | Skill | You mean |
 | --- | --- |
 | `oh-no-plan` | plan / accept plan |
-| `oh-no-task` | start this slice |
+| `oh-no-task` | start / reopen this slice |
 | `oh-no-verify` | done / verify |
 | `oh-no-resume` | where are we |
 | `oh-no-status` | status |
@@ -261,7 +266,7 @@ Shell details live inside each skill file for Codex; users need not memorize the
 
 | Piece | Role |
 | --- | --- |
-| CLI | `init` · `plan` · `task` · `verify` · `change` · `resume` · … |
+| CLI | `init` 路 `plan` 路 `task` 路 `verify` 路 `change` 路 `resume` 路 鈥?|
 | 13 Codex skills | Day-to-day discoverable procedure (setup is CLI) |
 | Hooks + pre-commit | Capsule inject, scope guard |
 | Projectors | `PROGRESS.md`, REQUIREMENTS, short AGENTS capsule |
@@ -279,19 +284,19 @@ Shell details live inside each skill file for Codex; users need not memorize the
 | Product status | `V1_TRIAL_ACCEPTED` |
 | CLI / hooks / atomic state | `LOCAL_PASS` |
 | Cockpit = status JSON | `LOCAL_PASS` |
-| Disposable real copies | `TRIAL_PASS` (P01–P06) |
-| npm | **`0.1.3`** (13 day-to-day skills; setup via CLI only) |
+| Disposable real copies | `TRIAL_PASS` (P01鈥揚06) |
+| npm | **`0.1.4`** (13 day-to-day skills; setup via CLI only) |
 
-Contracts: [Product](./docs/PRODUCT-CONTRACT.md) · [Design](./docs/DESIGN.md) · [Acceptance](./docs/ACCEPTANCE.md) · [Sins](./docs/CODEX-SINS.md)
+Contracts: [Product](./docs/PRODUCT-CONTRACT.md) 路 [Design](./docs/DESIGN.md) 路 [Acceptance](./docs/ACCEPTANCE.md) 路 [Sins](./docs/CODEX-SINS.md)
 
 ---
 
 <p align="center">
-  <sub>MIT · Independent community project · Not affiliated with OpenAI</sub>
+  <sub>MIT 路 Independent community project 路 Not affiliated with OpenAI</sub>
 </p>
 
 <p align="center">
   <strong>Bound the slice. Prove it. Recover without archaeology.</strong>
 </p>
 
-<p align="center"><a href="#readme-top">↑ top</a></p>
+<p align="center"><a href="#readme-top">鈫?top</a></p>

@@ -2,6 +2,11 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { relative, resolve } from "node:path";
 
+import {
+  assertPlanDiscipline,
+  planLooksLikeCommitLicense,
+  weakBlackboxSummary,
+} from "./discipline.js";
 import { readGitHead } from "./subject-digest.js";
 import {
   compareAndSwapStateAtomic,
@@ -26,6 +31,7 @@ export interface PlanProposalEvidence {
   head: string;
   proposedAt: string;
   exactDiff: string;
+  warnings: string[];
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -227,12 +233,33 @@ export async function proposePlan(
   if (!recorded) {
     throw new Error("current state changed while recording the plan proposal");
   }
+
+  // Soft discipline warnings (FT-02/05/14) — cooperative, not reject.
+  const warnings: string[] = [];
+  if (planLooksLikeCommitLicense(source.proposal.ordered_tasks)) {
+    warnings.push(
+      "WARN: plan looks like a commit-license / docs-only micro-plan "
+        + "(FT-05/14). Accepting will make cockpit show this plan as complete "
+        + "at 100% of plan tasks — not product done.",
+    );
+  }
+  for (const task of source.proposal.ordered_tasks) {
+    if (task.status !== "FROZEN") {
+      continue;
+    }
+    const weak = weakBlackboxSummary(task.test_command);
+    if (weak !== null) {
+      warnings.push(`WARN: task ${task.id}: ${weak}`);
+    }
+  }
+
   return {
     planRevision,
     diffDigest,
     head,
     proposedAt,
     exactDiff,
+    warnings,
   };
 }
 
@@ -240,6 +267,7 @@ export async function acceptPlan(
   projectPath: string,
   revision: string,
   diffDigest: string,
+  options: { allowWeakPlan?: boolean } = {},
 ): Promise<string> {
   const state = await readState(projectPath);
   const pending = state.pending_plan;
@@ -275,6 +303,11 @@ export async function acceptPlan(
     );
   }
 
+  // Hard gate (FT-02/05/14): Owner may override with --allow-weak-plan only.
+  assertPlanDiscipline(source.proposal.ordered_tasks, {
+    allowWeakPlan: options.allowWeakPlan === true,
+  });
+
   const recordedAt = new Date().toISOString();
   const accepted = await compareAndSwapStateAtomic(projectPath, state, {
     ...state,
@@ -299,5 +332,8 @@ export async function acceptPlan(
   if (!accepted) {
     throw new Error("current state changed while recording the local plan review");
   }
-  return `LOCAL_REVIEW_RECORDED: ${pending.plan_revision}\n`;
+  const weakNote = options.allowWeakPlan
+    ? "WEAK_PLAN_OVERRIDE: Owner passed --allow-weak-plan\n"
+    : "";
+  return `${weakNote}LOCAL_REVIEW_RECORDED: ${pending.plan_revision}\n`;
 }

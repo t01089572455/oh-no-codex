@@ -19,12 +19,29 @@ ohno plan propose --file .ohno/review-plan.json
 Cursor task must be `FROZEN` (behavior, test_command, allowed_files, stop, budget).
 Later tasks may be `OUTLINE`.
 
-## Accept (only after Owner review)
+### Anti-toy-plan (field trial FT-05/14) — **hard gate**
 
-Use the printed revision and diff digests:
+- Do **not** propose a single docs/commit/gitignore-only task just to unblock git
+  when the Owner goal is a multi-slice product.
+- Prefer several product tasks with **behavioral** black boxes (`npm test`, app
+  smoke, etc.). Avoid sole `git diff --check` as the product test.
+- `ohno plan propose` prints **WARN** lines.
+- `ohno plan accept` **refuses** commit-license / weak-blackbox plans by default.
+  Only if the Owner **explicitly** wants a meta-only plan:
+
+```bash
+ohno plan accept --revision <sha256> --diff <sha256> --allow-weak-plan
+```
+
+- After `PROJECT_COMPLETE`, propose a **new** implementation plan — that marker
+  means **this linear plan** finished, not the product.
+
+## Accept (only after Owner review)
 
 ```bash
 ohno plan accept --revision <sha256> --diff <sha256>
+# Owner override for meta-only plans only:
+# ohno plan accept --revision … --diff … --allow-weak-plan
 ```
 
 Never silent-accept without Owner review.

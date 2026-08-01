@@ -19,6 +19,8 @@ export const displayFieldByteLimits = Object.freeze({
   expectedBehavior: 512,
   testCommand: 1_024,
   changeSummary: 512,
+  /** Owner requirements notes (FT-25): longer than change summaries. */
+  ownerNote: 4_096,
 });
 
 export type DisplayTextIssue = "LINE_BREAK" | "TOO_LARGE";

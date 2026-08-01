@@ -314,14 +314,30 @@ async function verifyTaskWithLock(
   if (finalState === null) {
     return stateChangedOutcome();
   }
-  const completedState: ProjectState = {
-    ...finalState,
-    status: "IDLE",
-    active_task: null,
-    last_verification: passReceipt,
-    completed: [...finalState.completed, task],
-    cursor: finalState.cursor + 1,
-  };
+  // Reopen path (FT-24): task already in completed[] — refresh proof only.
+  const alreadyCompleted = finalState.completed.some(
+    (entry) => entry.id === task.id && entry.plan_revision === task.plan_revision,
+  );
+  const completedState: ProjectState = alreadyCompleted
+    ? {
+      ...finalState,
+      status: "IDLE",
+      active_task: null,
+      last_verification: passReceipt,
+      completed: finalState.completed.map((entry) =>
+        entry.id === task.id && entry.plan_revision === task.plan_revision
+          ? task
+          : entry
+      ),
+    }
+    : {
+      ...finalState,
+      status: "IDLE",
+      active_task: null,
+      last_verification: passReceipt,
+      completed: [...finalState.completed, task],
+      cursor: finalState.cursor + 1,
+    };
   await pauseBeforePassCasForTest();
   if (
     !await compareAndSwapStateAtomic(

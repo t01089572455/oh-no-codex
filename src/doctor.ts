@@ -1,6 +1,13 @@
 import { access } from "node:fs/promises";
 import { resolve } from "node:path";
+import { spawnSync } from "node:child_process";
 
+import {
+  looksLikeTrivialBlackbox,
+  planLooksLikeCommitLicense,
+  weakBlackboxSummary,
+} from "./discipline.js";
+import { listSiblingOhnoWorktrees } from "./worktree-authority.js";
 import { hooksIntegrationStatus } from "./install.js";
 import {
   enabledRules,
@@ -66,7 +73,8 @@ export async function runDoctor(projectPath: string): Promise<DoctorReport> {
           + `doc_sync=${model.document_sync_status}`,
       });
 
-      // Eighteen-sins pressure: broad scope and trivial black boxes.
+      // Eighteen-sins + field-trial pressure: broad scope, weak black boxes,
+      // commit-license plans, untracked harness, wrong-tree risk.
       try {
         const state = await readState(projectPath);
         const active = state.active_task;
@@ -85,16 +93,99 @@ export async function runDoctor(projectPath: string): Promise<DoctorReport> {
               ? "active allowed_files look very broad — risk of framework sprawl"
               : "active allowed_files look bounded",
           });
-          const trivial = /process\.exit\(0\)|exit 0|true\s*;?\s*$/iu.test(
-            active.test_command,
-          )
-            || active.test_command.trim().length < 8;
+          const weak = weakBlackboxSummary(active.test_command);
           checks.push({
             id: "blackbox_discipline",
-            status: trivial ? "WARN" : "PASS",
-            detail: trivial
-              ? "active test_command looks trivial — risk of test theatre"
+            status: weak !== null || looksLikeTrivialBlackbox(active.test_command)
+              ? "WARN"
+              : "PASS",
+            detail: weak !== null
+              ? `${weak} — risk of test theatre (FT-02)`
               : "active test_command present",
+          });
+        } else if (state.ordered_tasks.length > 0) {
+          const frozen = state.ordered_tasks.filter((t) => t.status === "FROZEN");
+          const weakFrozen = frozen.find((t) =>
+            looksLikeTrivialBlackbox(t.test_command)
+          );
+          if (weakFrozen !== undefined) {
+            checks.push({
+              id: "blackbox_discipline",
+              status: "WARN",
+              detail:
+                `plan task ${weakFrozen.id}: `
+                + `${weakBlackboxSummary(weakFrozen.test_command) ?? "weak test"} `
+                + `(FT-02)`,
+            });
+          }
+        }
+
+        if (
+          state.ordered_tasks.length > 0
+          && planLooksLikeCommitLicense(state.ordered_tasks)
+        ) {
+          checks.push({
+            id: "plan_shape",
+            status: "WARN",
+            detail:
+              "plan looks like a commit-license / docs-only micro-plan "
+              + "(FT-05/14) — cockpit 100% will not mean product done; "
+              + "prefer multi-slice product tasks with behavioral tests",
+          });
+        } else if (state.plan_revision !== null) {
+          checks.push({
+            id: "plan_shape",
+            status: "PASS",
+            detail: "plan shape does not match known commit-license micro-pattern",
+          });
+        }
+
+        if (
+          model.next_action === "PROJECT_COMPLETE"
+          && model.task_count > 0
+        ) {
+          checks.push({
+            id: "plan_complete_honesty",
+            status: "WARN",
+            detail:
+              `NEXT=PROJECT_COMPLETE means this linear plan cursor is done `
+              + `(${model.cursor}/${model.task_count} tasks), not that the `
+              + `product is finished (FT-01/09/12). Propose next phase: `
+              + `ohno plan propose`,
+          });
+        }
+
+        // FT-07: harness files untracked while in a git repo
+        const gitCheck = spawnSync(
+          "git",
+          ["-C", projectPath, "status", "--porcelain", "--", ".ohno", "AGENTS.md"],
+          { encoding: "utf8", windowsHide: true },
+        );
+        if (gitCheck.status === 0) {
+          const porc = gitCheck.stdout ?? "";
+          const untrackedHarness = porc.split(/\r?\n/u).some((line) =>
+            /^\?\?/.test(line) && (line.includes(".ohno") || line.includes("AGENTS.md"))
+          );
+          checks.push({
+            id: "harness_versioned",
+            status: untrackedHarness ? "WARN" : "PASS",
+            detail: untrackedHarness
+              ? ".ohno/ and/or AGENTS.md appear untracked — authority may not "
+                + "travel with commits (FT-07/22/31); consider committing harness"
+              : "harness paths not showing as untracked (or not a git repo)",
+          });
+        }
+
+        // FT-13/17: sibling git worktrees with their own .ohno
+        const siblings = await listSiblingOhnoWorktrees(projectPath);
+        if (siblings.length > 0) {
+          checks.push({
+            id: "worktree_authority",
+            status: "WARN",
+            detail:
+              `other git worktrees also have .ohno/state.json `
+              + `(${siblings.length}): cockpit/resume only see cwd `
+              + `${projectPath} (FT-13/17). Open ohno in the worktree you mean.`,
           });
         }
       } catch {
@@ -218,6 +309,31 @@ export async function runDoctor(projectPath: string): Promise<DoctorReport> {
       id: "control_skill",
       status: "WARN",
       detail: error instanceof Error ? error.message : String(error),
+    });
+  }
+
+  // FT-03: is `ohno` resolvable on PATH (Codex shells often miss node_global).
+  try {
+    const which = spawnSync(
+      process.platform === "win32" ? "where" : "which",
+      ["ohno"],
+      { encoding: "utf8", windowsHide: true },
+    );
+    const found = which.status === 0
+      && (which.stdout ?? "").trim().length > 0;
+    checks.push({
+      id: "cli_path",
+      status: found ? "PASS" : "WARN",
+      detail: found
+        ? `ohno on PATH: ${(which.stdout ?? "").trim().split(/\r?\n/u)[0]}`
+        : "ohno not found on PATH (FT-03). Add npm global bin "
+          + "(Windows often …\\nodejs\\node_global) or call node …/cli.js",
+    });
+  } catch {
+    checks.push({
+      id: "cli_path",
+      status: "WARN",
+      detail: "could not probe PATH for ohno",
     });
   }
 

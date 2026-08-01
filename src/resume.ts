@@ -1,4 +1,8 @@
 import type { ReadModel } from "./read-model.js";
+import {
+  formatSiblingWorktreesNote,
+  listSiblingOhnoWorktrees,
+} from "./worktree-authority.js";
 
 function completedLine(model: ReadModel): string {
   if (model.completed.length === 0) {
@@ -33,14 +37,40 @@ function boardLine(model: ReadModel): string {
   return result;
 }
 
+function honestyLines(model: ReadModel): string[] {
+  const lines: string[] = [];
+  if (model.next_action === "PROJECT_COMPLETE") {
+    lines.push(
+      "PLAN_COMPLETE_NOTE: linear plan cursor finished "
+        + `(${model.cursor}/${model.task_count}) — not product-finished; `
+        + "propose next phase with ohno plan propose",
+    );
+  }
+  if (
+    model.blocker === "STALE_PASS"
+    && model.current_task === null
+    && model.completed_count > 0
+  ) {
+    lines.push(
+      "RECOVERY: STALE after close — ohno task reopen then fix then ohno verify",
+    );
+  }
+  return lines;
+}
+
 export function serializeResume(model: ReadModel): string {
   const task = model.current_task;
+  const planProgress = model.task_count > 0
+    ? `${model.cursor}/${model.task_count} plan-tasks `
+      + `(${Math.round((model.cursor / model.task_count) * 100)}% of THIS plan)`
+    : "0/0 (no reviewed plan)";
   return [
     `AVAILABILITY: ${model.availability}`,
     `GOAL: ${model.goal ?? "NONE"}`,
     `STATUS: ${model.status}`,
     `PLAN: ${model.plan_revision ?? "NONE"}`,
     `CURSOR: ${model.cursor}/${model.task_count}`,
+    `PLAN_PROGRESS: ${planProgress}`,
     `BOARD: ${boardLine(model)}`,
     `COMPLETED: ${model.completed_count}`,
     `COMPLETED_RECENT: ${completedLine(model)}`,
@@ -60,7 +90,28 @@ export function serializeResume(model: ReadModel): string {
     `HANDOFF_BRANCH: ${model.handoff.branch ?? "NONE"}`,
     `HANDOFF_HEAD: ${model.handoff.head ?? "NONE"}`,
     `HANDOFF_DIRTY: ${model.handoff.dirty ? "YES" : "NO"}`,
+    `AUTHORITY_NOTE: resume/cockpit read only this cwd's .ohno/state.json `
+      + "(other git worktrees may have a different board — FT-13)",
+    ...honestyLines(model),
     `NEXT: ${model.next_action}`,
     "",
   ].join("\n");
+}
+
+/** Async resume with sibling worktree discovery (FT-13). */
+export async function serializeResumeWithWorktrees(
+  model: ReadModel,
+  projectPath: string,
+): Promise<string> {
+  const base = serializeResume(model).replace(/\n$/u, "");
+  try {
+    const siblings = await listSiblingOhnoWorktrees(projectPath);
+    const note = formatSiblingWorktreesNote(siblings);
+    if (note !== null) {
+      return `${base}\n${note}\n`;
+    }
+  } catch {
+    // ignore git/worktree probe failures
+  }
+  return `${base}\n`;
 }
