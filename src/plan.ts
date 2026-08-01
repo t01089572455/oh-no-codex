@@ -96,6 +96,32 @@ function normalizeTask(value: unknown): PlanTask {
     return task;
   }
   if (value.status === "FROZEN") {
+    const frozenKeys = [
+      "id",
+      "title",
+      "goal",
+      "status",
+      "expected_behavior",
+      "test_command",
+      "allowed_files",
+      "stop_condition",
+      "time_budget_minutes",
+    ] as const;
+    const actualKeys = Object.keys(value);
+    const unknown = actualKeys.filter(
+      (key) => !(frozenKeys as readonly string[]).includes(key),
+    );
+    if (unknown.length > 0) {
+      throw new Error(
+        `ACCEPTANCE_UNKNOWN_FIELD: FROZEN task has unsupported field(s): `
+          + `${unknown.join(", ")} (silent drop forbidden)`,
+      );
+    }
+    if (actualKeys.length !== frozenKeys.length) {
+      throw new Error(
+        "FROZEN cursor contract must bind behavior, test, files, stop, and budget",
+      );
+    }
     const task = {
       id: value.id,
       title: value.title,
@@ -322,6 +348,12 @@ export async function acceptPlan(
   const pending = state.pending_plan;
   if (pending === null) {
     throw new Error("no pending plan proposal to review");
+  }
+  if (!("acceptance_source_path" in pending)) {
+    throw new Error(
+      "ACCEPTANCE_BASIS_MIGRATE_REQUIRED: pending proposal predates structured "
+        + "basis; migrate or re-propose under schema 3",
+    );
   }
   if (
     revision !== pending.plan_revision

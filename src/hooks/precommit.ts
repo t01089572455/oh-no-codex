@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
 
+import { assertMigrationNotRequired } from "../migration-guard.js";
 import { readModel } from "../read-model.js";
 import { readState } from "../state.js";
 import { digestAllowedIndex } from "../subject-digest.js";
@@ -74,6 +75,16 @@ export async function checkPreCommit(startPath: string): Promise<string> {
     throw new Error(
       "COOPERATIVE_GUARDRAIL: document sync pending; next is "
       + "SYNC_GOVERNING_DOCUMENTS; accept the exact reviewed diff first",
+    );
+  }
+
+  try {
+    assertMigrationNotRequired(state);
+  } catch (error) {
+    throw new Error(
+      `COOPERATIVE_GUARDRAIL: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
     );
   }
 

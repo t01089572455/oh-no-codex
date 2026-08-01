@@ -1,3 +1,4 @@
+import { needsAcceptanceBasisMigration } from "../state.js";
 import { readModel } from "../read-model.js";
 import { serializeResumeWithWorktrees } from "../resume.js";
 import { readState } from "../state.js";
@@ -174,6 +175,24 @@ async function handlePreToolUse(
     );
   }
 
+  // Schema 2 pre-basis: only allow .ohno maintenance files so Owner can
+  // stage basis/truth for migrate; block product work and completion.
+  if (needsAcceptanceBasisMigration(state)) {
+    const outsidePlan = targets.filter(({ relativePath }) =>
+      relativePath === null
+      || !isOhnoPlanMaintenancePath(relativePath)
+    );
+    if (outsidePlan.length === 0) {
+      return {};
+    }
+    return denial(
+      "next is MIGRATE_ACCEPTANCE_BASIS; only .ohno maintenance files may be "
+        + "written until: ohno migrate acceptance-basis --file "
+        + "<structured-basis.json>. "
+        + `Outside: ${displayPaths(outsidePlan)}`,
+    );
+  }
+
   if (state.document_sync.status === "PENDING_REVIEW") {
     const requiredPaths: readonly string[] =
       state.document_sync.required_paths;
@@ -311,6 +330,14 @@ async function handleStop(
   } catch {
     return continuation(
       "Oh No state is unavailable; repair it before using a completion marker.",
+    );
+  }
+
+  if (needsAcceptanceBasisMigration(state)) {
+    return continuation(
+      "next is MIGRATE_ACCEPTANCE_BASIS; run "
+        + "ohno migrate acceptance-basis --file <structured-basis.json> "
+        + "before claiming completion",
     );
   }
 

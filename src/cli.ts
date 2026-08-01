@@ -222,8 +222,8 @@ async function initialize(projectPath: string, args: string[]): Promise<void> {
     + "RUNTIME_GITIGNORE: .ohno/.gitignore (locks/cockpit.runtime.json)\n"
     + "TIP: commit canonical harness only:\n"
     + "  git add AGENTS.md .ohno/state.json .ohno/truth.json "
-    + ".ohno/REQUIREMENTS.md .ohno/preferences.json .ohno/PROGRESS.md "
-    + ".ohno/.gitignore\n"
+    + ".ohno/acceptance-basis.json .ohno/REQUIREMENTS.md "
+    + ".ohno/preferences.json .ohno/PROGRESS.md .ohno/.gitignore\n"
     + "  (do not commit verify.lock / cockpit.runtime.json)\n"
     + "Next: ohno install  (hooks + skills), then ohno cockpit when you want the board\n",
   );

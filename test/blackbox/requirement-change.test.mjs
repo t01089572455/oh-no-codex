@@ -40,14 +40,19 @@ const truthTargets = Object.freeze([
     path: "AGENTS.md",
     concerns: ["agent-rules"],
   },
+  {
+    path: ".ohno/acceptance-basis.json",
+    concerns: ["acceptance-basis", "black-box"],
+  },
 ]);
 const allTargetPaths = truthTargets.map((target) => target.path);
-/** After init, Truth always also lists the structured acceptance basis. */
-const allRequiredPathsAfterInit = [
-  ...allTargetPaths,
+const allRequiredPathsAfterInit = [...allTargetPaths];
+/** requirements concern + always-included acceptance basis */
+const requirementPaths = [
   ".ohno/acceptance-basis.json",
+  "docs/PLAN.md",
+  "docs/PRODUCT.md",
 ];
-const requirementPaths = ["docs/PRODUCT.md", "docs/PLAN.md"];
 
 function runGit(cwd, args) {
   const result = spawnSync("git", args, {
@@ -160,6 +165,14 @@ async function createGovernedProject(t) {
   await mkdir(resolve(projectPath, ".ohno"), { recursive: true });
   await mkdir(resolve(projectPath, "docs"), { recursive: true });
   for (const target of truthTargets) {
+    if (target.path === ".ohno/acceptance-basis.json") {
+      await writeFile(
+        resolve(projectPath, target.path),
+        `${JSON.stringify({ schema_version: 1, tasks: [] }, null, 2)}\n`,
+        "utf8",
+      );
+      continue;
+    }
     await writeFile(
       resolve(projectPath, target.path),
       `baseline for ${target.path}\n`,
@@ -240,6 +253,18 @@ async function appendRequiredChanges(projectPath) {
     "Replacement current implementation plan\n",
     "utf8",
   );
+  // Basis is always in the required sync set with acceptance-basis concerns.
+  const basisPath = resolve(projectPath, ".ohno", "acceptance-basis.json");
+  await appendFile(
+    basisPath,
+    "",
+    "utf8",
+  );
+  // Touch content so git diff is non-empty (append empty may not change).
+  const basis = JSON.parse(await readFile(basisPath, "utf8"));
+  basis.tasks = basis.tasks ?? [];
+  basis.note = `touched ${Date.now()}`;
+  await writeFile(basisPath, `${JSON.stringify(basis, null, 2)}\n`, "utf8");
   reviewReplacementPlan(projectPath);
 }
 
@@ -411,11 +436,15 @@ test("known confirmed concerns select the de-duplicated union of matching target
   assert.equal(state.status, "BLOCKED_DOC_SYNC");
   assert.equal(state.active_task, null);
   assert.equal(state.document_sync.status, "PENDING_REVIEW");
-  assert.deepEqual(state.document_sync.required_paths, [
-    "README.md",
-    "docs/PRODUCT.md",
-    "docs/PLAN.md",
-  ]);
+  assert.deepEqual(
+    [...state.document_sync.required_paths].toSorted(),
+    [
+      ".ohno/acceptance-basis.json",
+      "README.md",
+      "docs/PLAN.md",
+      "docs/PRODUCT.md",
+    ].toSorted(),
+  );
   assert.match(state.document_sync.change_id, /^change-[a-f0-9-]+$/);
   assert.equal(state.document_sync.reviewed_diff_digest, null);
 });
@@ -439,9 +468,10 @@ test("mixed unknown, empty, and omitted concerns conservatively select every tar
   for (const variant of variants) {
     const projectPath = await createGovernedProject(t);
     beginChange(projectPath, variant.options);
+    const required = (await readState(projectPath)).document_sync.required_paths;
     assert.deepEqual(
-      (await readState(projectPath)).document_sync.required_paths,
-      allRequiredPathsAfterInit,
+      [...required].toSorted(),
+      [...allRequiredPathsAfterInit].toSorted(),
       variant.name,
     );
   }
@@ -454,13 +484,14 @@ test("Agent candidates are additive Truth targets and cannot shrink the Owner se
     concerns: "requirements",
   });
   assert.deepEqual(
-    (await readState(projectPath)).document_sync.required_paths,
+    [...(await readState(projectPath)).document_sync.required_paths].toSorted(),
     [
-      "README.md",
-      "docs/PRODUCT.md",
-      "docs/PLAN.md",
+      ".ohno/acceptance-basis.json",
       "AGENTS.md",
-    ],
+      "README.md",
+      "docs/PLAN.md",
+      "docs/PRODUCT.md",
+    ].toSorted(),
   );
 
   const invalidProject = await createGovernedProject(t);
@@ -496,7 +527,12 @@ test("Agent candidates are additive Truth targets and cannot shrink the Owner se
   assert.equal(withPlan.status, 0, withPlan.stderr);
   assert.deepEqual(
     (await readState(noPlanProject)).document_sync.required_paths,
-    ["README.md", "docs/PRODUCT.md", "docs/PLAN.md"],
+    [
+      ".ohno/acceptance-basis.json",
+      "README.md",
+      "docs/PLAN.md",
+      "docs/PRODUCT.md",
+    ],
   );
 });
 
@@ -556,6 +592,11 @@ test("change diff emits the exact staged plus unstaged required diff and its SHA
     "unstaged replacement plan\n",
     "utf8",
   );
+  // Basis is always required; must differ from HEAD for empty missing set.
+  const basisPath = resolve(projectPath, ".ohno", "acceptance-basis.json");
+  const basis = JSON.parse(await readFile(basisPath, "utf8"));
+  basis.note = "basis coverage for exact diff test";
+  await writeFile(basisPath, `${JSON.stringify(basis, null, 2)}\n`, "utf8");
   await appendFile(
     resolve(projectPath, "AGENTS.md"),
     "unrelated change excluded from required diff\n",

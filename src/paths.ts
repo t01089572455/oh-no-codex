@@ -1,5 +1,10 @@
 import { realpath, lstat } from "node:fs/promises";
-import { resolve, relative, sep } from "node:path";
+import {
+  isAbsolute,
+  resolve,
+  relative,
+  sep,
+} from "node:path";
 
 /**
  * Project-relative path rules shared by state validation and plan I/O.
@@ -68,8 +73,10 @@ export async function resolveInsideProject(
     resolved = resolve(parent, base);
   }
   const rel = relative(projectRoot, resolved);
+  // Cross-drive / junction escape: relative() returns an absolute path.
   if (
-    rel.startsWith("..")
+    isAbsolute(rel)
+    || rel.startsWith("..")
     || rel === ".."
     || (rel.length > 0 && rel.split(sep)[0] === "..")
   ) {
@@ -77,16 +84,12 @@ export async function resolveInsideProject(
       `path escapes project root: ${safe}`,
     );
   }
-  // Re-encode as forward-slash project-relative (posix style).
-  const normalized = rel.split(sep).join("/");
-  if (normalized !== "" && !isSafeProjectRelativePath(normalized)) {
-    // Empty means project root file via `.` edge — reject for our use.
-    if (normalized === "") {
-      throw new Error(`path must name a file inside the project: ${safe}`);
-    }
+  if (rel === "") {
+    throw new Error(`path must name a file inside the project: ${safe}`);
   }
   return {
     relativePath: safe,
+    // Use the non-escaped resolved path under the real project root.
     absolutePath: resolve(projectRoot, ...safe.split("/")),
   };
 }

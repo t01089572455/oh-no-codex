@@ -112,6 +112,19 @@ export interface PlanReview {
 
 export type AnyPlanReview = PlanReview | PlanReviewLegacy;
 
+/** Pre-basis pending proposal (schema 2). */
+export interface PendingPlanLegacy {
+  plan_revision: string;
+  ordered_tasks: PlanTask[];
+  cursor: number;
+  diff_digest: string;
+  head: string;
+  proposed_at: string;
+  source_path: string;
+  source_digest: string;
+}
+
+/** Schema 3 pending proposal with structured basis binding. */
 export interface PendingPlan {
   plan_revision: string;
   ordered_tasks: PlanTask[];
@@ -124,6 +137,8 @@ export interface PendingPlan {
   acceptance_source_path: string;
   acceptance_source_digest: string;
 }
+
+export type AnyPendingPlan = PendingPlan | PendingPlanLegacy;
 
 export type TruthClassification =
   | "AGENT_INSTRUCTIONS"
@@ -154,7 +169,7 @@ export interface ProjectState {
   ordered_tasks: PlanTask[];
   cursor: number;
   plan_review: AnyPlanReview | null;
-  pending_plan: PendingPlan | null;
+  pending_plan: AnyPendingPlan | null;
   truth_inventory: TruthInventory;
   active_task: TaskContract | null;
   last_verification: VerificationReceipt | null;
@@ -489,7 +504,38 @@ function isOrderedTasks(value: unknown): value is PlanTask[] {
   return new Set(ids).size === ids.length;
 }
 
-function isPendingPlan(value: unknown): value is PendingPlan {
+function isPendingPlanLegacy(value: unknown): value is PendingPlanLegacy {
+  if (
+    !isRecord(value)
+    || !hasExactKeys(value, [
+      "plan_revision",
+      "ordered_tasks",
+      "cursor",
+      "diff_digest",
+      "head",
+      "proposed_at",
+      "source_path",
+      "source_digest",
+    ])
+    || !isSha256(value.plan_revision)
+    || !isOrderedTasks(value.ordered_tasks)
+    || !Number.isSafeInteger(value.cursor)
+    || (value.cursor as number) < 0
+    || (value.cursor as number) > value.ordered_tasks.length
+    || !isSha256(value.diff_digest)
+    || !isGitHead(value.head)
+    || !isRfc3339Timestamp(value.proposed_at)
+    || !isSafePath(value.source_path)
+    || !isSha256(value.source_digest)
+  ) {
+    return false;
+  }
+  return value.plan_revision === planRevisionForTasksOnly(
+    value.ordered_tasks as PlanTask[],
+  );
+}
+
+function isPendingPlanModern(value: unknown): value is PendingPlan {
   if (
     !isRecord(value)
     || !hasExactKeys(value, [
@@ -682,15 +728,17 @@ function isProjectState(value: unknown): value is ProjectState {
 
   const schema = value.schema_version as 2 | 3;
 
-  // Schema 2: legacy plan_review; pending_plan must be null (pre-basis era) or
-  // invalid modern pending is rejected — only null allowed for pending on v2.
+  // Schema 2: legacy plan_review + optional legacy pending (no basis fields).
   if (schema === 2) {
     if (
       !(
         value.plan_review === null
         || isPlanReviewLegacy(value.plan_review)
       )
-      || value.pending_plan !== null
+      || !(
+        value.pending_plan === null
+        || isPendingPlanLegacy(value.pending_plan)
+      )
     ) {
       return false;
     }
@@ -701,7 +749,7 @@ function isProjectState(value: unknown): value is ProjectState {
     )
     || !(
       value.pending_plan === null
-      || isPendingPlan(value.pending_plan)
+      || isPendingPlanModern(value.pending_plan)
     )
   ) {
     return false;

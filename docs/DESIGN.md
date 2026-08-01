@@ -196,6 +196,12 @@ refuses the operation.
 Schema 2 projects that still lack structured basis remain readable; `next` is
 `MIGRATE_ACCEPTANCE_BASIS` until `ohno migrate acceptance-basis --file …`
 upgrades them to schema 3 without dropping cursor or completed history.
+Empty Truth inventories are migratable: migrate registers the basis path into
+`truth.json` and the inventory. Migrate evidence is a fresh exact migrate diff
+bound to current HEAD—not a recycled pre-basis `LOCAL_REVIEW` digest. While
+migration is required, verify, task start, pre-commit, and Codex completion
+hooks refuse product work. Unknown FROZEN plan fields are hard-rejected.
+`change begin` always includes Truth-listed acceptance-basis / black-box paths.
 
 The cursor task must be `FROZEN` with behavior, exact test, file scope, stop
 condition, and budget. Later tasks may be `OUTLINE` with only id, title, and

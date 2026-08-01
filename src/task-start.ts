@@ -1,7 +1,7 @@
+import { assertMigrationNotRequired } from "./migration-guard.js";
 import {
   compareAndSwapStateAtomic,
   contractDigestFor,
-  needsAcceptanceBasisMigration,
   readState,
 } from "./state.js";
 import type {
@@ -20,13 +20,7 @@ export async function startTask(
     );
   }
   const state = await readState(projectPath);
-  if (needsAcceptanceBasisMigration(state)) {
-    throw new Error(
-      "acceptance basis migration required; next action is "
-        + "MIGRATE_ACCEPTANCE_BASIS "
-        + "(ohno migrate acceptance-basis --file <structured-basis.json>)",
-    );
-  }
+  assertMigrationNotRequired(state);
   if (state.active_task !== null) {
     throw new Error(`active task ${state.active_task.id} already exists`);
   }

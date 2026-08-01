@@ -914,7 +914,7 @@ unless Owner explicitly accepts HISTORICAL-only.
 First landing `4f316d9` used keyword detectors and broke schema-2 read → marked
 `CHANGES_REQUIRED` (kept as failed checkpoint).
 
-**Repair (structured basis, this commit):**
+**Repair (structured basis) + Codex six-point follow-up:**
 
 - Structured basis JSON: `{ schema_version:1, tasks:[{id, expected_behavior,
   test_command, stop_condition}] }` — exact string match per FROZEN id.
@@ -923,10 +923,20 @@ First landing `4f316d9` used keyword detectors and broke schema-2 read → marke
 - `plan_revision` format `ohno-plan-revision-v3` binds path+digest.
 - Propose/accept re-read; mismatch → `ACCEPTANCE_DENOMINATOR_MISMATCH` /
   `ACCEPTANCE_BASIS_DRIFT` (not overridable by `--allow-weak-plan`).
-- Schema **2** legacy plans remain readable; `next=MIGRATE_ACCEPTANCE_BASIS`;
-  `ohno migrate acceptance-basis --file …` upgrades to schema **3** without
-  dropping cursor/completed.
-- Keyword regex detector retired as product authority.
-- Owning black box: `node --test test/blackbox/acceptance-denominator.test.mjs`.
+- Unknown FROZEN fields → hard refuse `ACCEPTANCE_UNKNOWN_FIELD` (no silent drop).
+- Schema **2** legacy plans/pending remain readable; `next=MIGRATE_ACCEPTANCE_BASIS`.
+- **Empty-Truth** schema-2 ACTIVE migrates: migrate registers basis into
+  `truth.json` + inventory (no test helper inventory patch required).
+- Migrate records a **fresh** exact migrate diff + current HEAD as
+  `LOCAL_REVIEW_RECORDED` (does not recycle pre-basis digests); preserves
+  cursor/completed; clears active_task / last_verification / pending_plan.
+- While MIGRATE is required: **verify**, **task start**, **pre-commit**, and
+  Codex PreToolUse/Stop completion paths hard-block (shared
+  `assertMigrationNotRequired` / `needsAcceptanceBasisMigration`).
+- `change begin` always unions acceptance-basis / black-box Truth targets into
+  `required_paths`.
+- Owning black box: `node --test test/blackbox/acceptance-denominator.test.mjs`
+  (real schema-2 fixtures; CLI-only migrate/verify; no state-patch fake migrate).
 - Full suite: `npm test` → 139/139.
 - Still **not** a release (HISTORICAL perf; no push/publish in this slice).
+  Stop for independent review after this commit.

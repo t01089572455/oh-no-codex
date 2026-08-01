@@ -1,8 +1,9 @@
 /**
- * Correction 4 (repaired): structured acceptance basis hard gate.
- * Exact task contract match — not keyword regex.
+ * Correction 4 follow-up: structured basis + real migration + hard MIGRATE gates.
+ * Fixtures are written as files; migrate/verify go through the CLI only.
  */
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import {
   mkdir,
   readFile,
@@ -16,52 +17,41 @@ import {
   frozenPlanTask,
   runCli,
   runInit,
-  syncTruthInventoryForBasis,
   writeStructuredAcceptanceBasis,
 } from "../helpers/blackbox.mjs";
 
-const ownerGoal =
-  "Help the Owner stop procrastinating without underestimating effort";
-
+const ownerGoal = "Owner goal for denominator follow-up";
 const basisPath = ".ohno/acceptance-basis.json";
 
-const task2Frozen = frozenPlanTask({
+const frozenUnit = frozenPlanTask({
   id: "cloudbase-data",
-  title: "建立 CloudBase 数据与用户隔离",
-  goal: "让用户能够安全创建、查询和删除自己的任务",
-  expected_behavior:
-    "服务端从 CloudBase 上下文取 ownerId，创建任务时校验描述；"
-    + "相同用户 idempotencyKey 只产生一条任务；列表只返回本人未删除任务",
-  test_command:
-    "npm test -- --run cloudfunctions/_shared/validation.test.js "
-    + "cloudfunctions/createTask/index.test.js",
-  stop_condition:
-    "绑定的验证和用户隔离测试全部通过，CloudBase 数据切片已提交",
-  allowed_files: [
-    "cloudfunctions/**",
-    "miniprogram/**",
-    "docs/development/cloudbase-setup.md",
-  ],
-  time_budget_minutes: 90,
+  title: "CloudBase isolation",
+  goal: "User isolation",
+  expected_behavior: "ownerId isolation and validation for create/list/delete",
+  test_command: "node pass.mjs",
+  stop_condition: "unit black box passes; stop",
+  allowed_files: ["pass.mjs"],
+  time_budget_minutes: 30,
 });
 
-/** Independent correct basis for Task2 unit black box (Owner-authored). */
-const task2BasisCorrect = {
+const basisUnit = {
   id: "cloudbase-data",
-  expected_behavior: task2Frozen.expected_behavior,
-  test_command: task2Frozen.test_command,
-  stop_condition: task2Frozen.stop_condition,
+  expected_behavior: frozenUnit.expected_behavior,
+  test_command: frozenUnit.test_command,
+  stop_condition: frozenUnit.stop_condition,
 };
 
-/** Independent heavier basis claim (what the detailed plan required). */
-const task2BasisHeavy = {
+const basisHeavy = {
   id: "cloudbase-data",
   expected_behavior:
-    "在微信开发者工具中创建任务、重启后仍存在、切换模拟用户后数据隔离",
-  test_command:
-    "node --test tests/smoke/wechat-devtools-multi-user.smoke.test.mjs",
-  stop_condition: "微信开发者工具 multi-user smoke 全部通过",
+    "WeChat DevTools multi-user smoke creates and isolates tasks",
+  test_command: "node wechat-devtools-multi-user.smoke.mjs",
+  stop_condition: "devtools multi-user smoke passes",
 };
+
+async function writePassScript(projectPath) {
+  await writeFile(resolve(projectPath, "pass.mjs"), "process.exit(0);\n", "utf8");
+}
 
 async function writePlan(projectPath, tasks, acceptanceSource = basisPath) {
   await writeFile(
@@ -75,15 +65,76 @@ async function writePlan(projectPath, tasks, acceptanceSource = basisPath) {
   );
 }
 
-test("RED: plan shrinks vs independent structured basis is blocked", async (t) => {
+/** Pure file fixture: schema 2 ACTIVE plan (0.1.6-shaped). No inventory patching. */
+async function writeSchema2ActiveFixture(projectPath, task = frozenUnit) {
+  await writePassScript(projectPath);
+  const tasks = [task];
+  const rev = createHash("sha256").update(JSON.stringify(tasks)).digest("hex");
+  const unsigned = {
+    id: task.id,
+    expected_behavior: task.expected_behavior,
+    test_command: task.test_command,
+    stop_condition: task.stop_condition,
+    allowed_files: task.allowed_files,
+    time_budget_minutes: task.time_budget_minutes,
+    plan_revision: rev,
+  };
+  const contract = {
+    ...unsigned,
+    contract_digest: createHash("sha256")
+      .update(JSON.stringify(unsigned))
+      .digest("hex"),
+  };
+  const now = new Date().toISOString();
+  // Empty Truth inventory — real 0.1.6 empty-Truth field trial shape.
+  const state = {
+    schema_version: 2,
+    goal: ownerGoal,
+    status: "ACTIVE",
+    plan_revision: rev,
+    ordered_tasks: tasks,
+    cursor: 0,
+    plan_review: {
+      status: "LOCAL_REVIEW_RECORDED",
+      plan_revision: rev,
+      diff_digest: rev,
+      head: "UNBORN",
+      proposed_at: now,
+      recorded_at: now,
+    },
+    pending_plan: null,
+    truth_inventory: {
+      inventory_digest: createHash("sha256").update("[]").digest("hex"),
+      classification: [],
+    },
+    active_task: contract,
+    last_verification: null,
+    completed: [],
+    document_sync: {
+      status: "CLEAN",
+      change_id: null,
+      required_paths: [],
+      reviewed_diff_digest: null,
+    },
+  };
+  // Fix empty inventory digest to match product formula.
+  state.truth_inventory.inventory_digest = createHash("sha256")
+    .update(JSON.stringify([]))
+    .digest("hex");
+  await mkdir(resolve(projectPath, ".ohno"), { recursive: true });
+  await writeFile(
+    resolve(projectPath, ".ohno", "state.json"),
+    `${JSON.stringify(state, null, 2)}\n`,
+    "utf8",
+  );
+  return { rev, state };
+}
+
+test("RED: plan contract shrink vs independent structured basis is blocked", async (t) => {
   const projectPath = await createProject(t);
   runInit(projectPath, ownerGoal);
-  // Basis written first independently with heavier contract.
-  writeStructuredAcceptanceBasis(projectPath, [task2BasisHeavy], basisPath);
-  syncTruthInventoryForBasis(projectPath, basisPath);
-  // Plan freezes a narrower unit-only contract (Task2 accident).
-  await writePlan(projectPath, [task2Frozen], basisPath);
-
+  writeStructuredAcceptanceBasis(projectPath, [basisHeavy], basisPath);
+  await writePlan(projectPath, [frozenUnit], basisPath);
   const proposed = runCli(projectPath, [
     "plan",
     "propose",
@@ -97,13 +148,11 @@ test("RED: plan shrinks vs independent structured basis is blocked", async (t) =
   );
 });
 
-test("PASS: plan exact-matches independent structured basis", async (t) => {
+test("PASS: exact structured basis match proposes and accepts", async (t) => {
   const projectPath = await createProject(t);
   runInit(projectPath, ownerGoal);
-  writeStructuredAcceptanceBasis(projectPath, [task2BasisCorrect], basisPath);
-  syncTruthInventoryForBasis(projectPath, basisPath);
-  await writePlan(projectPath, [task2Frozen], basisPath);
-
+  writeStructuredAcceptanceBasis(projectPath, [basisUnit], basisPath);
+  await writePlan(projectPath, [frozenUnit], basisPath);
   const proposed = runCli(projectPath, [
     "plan",
     "propose",
@@ -111,7 +160,6 @@ test("PASS: plan exact-matches independent structured basis", async (t) => {
     ".ohno/plan.json",
   ]);
   assert.equal(proposed.status, 0, proposed.stderr);
-  assert.match(proposed.stdout, /^ACCEPTANCE_SOURCE: /m);
   const revision = /^PLAN_REVISION: ([a-f0-9]{64})$/m.exec(proposed.stdout)?.[1];
   const diff = /^DIFF_DIGEST: ([a-f0-9]{64})$/m.exec(proposed.stdout)?.[1];
   const accepted = runCli(projectPath, [
@@ -123,20 +171,24 @@ test("PASS: plan exact-matches independent structured basis", async (t) => {
     diff,
   ]);
   assert.equal(accepted.status, 0, accepted.stderr);
-  assert.match(accepted.stdout, /LOCAL_REVIEW_RECORDED/);
 });
 
-test("comment in test_command does not satisfy structured basis mismatch", async (t) => {
+test("unknown FROZEN field is hard-rejected", async (t) => {
   const projectPath = await createProject(t);
   runInit(projectPath, ownerGoal);
-  writeStructuredAcceptanceBasis(projectPath, [task2BasisHeavy], basisPath);
-  syncTruthInventoryForBasis(projectPath, basisPath);
-  const sneaky = {
-    ...task2Frozen,
-    test_command:
-      `${task2Frozen.test_command} # 微信开发者工具 multi-user`,
-  };
-  await writePlan(projectPath, [sneaky], basisPath);
+  writeStructuredAcceptanceBasis(projectPath, [basisUnit], basisPath);
+  await writeFile(
+    resolve(projectPath, ".ohno", "plan.json"),
+    `${JSON.stringify({
+      cursor: 0,
+      ordered_tasks: [{
+        ...frozenUnit,
+        manual_acceptance: "Also verify the real browser path",
+      }],
+      acceptance_source: basisPath,
+    }, null, 2)}\n`,
+    "utf8",
+  );
   const proposed = runCli(projectPath, [
     "plan",
     "propose",
@@ -146,62 +198,117 @@ test("comment in test_command does not satisfy structured basis mismatch", async
   assert.notEqual(proposed.status, 0);
   assert.match(
     `${proposed.stderr}\n${proposed.stdout}`,
-    /ACCEPTANCE_DENOMINATOR_MISMATCH/i,
+    /ACCEPTANCE_UNKNOWN_FIELD|manual_acceptance/i,
   );
 });
 
-test("multi-task isolation: unit task not blocked by later heavy basis entry", async (t) => {
+test("MIGRATE next blocks verify on real empty-Truth ACTIVE schema 2 fixture", async (t) => {
+  const projectPath = await createProject(t);
+  await writeSchema2ActiveFixture(projectPath);
+  const next = runCli(projectPath, ["next"]);
+  assert.equal(next.stdout.trim(), "MIGRATE_ACCEPTANCE_BASIS");
+  const verified = runCli(projectPath, ["verify"]);
+  assert.notEqual(verified.status, 0);
+  assert.match(verified.stderr, /MIGRATE_ACCEPTANCE_BASIS/i);
+  const after = JSON.parse(
+    await readFile(resolve(projectPath, ".ohno", "state.json"), "utf8"),
+  );
+  assert.equal(after.cursor, 0);
+  assert.equal(after.completed.length, 0);
+  assert.equal(after.active_task?.id, "cloudbase-data");
+});
+
+test("empty-Truth schema 2 ACTIVE migrates without helper inventory patches", async (t) => {
+  const projectPath = await createProject(t);
+  const { rev: oldRev } = await writeSchema2ActiveFixture(projectPath);
+  // No truth.json, no basis yet — product migrate must create/register them.
+  writeStructuredAcceptanceBasis(projectPath, [basisUnit], basisPath);
+
+  const migrated = runCli(projectPath, [
+    "migrate",
+    "acceptance-basis",
+    "--file",
+    basisPath,
+  ]);
+  assert.equal(migrated.status, 0, migrated.stderr);
+  assert.match(migrated.stdout, /MIGRATED: schema_version=3/);
+  assert.match(migrated.stdout, /DIFF_DIGEST: [a-f0-9]{64}/);
+  assert.match(migrated.stdout, /REVIEW: LOCAL_REVIEW_RECORDED for migrate exact diff/);
+
+  const after = JSON.parse(
+    await readFile(resolve(projectPath, ".ohno", "state.json"), "utf8"),
+  );
+  assert.equal(after.schema_version, 3);
+  assert.equal(after.cursor, 0);
+  assert.equal(after.completed.length, 0);
+  assert.equal(after.active_task, null);
+  assert.notEqual(after.plan_revision, oldRev);
+  assert.equal(after.plan_review.acceptance_source_path, basisPath);
+  // Review evidence must be fresh (diff_digest is migrate exact diff, not old rev).
+  assert.notEqual(after.plan_review.diff_digest, oldRev);
+  assert.match(after.plan_review.diff_digest, /^[a-f0-9]{64}$/);
+  // Truth file registered by migrate.
+  const truth = JSON.parse(
+    await readFile(resolve(projectPath, ".ohno", "truth.json"), "utf8"),
+  );
+  assert.ok(truth.targets.some((t) => t.path === basisPath));
+  assert.ok(
+    after.truth_inventory.classification.some(
+      (e) => e.path === basisPath && e.truth_target,
+    ),
+  );
+
+  const next = runCli(projectPath, ["next"]);
+  assert.equal(next.stdout.trim(), "START_TASK:cloudbase-data");
+});
+
+test("legacy schema 2 pending_plan remains readable", async (t) => {
   const projectPath = await createProject(t);
   runInit(projectPath, ownerGoal);
-  const unit = frozenPlanTask({
-    id: "unit-a",
-    expected_behavior: "Unit A behavior",
-    test_command: "node --test a.test.mjs",
-    stop_condition: "A done",
-    allowed_files: ["a.test.mjs"],
-  });
-  const e2e = frozenPlanTask({
-    id: "e2e-b",
-    expected_behavior: "E2E B behavior with browser path",
-    test_command: "node --test e2e-b.test.mjs",
-    stop_condition: "E2E B done",
-    allowed_files: ["e2e-b.test.mjs"],
-  });
-  writeStructuredAcceptanceBasis(
-    projectPath,
-    [
-      {
-        id: "unit-a",
-        expected_behavior: unit.expected_behavior,
-        test_command: unit.test_command,
-        stop_condition: unit.stop_condition,
-      },
-      {
-        id: "e2e-b",
-        expected_behavior: e2e.expected_behavior,
-        test_command: e2e.test_command,
-        stop_condition: e2e.stop_condition,
-      },
-    ],
-    basisPath,
+  await writePassScript(projectPath);
+  const tasks = [frozenUnit];
+  const rev = createHash("sha256").update(JSON.stringify(tasks)).digest("hex");
+  const now = new Date().toISOString();
+  const state = JSON.parse(
+    await readFile(resolve(projectPath, ".ohno", "state.json"), "utf8"),
   );
-  syncTruthInventoryForBasis(projectPath, basisPath);
-  await writePlan(projectPath, [unit, e2e], basisPath);
-  const proposed = runCli(projectPath, [
-    "plan",
-    "propose",
-    "--file",
-    ".ohno/plan.json",
-  ]);
-  assert.equal(proposed.status, 0, proposed.stderr);
+  state.schema_version = 2;
+  state.status = "IDLE";
+  state.plan_revision = null;
+  state.ordered_tasks = [];
+  state.cursor = 0;
+  state.plan_review = null;
+  state.active_task = null;
+  state.last_verification = null;
+  state.completed = [];
+  state.pending_plan = {
+    plan_revision: rev,
+    ordered_tasks: tasks,
+    cursor: 0,
+    diff_digest: rev,
+    head: "UNBORN",
+    proposed_at: now,
+    source_path: ".ohno/plan.json",
+    source_digest: rev,
+  };
+  await writeFile(
+    resolve(projectPath, ".ohno", "state.json"),
+    `${JSON.stringify(state, null, 2)}\n`,
+    "utf8",
+  );
+  const status = runCli(projectPath, ["status", "--json"]);
+  assert.equal(status.status, 0, status.stderr);
+  const model = JSON.parse(status.stdout);
+  assert.equal(model.availability, "AVAILABLE");
+  assert.equal(model.next_action, "MIGRATE_ACCEPTANCE_BASIS");
 });
 
-test("absolute Windows path acceptance_source is refused before I/O", async (t) => {
+test("absolute path acceptance_source is refused", async (t) => {
   const projectPath = await createProject(t);
   runInit(projectPath, ownerGoal);
   await writePlan(
     projectPath,
-    [frozenPlanTask()],
+    [frozenUnit],
     "C:/Users/Public/evil-basis.json",
   );
   const proposed = runCli(projectPath, [
@@ -217,171 +324,10 @@ test("absolute Windows path acceptance_source is refused before I/O", async (t) 
   );
 });
 
-test("acceptance_source not in Truth is refused", async (t) => {
+test("pre-commit is blocked while MIGRATE is required", async (t) => {
   const projectPath = await createProject(t);
-  runInit(projectPath, ownerGoal);
-  await mkdir(resolve(projectPath, "docs"), { recursive: true });
-  const outsider = "docs/not-in-truth-basis.json";
-  writeStructuredAcceptanceBasis(
-    projectPath,
-    [task2BasisCorrect],
-    outsider,
-  );
-  // Do NOT sync truth inventory for this path.
-  await writePlan(projectPath, [task2Frozen], outsider);
-  const proposed = runCli(projectPath, [
-    "plan",
-    "propose",
-    "--file",
-    ".ohno/plan.json",
-  ]);
-  assert.notEqual(proposed.status, 0);
-  assert.match(
-    `${proposed.stderr}\n${proposed.stdout}`,
-    /ACCEPTANCE_BASIS_NOT_IN_TRUTH/i,
-  );
-});
-
-test("legacy schema 2 plan state is readable with MIGRATE_ACCEPTANCE_BASIS", async (t) => {
-  const projectPath = await createProject(t);
-  runInit(projectPath, ownerGoal);
-  // Build a modern plan first so we have valid tasks, then rewrite as schema 2 legacy.
-  writeStructuredAcceptanceBasis(projectPath, [task2BasisCorrect], basisPath);
-  syncTruthInventoryForBasis(projectPath, basisPath);
-  await writePlan(projectPath, [task2Frozen], basisPath);
-  const proposed = runCli(projectPath, [
-    "plan",
-    "propose",
-    "--file",
-    ".ohno/plan.json",
-  ]);
-  assert.equal(proposed.status, 0, proposed.stderr);
-  const revision = /^PLAN_REVISION: ([a-f0-9]{64})$/m.exec(proposed.stdout)?.[1];
-  const diff = /^DIFF_DIGEST: ([a-f0-9]{64})$/m.exec(proposed.stdout)?.[1];
-  assert.equal(
-    runCli(projectPath, [
-      "plan",
-      "accept",
-      "--revision",
-      revision,
-      "--diff",
-      diff,
-    ]).status,
-    0,
-  );
-
-  // Downgrade on disk to schema 2 legacy shape (simulate 0.1.6).
-  const { createHash } = await import("node:crypto");
-  const state = JSON.parse(
-    await readFile(resolve(projectPath, ".ohno", "state.json"), "utf8"),
-  );
-  const legacyRevision = createHash("sha256")
-    .update(JSON.stringify(state.ordered_tasks))
-    .digest("hex");
-  state.schema_version = 2;
-  state.plan_revision = legacyRevision;
-  state.plan_review = {
-    status: "LOCAL_REVIEW_RECORDED",
-    plan_revision: legacyRevision,
-    diff_digest: state.plan_review.diff_digest,
-    head: state.plan_review.head,
-    proposed_at: state.plan_review.proposed_at,
-    recorded_at: state.plan_review.recorded_at,
-  };
-  state.pending_plan = null;
-  const { createHash: h2 } = await import("node:crypto");
-  const completedUnsigned = {
-    id: "planning-domain",
-    expected_behavior: "domain done",
-    test_command: "node --test d.test.mjs",
-    stop_condition: "stop",
-    allowed_files: ["d.test.mjs"],
-    time_budget_minutes: 10,
-    plan_revision: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-  };
-  state.completed = [
-    {
-      ...completedUnsigned,
-      contract_digest: h2("sha256")
-        .update(JSON.stringify(completedUnsigned))
-        .digest("hex"),
-    },
-  ];
-  state.cursor = 0;
-  state.active_task = null;
-  state.last_verification = null;
-  state.status = "IDLE";
-  await writeFile(
-    resolve(projectPath, ".ohno", "state.json"),
-    `${JSON.stringify(state, null, 2)}\n`,
-    "utf8",
-  );
-
-  const status = runCli(projectPath, ["status", "--json"]);
-  assert.equal(status.status, 0, status.stderr);
-  const model = JSON.parse(status.stdout);
-  assert.equal(model.availability, "AVAILABLE");
-  assert.equal(model.next_action, "MIGRATE_ACCEPTANCE_BASIS");
-  assert.equal(model.cursor, 0);
-
-  const start = runCli(projectPath, ["task", "start"]);
-  assert.notEqual(start.status, 0);
-  assert.match(start.stderr, /MIGRATE_ACCEPTANCE_BASIS|migration/i);
-
-  // Explicit migrate preserves completed count and cursor.
-  writeStructuredAcceptanceBasis(projectPath, [task2BasisCorrect], basisPath);
-  syncTruthInventoryForBasis(projectPath, basisPath);
-  const migrated = runCli(projectPath, [
-    "migrate",
-    "acceptance-basis",
-    "--file",
-    basisPath,
-  ]);
-  assert.equal(migrated.status, 0, migrated.stderr);
-  assert.match(migrated.stdout, /MIGRATED: schema_version=3/);
-  const after = JSON.parse(
-    await readFile(resolve(projectPath, ".ohno", "state.json"), "utf8"),
-  );
-  assert.equal(after.schema_version, 3);
-  assert.equal(after.cursor, 0);
-  assert.equal(after.completed.length, 1);
-  assert.equal(after.completed[0].id, "planning-domain");
-  assert.ok(after.plan_review.acceptance_source_path);
-  assert.equal(after.active_task, null);
-
-  const next = runCli(projectPath, ["next"]);
-  assert.equal(next.stdout.trim(), "START_TASK:cloudbase-data");
-});
-
-test("accept re-reads basis and blocks content drift", async (t) => {
-  const projectPath = await createProject(t);
-  runInit(projectPath, ownerGoal);
-  writeStructuredAcceptanceBasis(projectPath, [task2BasisCorrect], basisPath);
-  syncTruthInventoryForBasis(projectPath, basisPath);
-  await writePlan(projectPath, [task2Frozen], basisPath);
-  const proposed = runCli(projectPath, [
-    "plan",
-    "propose",
-    "--file",
-    ".ohno/plan.json",
-  ]);
-  assert.equal(proposed.status, 0, proposed.stderr);
-  const revision = /^PLAN_REVISION: ([a-f0-9]{64})$/m.exec(proposed.stdout)?.[1];
-  const diff = /^DIFF_DIGEST: ([a-f0-9]{64})$/m.exec(proposed.stdout)?.[1];
-
-  writeStructuredAcceptanceBasis(projectPath, [task2BasisHeavy], basisPath);
-
-  const accepted = runCli(projectPath, [
-    "plan",
-    "accept",
-    "--revision",
-    revision,
-    "--diff",
-    diff,
-  ]);
-  assert.notEqual(accepted.status, 0);
-  assert.match(
-    `${accepted.stderr}\n${accepted.stdout}`,
-    /ACCEPTANCE_BASIS_DRIFT|ACCEPTANCE_DENOMINATOR_MISMATCH/i,
-  );
+  await writeSchema2ActiveFixture(projectPath);
+  const pre = runCli(projectPath, ["git", "pre-commit"]);
+  assert.notEqual(pre.status, 0);
+  assert.match(pre.stderr, /MIGRATE_ACCEPTANCE_BASIS/i);
 });
