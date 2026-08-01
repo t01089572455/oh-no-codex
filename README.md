@@ -121,7 +121,7 @@ Enemy list from a long session audit 鈥?not eighteen features. Full text: [`doc
 ```bash
 npm install -g oh-no-codex
 cd your-git-repo
-ohno init                 # creates .ohno/ 鈥?no --goal
+ohno init --goal "Owner project goal"
 ohno install              # hooks + day-to-day oh-no-* skills
 ```
 
@@ -131,7 +131,7 @@ ohno skill status
 # open a new Codex session so discovery picks them up
 ```
 
-Node.js **鈮?22.20**. Package: [oh-no-codex](https://www.npmjs.com/package/oh-no-codex) (`0.1.6`).
+Node.js **鈮?22.20**. Package: [oh-no-codex](https://www.npmjs.com/package/oh-no-codex) (`0.1.7` local).
 
 ### Windows notes
 
@@ -305,8 +305,8 @@ Shell details live inside each skill file for Codex; users need not memorize the
 | Release / public status | `RELEASE_CHANGES_REQUIRED` |
 | CLI / hooks / atomic state | `LOCAL_PASS` |
 | Cockpit = status JSON | `LOCAL_PASS` |
-| Disposable real copies | `TRIAL_PASS` (P01鈥揚06) |
-| npm | **`0.1.7`** (13 day-to-day skills; setup via CLI only) |
+| Disposable real copies | `HISTORICAL` (P01-P05 on 2026-07-31; not re-run for 0.1.7) |
+| npm | **`0.1.7` local / unpublished** (not public until Owner publishes) |
 
 Contracts: [Product](./docs/PRODUCT-CONTRACT.md) 路 [Design](./docs/DESIGN.md) 路 [Acceptance](./docs/ACCEPTANCE.md) 路 [Sins](./docs/CODEX-SINS.md)
 

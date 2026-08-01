@@ -20,6 +20,7 @@ import { fileURLToPath } from "node:url";
 import {
   cliPath,
   frozenPlanTask,
+  runInit,
 } from "../helpers/blackbox.mjs";
 
 const repositoryRoot = resolve(
@@ -459,9 +460,7 @@ async function initializeTrialProject(cwd) {
   const installed = requireSuccess(runCli(cwd, ["install"]), "ohno install");
   assert.match(installed.stdout, /COOPERATIVE_GUARDRAIL/u);
   requireSuccess(
-    runCli(cwd, [
-      "init",
-    ]),
+    runInit(cwd),
     "ohno init",
   );
 }
@@ -721,7 +720,7 @@ async function measureLargestAcceptedCapsule() {
     await writeFile(resolve(projectPath, "subject.txt"), "bounded\n", "utf8");
     await writeFile(resolve(projectPath, "fail.mjs"), "process.exit(9);\n", "utf8");
     requireSuccess(
-      runCli(projectPath, ["init"]),
+      runInit(projectPath, maximumGoal),
       "P04 ohno init",
     );
     const maximumTest = paddedCommand(

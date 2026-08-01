@@ -14,6 +14,7 @@ import {
   reviewPlan,
   runCli,
   spawnCli,
+  runInit,
 } from "../helpers/blackbox.mjs";
 
 const requiredFrozenFields = [
@@ -27,10 +28,7 @@ const requiredFrozenFields = [
 ];
 
 async function initialize(projectPath, projectGoal = "Ship one bounded change") {
-  const initialized = runCli(projectPath, [
-    "init",
-  ]);
-  assert.equal(initialized.status, 0, initialized.stderr);
+  runInit(projectPath, projectGoal);
 }
 
 async function writeProposal(projectPath, task) {
@@ -86,26 +84,26 @@ function activeStateBytes(state, task) {
   }, null, 2)}\n`);
 }
 
-test("init takes no project goal and refuses silent re-initialization", async (t) => {
+test("init requires Owner goal and refuses silent re-initialization", async (t) => {
   const projectPath = await createProject(t);
-  const first = runCli(projectPath, ["init"]);
-  assert.equal(first.status, 0, first.stderr);
-  assert.equal((await readState(projectPath)).goal, "");
+  const missingGoal = runCli(projectPath, ["init"]);
+  assert.notEqual(missingGoal.status, 0);
+  assert.match(missingGoal.stderr, /usage: ohno init --goal/i);
+
+  const first = runInit(projectPath, "Ship one bounded change");
+  assert.equal((await readState(projectPath)).goal, "Ship one bounded change");
   assert.match(first.stdout, /Initialized/i);
+  assert.match(first.stdout, /GOAL: Ship one bounded change/);
   assert.match(first.stdout, /cockpit/i);
 
-  const withGoal = runCli(projectPath, ["init", "--goal", "legacy slogan"]);
-  assert.notEqual(withGoal.status, 0);
-  assert.match(withGoal.stderr, /no longer takes --goal|already initialized/i);
+  const secondInit = runCli(projectPath, ["init", "--goal", "another slogan"]);
+  assert.notEqual(secondInit.status, 0);
+  assert.match(secondInit.stderr, /already initialized/i);
 
   const projectPath2 = await createProject(t);
-  const legacyFlag = runCli(projectPath2, ["init", "--goal", "should fail"]);
-  assert.notEqual(legacyFlag.status, 0);
-  assert.match(legacyFlag.stderr, /no longer takes --goal/i);
-
-  await initialize(projectPath2);
+  await initialize(projectPath2, "Preserve re-init refusal");
   const before = await readStateBytes(projectPath2);
-  const repeated = runCli(projectPath2, ["init"]);
+  const repeated = runCli(projectPath2, ["init", "--goal", "must fail"]);
   assert.notEqual(repeated.status, 0);
   assert.match(repeated.stderr, /already initialized/i);
   assert.deepEqual(await readStateBytes(projectPath2), before);
@@ -159,7 +157,7 @@ test("a complete reviewed bounded contract creates exactly one active task", asy
   const state = await readState(projectPath);
   assert.equal(state.schema_version, 2);
   assert.equal(state.status, "ACTIVE");
-  assert.equal(state.goal, "");
+  assert.equal(state.goal, "Ship one bounded change");
   assert.equal(state.plan_revision, review.revision);
   assert.deepEqual(state.active_task, {
     id: "task-001",

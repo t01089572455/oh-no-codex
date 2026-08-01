@@ -19,6 +19,7 @@ import {
   readStateBytes,
   reviewPlan,
   runCli,
+  runInit,
 } from "../helpers/blackbox.mjs";
 
 const ownerGoal = "Keep governing documents aligned with Owner changes";
@@ -145,7 +146,7 @@ async function writeTruth(projectPath, truth = {
 }
 
 async function initialize(projectPath) {
-  const result = runCli(projectPath, ["init"]);
+  const result = runInit(projectPath);
   assert.equal(result.status, 0, result.stderr);
 }
 

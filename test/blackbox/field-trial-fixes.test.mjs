@@ -8,11 +8,12 @@ import {
   frozenPlanTask,
   reviewPlan,
   runCli,
+  runInit,
 } from "../helpers/blackbox.mjs";
 
 test("field trial: plan propose warns and accept refuses micro-plan without override", async (t) => {
   const projectPath = await createProject(t);
-  assert.equal(runCli(projectPath, ["init"]).status, 0);
+  assert.equal(runInit(projectPath).status, 0);
   const planPath = resolve(projectPath, ".ohno", "toy-plan.json");
   await writeFile(
     planPath,
@@ -75,7 +76,7 @@ test("field trial: plan propose warns and accept refuses micro-plan without over
 
 test("field trial: resume frames plan progress and authority cwd", async (t) => {
   const projectPath = await createProject(t);
-  assert.equal(runCli(projectPath, ["init"]).status, 0);
+  assert.equal(runInit(projectPath).status, 0);
   reviewPlan(projectPath, {
     tasks: [
       frozenPlanTask({
@@ -94,7 +95,7 @@ test("field trial: resume frames plan progress and authority cwd", async (t) => 
 
 test("field trial: doctor warns on weak blackbox when weak plan forced", async (t) => {
   const projectPath = await createProject(t);
-  assert.equal(runCli(projectPath, ["init"]).status, 0);
+  assert.equal(runInit(projectPath).status, 0);
   const planPath = resolve(projectPath, ".ohno", "toy-plan.json");
   await writeFile(
     planPath,
@@ -143,7 +144,7 @@ test("field trial: doctor warns on weak blackbox when weak plan forced", async (
 
 test("field trial: requirements note accepts up to 4096 bytes", async (t) => {
   const projectPath = await createProject(t);
-  assert.equal(runCli(projectPath, ["init"]).status, 0);
+  assert.equal(runInit(projectPath).status, 0);
   const long = "x".repeat(2000);
   const note = runCli(projectPath, ["requirements", "note", "--text", long]);
   assert.equal(note.status, 0, note.stderr + note.stdout);
@@ -155,7 +156,7 @@ test("field trial: requirements note accepts up to 4096 bytes", async (t) => {
 
 test("field trial: task reopen re-activates last completed without double advance", async (t) => {
   const projectPath = await createProject(t);
-  assert.equal(runCli(projectPath, ["init"]).status, 0);
+  assert.equal(runInit(projectPath).status, 0);
   await mkdir(resolve(projectPath, "test"), { recursive: true });
   await writeFile(
     resolve(projectPath, "test", "ok.test.mjs"),

@@ -16,6 +16,7 @@ import {
   readStateBytes,
   reviewPlan,
   runCli,
+  runInit,
 } from "../helpers/blackbox.mjs";
 
 const canonicalKeys = [
@@ -39,7 +40,7 @@ const canonicalKeys = [
   "handoff",
 ];
 
-const goal = "Keep every resumed session aligned";
+const ownerGoal = "Keep every resumed session aligned";
 const taskId = "read-surfaces-001";
 const expectedBehavior = "Every read surface shows the same current truth";
 const nextTaskId = "read-surfaces-next";
@@ -67,8 +68,7 @@ async function writeCommandScript(projectPath, name, source) {
 }
 
 async function initialize(projectPath) {
-  const result = runCli(projectPath, ["init"]);
-  assert.equal(result.status, 0, result.stderr);
+  runInit(projectPath, ownerGoal);
 }
 
 function taskDefinition({
@@ -296,7 +296,7 @@ test("idle status, resume, and next agree on the derived plan action", async (t)
   assert.deepEqual(model, {
     schema_version: 2,
     availability: "AVAILABLE",
-    goal: null,
+    goal: ownerGoal,
     status: "IDLE",
     plan_revision: null,
     cursor: 0,
@@ -336,7 +336,7 @@ test("active read surfaces expose the exact contract without running its test", 
   assert.deepEqual(model, {
     schema_version: 2,
     availability: "AVAILABLE",
-    goal: "Keep read surfaces aligned",
+    goal: ownerGoal,
     status: "ACTIVE",
     plan_revision: model.plan_revision,
     cursor: 0,
@@ -405,20 +405,16 @@ test("a prior PASS is historical when a different task becomes active", async (t
   assert.equal(model.proof_freshness, "NONE");
   assert.equal(model.blocker, "NONE");
   assert.equal(model.next_action, "CONTINUE_ACTIVE:task-b");
-  assert.equal(model.goal, "Keep read surfaces aligned");
+  assert.equal(model.goal, ownerGoal);
   assertAllSurfacesAgree(projectPath, model);
 });
 
-test("init rejects legacy --goal without creating state", async (t) => {
+test("init without --goal creates no state", async (t) => {
   const projectPath = await createProject(t);
 
-  const result = runCli(projectPath, [
-    "init",
-    "--goal",
-    "legacy slogan must fail",
-  ]);
+  const result = runCli(projectPath, ["init"]);
   assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /no longer takes --goal/i);
+  assert.match(result.stderr, /usage: ohno init --goal/i);
   await assert.rejects(
     access(resolve(projectPath, ".ohno", "state.json")),
     (error) => error.code === "ENOENT",
@@ -587,7 +583,7 @@ test("a failed exact command is projected as blocker with RUN_EXACT_TEST next", 
   assert.equal(model.proof_freshness, "FAIL");
   assert.equal(model.blocker, "EXACT_TEST_FAILED");
   assert.equal(model.next_action, `RUN_EXACT_TEST:${taskId}`);
-  assert.equal(model.goal, "Keep read surfaces aligned");
+  assert.equal(model.goal, ownerGoal);
   assertAllSurfacesAgree(projectPath, model);
 });
 
@@ -606,7 +602,7 @@ test("a completed fresh PASS exposes only its plan-derived next action", async (
   assert.deepEqual(model, {
     schema_version: 2,
     availability: "AVAILABLE",
-    goal: `Future goal ${nextTaskId}`,
+    goal: ownerGoal,
     status: "IDLE",
     plan_revision: model.plan_revision,
     cursor: 1,
@@ -658,7 +654,7 @@ test("a maximum stable next task id remains exact in a bounded resume", async (t
   assert.equal(verified.stdout, `${maximumNext}\n`);
 
   const model = statusJson(projectPath);
-  assert.equal(model.goal, `Future goal ${maximumNextId}`);
+  assert.equal(model.goal, ownerGoal);
   assert.equal(model.proof_freshness, "FRESH");
   assert.equal(model.next_action, maximumNext);
   const resumed = runCli(projectPath, ["resume"]);
@@ -666,13 +662,13 @@ test("a maximum stable next task id remains exact in a bounded resume", async (t
   assert.ok(Buffer.byteLength(resumed.stdout, "utf8") < 4_096);
   assert.match(
     resumed.stdout,
-    new RegExp(`^GOAL: ${escapeRegExp(`Future goal ${maximumNextId}`)}$`, "m"),
+    new RegExp(`^GOAL: ${escapeRegExp(ownerGoal)}$`, "m"),
   );
   assert.ok(resumed.stdout.includes(`NEXT: ${maximumNext}\n`));
   assertAllSurfacesAgree(projectPath, model);
 });
 
-test("a stale PASS blocks its old action and reports explicit NONE", async (t) => {
+test("a stale PASS after close points at REOPEN_TASK not next-slice license", async (t) => {
   const projectPath = await createProject(t);
   await initialize(projectPath);
   await writeFile(resolve(projectPath, "subject.txt"), "verified subject\n", "utf8");
@@ -688,7 +684,7 @@ test("a stale PASS blocks its old action and reports explicit NONE", async (t) =
   assert.equal(model.current_task, null);
   assert.equal(model.proof_freshness, "STALE");
   assert.equal(model.blocker, "STALE_PASS");
-  assert.equal(model.next_action, "NONE");
+  assert.equal(model.next_action, `REOPEN_TASK:${taskId}`);
   assertAllSurfacesAgree(projectPath, model);
 });
 
@@ -720,7 +716,7 @@ test("pending document sync has one authoritative next action", async (t) => {
   assert.deepEqual(model, {
     schema_version: 2,
     availability: "AVAILABLE",
-    goal: null,
+    goal: ownerGoal,
     status: "BLOCKED_DOC_SYNC",
     plan_revision: null,
     cursor: 0,
@@ -799,8 +795,7 @@ test("resume stays below 4096 UTF-8 bytes and prioritizes the current contract a
     Buffer.byteLength(resumed.stdout, "utf8") < 4_096,
     `resume capsule was ${Buffer.byteLength(resumed.stdout, "utf8")} bytes`,
   );
-  // Project goal empty → effective goal is the active plan-task goal.
-  assert.match(resumed.stdout, /^GOAL: Keep read surfaces aligned$/m);
+  assert.match(resumed.stdout, new RegExp(`^GOAL: ${escapeRegExp(ownerGoal)}$`, "m"));
   assert.ok(resumed.stdout.includes(`TASK: ${maximumId}\n`));
   assert.ok(resumed.stdout.includes(`EXPECTED: ${maximumExpected}\n`));
   assert.ok(resumed.stdout.includes(`TEST: ${command}\n`));

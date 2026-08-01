@@ -22,6 +22,8 @@ import type {
 interface PlanProposalFile {
   cursor: number;
   ordered_tasks: PlanTask[];
+  /** Optional project-relative governing plan / checklist for denominator checks. */
+  acceptance_source?: string;
 }
 
 export interface PlanProposalEvidence {
@@ -134,15 +136,43 @@ function parsePlan(bytes: string): PlanProposalFile {
   }
   if (
     !isRecord(parsed)
-    || !hasExactKeys(parsed, ["cursor", "ordered_tasks"])
     || !Number.isSafeInteger(parsed.cursor)
     || (parsed.cursor as number) < 0
     || !Array.isArray(parsed.ordered_tasks)
     || parsed.ordered_tasks.length === 0
   ) {
     throw new Error(
-      "plan proposal must contain only cursor and non-empty ordered_tasks",
+      "plan proposal must contain cursor and non-empty ordered_tasks",
     );
+  }
+  const keys = Object.keys(parsed);
+  const allowed = new Set(["cursor", "ordered_tasks", "acceptance_source"]);
+  if (
+    !keys.includes("cursor")
+    || !keys.includes("ordered_tasks")
+    || !keys.every((key) => allowed.has(key))
+  ) {
+    throw new Error(
+      "plan proposal may contain only cursor, ordered_tasks, "
+      + "and optional acceptance_source",
+    );
+  }
+  let acceptanceSource: string | undefined;
+  if (parsed.acceptance_source !== undefined) {
+    if (
+      typeof parsed.acceptance_source !== "string"
+      || parsed.acceptance_source.trim() === ""
+      || parsed.acceptance_source.includes("\\")
+      || parsed.acceptance_source.includes("\0")
+      || parsed.acceptance_source.startsWith("/")
+      || parsed.acceptance_source.startsWith("../")
+      || parsed.acceptance_source.includes("..")
+    ) {
+      throw new Error(
+        "acceptance_source must be a safe project-relative path",
+      );
+    }
+    acceptanceSource = parsed.acceptance_source.trim().replaceAll("\\", "/");
   }
   const orderedTasks = parsed.ordered_tasks.map(normalizeTask);
   if ((parsed.cursor as number) > orderedTasks.length) {
@@ -155,6 +185,9 @@ function parsePlan(bytes: string): PlanProposalFile {
   return {
     cursor: parsed.cursor as number,
     ordered_tasks: orderedTasks,
+    ...(acceptanceSource === undefined
+      ? {}
+      : { acceptance_source: acceptanceSource }),
   };
 }
 
@@ -234,7 +267,28 @@ export async function proposePlan(
   }
 
   // Soft discipline warnings (FT-02/05/14 + denominator shrink) — cooperative.
-  const warnings = planSoftWarnings(source.proposal.ordered_tasks);
+  let externalAcceptanceProse = "";
+  let acceptanceSourceUnreadable = false;
+  if (source.proposal.acceptance_source !== undefined) {
+    try {
+      const abs = resolve(projectPath, source.proposal.acceptance_source);
+      externalAcceptanceProse = await readFile(abs, "utf8");
+    } catch {
+      acceptanceSourceUnreadable = true;
+    }
+  }
+  const warnings = planSoftWarnings(source.proposal.ordered_tasks, {
+    externalAcceptanceProse,
+  });
+  if (
+    source.proposal.acceptance_source !== undefined
+    && acceptanceSourceUnreadable
+  ) {
+    warnings.push(
+      `WARN: acceptance_source ${source.proposal.acceptance_source} `
+        + "could not be read; denominator check used freeze contract only",
+    );
+  }
 
   return {
     planRevision,

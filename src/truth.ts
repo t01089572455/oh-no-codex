@@ -1,5 +1,6 @@
 import {
   access,
+  lstat,
   mkdir,
   readFile,
   writeFile,
@@ -109,18 +110,106 @@ export async function readTruth(projectPath: string): Promise<TruthDocument> {
 }
 
 /**
- * Default Truth so init is not a zero-target dead end. Owner may expand
- * targets later; change-begin still requires review of the sync set.
+ * High-risk entry paths considered for default Truth seeding when present.
+ * Only paths that exist on disk are written (fail-closed targets).
  */
-export function defaultInitTruthDocument(): TruthDocument {
+export const defaultTruthCandidates: readonly TruthTarget[] = [
+  {
+    path: "AGENTS.md",
+    concerns: ["agent-instructions", "workflow"],
+  },
+  {
+    path: "README.md",
+    concerns: ["public-capability"],
+  },
+  {
+    path: "README.zh-CN.md",
+    concerns: ["public-capability"],
+  },
+  {
+    path: "PRODUCT-CONTRACT.md",
+    concerns: ["requirements", "contract"],
+  },
+  {
+    path: "DESIGN.md",
+    concerns: ["requirements", "design"],
+  },
+  {
+    path: "ACCEPTANCE.md",
+    concerns: ["requirements", "acceptance"],
+  },
+  {
+    path: "PLAN.md",
+    concerns: ["requirements", "plan"],
+  },
+  {
+    path: "docs/PRODUCT-CONTRACT.md",
+    concerns: ["requirements", "contract"],
+  },
+  {
+    path: "docs/DESIGN.md",
+    concerns: ["requirements", "design"],
+  },
+  {
+    path: "docs/ACCEPTANCE.md",
+    concerns: ["requirements", "acceptance"],
+  },
+  {
+    path: "docs/IMPLEMENTATION-PLAN.md",
+    concerns: ["requirements", "plan"],
+  },
+  {
+    path: "docs/PLAN.md",
+    concerns: ["requirements", "plan"],
+  },
+  {
+    path: "docs/PRODUCT.md",
+    concerns: ["requirements"],
+  },
+  {
+    path: ".ohno/REQUIREMENTS.md",
+    concerns: ["owner-requirements"],
+  },
+];
+
+async function pathExistsAsFile(
+  projectPath: string,
+  relativePath: string,
+): Promise<boolean> {
+  try {
+    const stats = await lstat(resolve(projectPath, ...relativePath.split("/")));
+    return stats.isFile() || stats.isSymbolicLink();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Default Truth from present high-risk paths so init is not a zero-target
+ * dead end and change-sync has more than AGENTS alone. Owner may expand.
+ */
+export async function buildDefaultInitTruthDocument(
+  projectPath: string,
+): Promise<TruthDocument> {
+  const targets: TruthTarget[] = [];
+  for (const candidate of defaultTruthCandidates) {
+    if (await pathExistsAsFile(projectPath, candidate.path)) {
+      targets.push({
+        path: candidate.path,
+        concerns: [...candidate.concerns],
+      });
+    }
+  }
+  if (targets.length === 0) {
+    // AGENTS shell is created before seed; still fail closed with one target.
+    targets.push({
+      path: "AGENTS.md",
+      concerns: ["agent-instructions", "workflow"],
+    });
+  }
   return {
     schema_version: 1,
-    targets: [
-      {
-        path: "AGENTS.md",
-        concerns: ["agent-instructions", "workflow"],
-      },
-    ],
+    targets,
   };
 }
 
@@ -138,7 +227,7 @@ export async function ensureDefaultTruth(
     }
   }
   await mkdir(resolve(projectPath, ".ohno"), { recursive: true });
-  const doc = defaultInitTruthDocument();
+  const doc = await buildDefaultInitTruthDocument(projectPath);
   await writeFile(path, `${JSON.stringify(doc, null, 2)}\n`, "utf8");
   return true;
 }
@@ -148,7 +237,7 @@ export const ohnoRuntimeGitignore = [
   "# Oh No: runtime / machine-local (do not commit)",
   "verify.lock",
   "*.lock",
-  "cockpit-runtime.json",
+  "cockpit.runtime.json",
   "cockpit-port",
   "*.pid",
   "",

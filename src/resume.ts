@@ -58,6 +58,12 @@ function honestyLines(model: ReadModel): string[] {
         + "(FAIL/UNKNOWN/STALE proof)",
     );
   }
+  if (model.next_action.startsWith("REOPEN_TASK:")) {
+    lines.push(
+      "STALE_NOTE: last closed task proof is STALE — "
+        + "ohno task reopen then fix then ohno verify",
+    );
+  }
   if (
     model.blocker === "STALE_PASS"
     && model.current_task === null
@@ -65,6 +71,12 @@ function honestyLines(model: ReadModel): string[] {
   ) {
     lines.push(
       "RECOVERY: STALE after close — ohno task reopen then fix then ohno verify",
+    );
+  }
+  if (model.goal === null) {
+    lines.push(
+      "GOAL_NOTE: project Owner goal is empty; "
+        + "new projects require ohno init --goal (A01)",
     );
   }
   return lines;

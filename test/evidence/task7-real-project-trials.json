@@ -4,7 +4,7 @@
   "generated_at": "2026-07-31T08:17:34.861Z",
   "implementation": {
     "dist_cli_sha256": "b41fc098e9098fc3f26be52c560deaf72cf7e075679dff5976c04329a9cd6bbc",
-    "package_subject_sha256": "9eeabd257227ef3227721e0260578052b3f8334a444f3f2d997b455799c596c9",
+    "package_subject_sha256": "c862045943a6e9e6a50f579e7f174f2bfa3ecbc38cf70f3edcf8b0158ea34cfc",
     "head": "9833bb7fcad6684dad9a64161fe758f120876c01",
     "tree": "4154c4117ae553a2a38d78f77982e463bd22ee73"
   },
@@ -673,5 +673,7 @@
     "Real-project trials are bounded harness trials: each copy uses ohno-trial fixtures rather than deep native business-test integration for TypeScript CLI / React Vite / Python OCR stacks.",
     "P06 was measured with system Chrome/Edge via puppeteer-core after the Owner authorized external-browser acceptance when the in-app Browser rejected loopback navigation.",
     "Package subject digest binds shipped runtime files only; it is not a signature or release attestation."
-  ]
+  ],
+  "measurement_binding": "HISTORICAL",
+  "measurement_note": "Measured 2026-07-31 on head 9833bb7 / package of that era. Digests intentionally NOT rebased for oh-no-codex@0.1.7. Re-run three disposable trials before any LIVE release claim. Unverified for current HEAD."
 }

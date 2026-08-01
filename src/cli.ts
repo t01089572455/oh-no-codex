@@ -77,7 +77,7 @@ import { verifyTask } from "./verify.js";
 
 const usageText = [
   "usage:",
-  "  ohno init",
+  "  ohno init --goal <owner-authored project goal>",
   "  ohno plan propose --file <review.json>",
   "  ohno plan accept --revision <sha256> --diff <sha256> [--allow-weak-plan]",
   "  ohno task start | ohno task reopen",
@@ -154,15 +154,32 @@ async function ensureAgentsShell(projectPath: string): Promise<"created" | "pres
 }
 
 async function initialize(projectPath: string, args: string[]): Promise<void> {
-  // Project-level slogans removed from UX. Scope lives in plan tasks + notes.
-  if (args.includes("--goal")) {
+  // A01 / DESIGN: one Owner-authored project goal is required at init.
+  // Task goals stay on plan tasks and are never substituted for this field.
+  let goalRaw: string;
+  try {
+    goalRaw = requiredValue(args, "--goal");
+  } catch {
     throw new Error(
-      "ohno init no longer takes --goal; put product intent in plan tasks "
-      + "or `ohno requirements note`",
+      "usage: ohno init --goal <owner-authored project goal>",
     );
   }
-  if (args.length > 0) {
-    throw new Error("usage: ohno init");
+  const goal = boundedDisplayValue(
+    goalRaw,
+    "--goal",
+    displayFieldByteLimits.goal,
+  );
+  const leftover = args.filter((arg, index) => {
+    if (arg === "--goal") {
+      return false;
+    }
+    if (index > 0 && args[index - 1] === "--goal") {
+      return false;
+    }
+    return true;
+  });
+  if (leftover.length > 0) {
+    throw new Error("usage: ohno init --goal <owner-authored project goal>");
   }
   if (await stateExists(projectPath)) {
     throw new Error("project is already initialized");
@@ -173,12 +190,11 @@ async function initialize(projectPath: string, args: string[]): Promise<void> {
   await ensureOhnoRuntimeGitignore(projectPath);
   const truthSeeded = await ensureDefaultTruth(projectPath);
   const truthInventory = await classifyTruthAtInit(projectPath);
-  await writeStateAtomic(projectPath, initialState("", truthInventory));
+  await writeStateAtomic(projectPath, initialState(goal, truthInventory));
   await ensurePreferences(projectPath);
   await appendRequirementsNote(
     projectPath,
-    "Project initialized. Capture Owner intent with plan tasks and "
-    + "`ohno requirements note` (no project-level goal field in the UX).",
+    `Project initialized with Owner goal: ${goal}`,
     "init",
   ).catch(() => undefined);
   await appendRequirementsNote(
@@ -191,17 +207,22 @@ async function initialize(projectPath: string, args: string[]): Promise<void> {
   await refreshProjectors(projectPath).catch(() => undefined);
   process.stdout.write(
     "Initialized\n"
+    + `GOAL: ${goal}\n`
     + `AGENTS: ${agentsMode === "preserved" ? "preserved existing file; " : ""}`
     + `managed block ${agentsBeginMarker} … ${agentsEndMarker}\n`
     + "REQUIREMENTS: .ohno/REQUIREMENTS.md\n"
     + "PREFERENCES: .ohno/preferences.json\n"
-    + `TRUTH: ${truthSeeded ? "seeded .ohno/truth.json (AGENTS.md target)" : "kept existing .ohno/truth.json"}\n`
-    + "RUNTIME_GITIGNORE: .ohno/.gitignore (locks/cockpit runtime)\n"
+    + `TRUTH: ${
+      truthSeeded
+        ? "seeded .ohno/truth.json (present high-risk paths)"
+        : "kept existing .ohno/truth.json"
+    }\n`
+    + "RUNTIME_GITIGNORE: .ohno/.gitignore (locks/cockpit.runtime.json)\n"
     + "TIP: commit canonical harness only:\n"
     + "  git add AGENTS.md .ohno/state.json .ohno/truth.json "
     + ".ohno/REQUIREMENTS.md .ohno/preferences.json .ohno/PROGRESS.md "
     + ".ohno/.gitignore\n"
-    + "  (do not commit verify.lock / cockpit-runtime.json)\n"
+    + "  (do not commit verify.lock / cockpit.runtime.json)\n"
     + "Next: ohno install  (hooks + skills), then ohno cockpit when you want the board\n",
   );
 }

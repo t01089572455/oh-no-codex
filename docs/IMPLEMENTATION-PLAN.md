@@ -887,21 +887,23 @@ No Task 8.
 
 ## Correction 3 local evidence (2026-08-01)
 
-Recorded on HEAD of branch `fix/release-honesty-0.1.7` with Node.js v24:
+Branch `fix/release-honesty-0.1.7`. Codex review of first Correction 3 commit
+required a follow-up; do not treat the first commit alone as complete.
 
-- **Public labels:** `ANTI_DRIFT_CORE_WORKS` + `RELEASE_CHANGES_REQUIRED`
-  (README badge/evidence, ACCEPTANCE completion language, plan status).
-  `V1_TRIAL_ACCEPTED` withdrawn from public surfaces until full release gate.
-- **Owning black box:** `node --test test/blackbox/release-honesty.test.mjs`
-  exited 0 (AGENTS preserve, Truth seed, CONTINUE_ACTIVE + task goal,
-  denominator shrink WARN).
-- **Read surfaces:** `node --test test/blackbox/resume-status-next.test.mjs`
-  exited 0 after ACTIVE `next` and effective-goal updates.
-- **Full suite:** `npm test` → 132/132 pass.
-- **Build:** `npm run build` and `npm run typecheck` exited 0.
-- Package version **0.1.7**; package subject digest refreshed in
-  `test/evidence/task7-real-project-trials.json`.
+- **Public labels:** `ANTI_DRIFT_CORE_WORKS` + `RELEASE_CHANGES_REQUIRED`.
+- **Owner goal:** `ohno init --goal` required again (A01/DESIGN); surfaces use
+  project goal only (no task-goal substitution).
+- **Truth seed:** present high-risk paths (not AGENTS-only).
+- **Denominator:** contract-internal WARN + optional plan
+  `acceptance_source` (Task2 external-plan fixture).
+- **Gitignore:** `cockpit.runtime.json` (real runtime filename).
+- **Trial evidence:** `measurement_binding=HISTORICAL` — digests **not**
+  rebased onto 0.1.7; `npm run test:performance` intentionally fails until
+  three-copy remeasure.
+- **Owning black box:** `node --test test/blackbox/release-honesty.test.mjs`.
+- Package **0.1.7** local; **do not publish** until Owner re-authorizes after
+  LIVE performance evidence.
 
-**Next (not authorized as release):** keep `RELEASE_CHANGES_REQUIRED` until
-Owner authorizes publish; optional zh-CN README rewrite; existing field trials
-need manual Truth/handoff hygiene (not re-init overwrite).
+**Next:** remeasure performance for LIVE binding, or keep
+`RELEASE_CHANGES_REQUIRED`. No merge/publish while performance Gate is red
+unless Owner explicitly accepts HISTORICAL-only.

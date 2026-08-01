@@ -15,6 +15,7 @@ import {
   readStateBytes,
   reviewPlan,
   runCli,
+  runInit,
 } from "../helpers/blackbox.mjs";
 import { computePackageSubjectSha256 } from "../helpers/package-subject.mjs";
 import { readFile } from "node:fs/promises";
@@ -78,18 +79,14 @@ async function createGovernedProject(t, {
     "-m",
     "governing baseline",
   ]);
-  const initialized = runCli(projectPath, [
-    "init",
-  ]);
+  const initialized = runInit(projectPath);
   assert.equal(initialized.status, 0, initialized.stderr);
   return projectPath;
 }
 
 test("plan review rejects unbounded root globs without writing active authority", async (t) => {
   const projectPath = await createProject(t);
-  const initialized = runCli(projectPath, [
-    "init",
-  ]);
+  const initialized = runInit(projectPath);
   assert.equal(initialized.status, 0, initialized.stderr);
   const before = await readStateBytes(projectPath);
 
@@ -236,7 +233,7 @@ test("change begin persists bounded summary and binds pending identity to plan c
   );
 });
 
-test("performance evidence must bind a recomputable package subject digest", async () => {
+test("performance evidence is honest about historical vs current package binding", async () => {
   const root = resolve(fileURLToPath(new URL("../..", import.meta.url)));
   const evidence = JSON.parse(
     await readFile(
@@ -249,9 +246,26 @@ test("performance evidence must bind a recomputable package subject digest", asy
     /^[a-f0-9]{64}$/u,
     "trial evidence must record package_subject_sha256",
   );
-  assert.equal(
-    evidence.implementation.package_subject_sha256,
-    await computePackageSubjectSha256(root),
-    "package subject digest must recompute from the current package files",
-  );
+  const currentPackage = await computePackageSubjectSha256(root);
+  const binding = evidence.measurement_binding ?? "LIVE";
+  if (binding === "LIVE") {
+    assert.equal(
+      evidence.implementation.package_subject_sha256,
+      currentPackage,
+      "LIVE trial evidence must recompute from the current package files",
+    );
+  } else {
+    assert.equal(binding, "HISTORICAL");
+    assert.match(
+      evidence.measurement_note ?? "",
+      /not re-run|historical|unverified/i,
+      "HISTORICAL evidence must explain it is not release proof",
+    );
+    // Do not rebind hash: recorded subject may differ from current package.
+    assert.notEqual(
+      evidence.implementation.package_subject_sha256,
+      currentPackage,
+      "HISTORICAL evidence must not silently equal current package after unmeasured edits",
+    );
+  }
 });

@@ -24,6 +24,7 @@ import {
   readState,
   readStateBytes,
   runCli,
+  runInit,
 } from "../helpers/blackbox.mjs";
 
 const repositoryRoot = resolve(
@@ -74,7 +75,7 @@ function emptyCommit(projectPath, message) {
 }
 
 async function initialize(projectPath) {
-  const result = runCli(projectPath, ["init"]);
+  const result = runInit(projectPath);
   assert.equal(result.status, 0, result.stderr);
 }
 

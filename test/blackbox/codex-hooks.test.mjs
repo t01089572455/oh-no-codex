@@ -16,6 +16,7 @@ import {
   readState,
   runCli,
   startTaskFromPlan,
+  runInit,
 } from "../helpers/blackbox.mjs";
 
 const goal = "Keep Codex mutations inside one bounded task";
@@ -56,7 +57,7 @@ function parseHookResult(result) {
 }
 
 async function initialize(projectPath) {
-  const initialized = runCli(projectPath, ["init"]);
+  const initialized = runInit(projectPath);
   assert.equal(initialized.status, 0, initialized.stderr);
 }
 

@@ -45,6 +45,17 @@ export function runCli(cwd, args, options = {}) {
   });
 }
 
+/** A01: init requires Owner project goal. */
+export function runInit(
+  cwd,
+  goal = "Disposable Owner goal for black-box tests",
+  options = {},
+) {
+  const result = runCli(cwd, ["init", "--goal", goal], options);
+  assert.equal(result.status, 0, result.stderr);
+  return result;
+}
+
 export function spawnCli(cwd, args) {
   return spawn(process.execPath, [cliPath, ...args], {
     cwd,

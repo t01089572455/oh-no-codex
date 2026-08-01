@@ -223,7 +223,7 @@ export async function runDoctor(projectPath: string): Promise<DoctorReport> {
               ? "canonical harness untracked (AGENTS.md / .ohno state, truth, "
                 + "requirements, preferences) — authority may not travel with "
                 + "clone (FT-07). Commit those files; keep verify.lock and "
-                + "cockpit-runtime out via .ohno/.gitignore"
+                + "cockpit.runtime.json out via .ohno/.gitignore"
               : "harness paths not showing as untracked (or not a git repo)",
           });
         }
