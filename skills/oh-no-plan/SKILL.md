@@ -10,11 +10,21 @@ description: >
 
 ## Propose
 
-Write a review JSON (cursor + ordered_tasks), then:
+Write a review JSON under **`.ohno/`** (cursor + ordered_tasks), then:
 
 ```bash
 ohno plan propose --file .ohno/review-plan.json
 ```
+
+### FREEZE / no-ACTIVE write path (0.1.6)
+
+When `ohno next` is `PROPOSE_PLAN`, `FREEZE_TASK:…`, or `PROJECT_COMPLETE`, there is
+**no** ACTIVE task. PreToolUse **allows** writing `.ohno/*.json` and `.ohno/*.md`
+(except `.ohno/state.json` and cockpit runtime). It still **denies** product code
+until `ohno task start`.
+
+Do **not** use absolute Windows paths in patches. Do **not** rewrite `state.json`
+by hand.
 
 Cursor task must be `FROZEN` (behavior, test_command, allowed_files, stop, budget).
 Later tasks may be `OUTLINE`.

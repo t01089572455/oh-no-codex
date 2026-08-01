@@ -140,6 +140,22 @@ export async function runDoctor(projectPath: string): Promise<DoctorReport> {
           });
         }
 
+        // 0.1.6: tell operators FREEZE/PROPOSE may write .ohno plan files.
+        if (
+          modelNext.startsWith("FREEZE_TASK:")
+          || modelNext === "PROPOSE_PLAN"
+          || modelNext === "PROJECT_COMPLETE"
+        ) {
+          checks.push({
+            id: "plan_write_path",
+            status: "PASS",
+            detail:
+              `next=${modelNext}: PreToolUse allows .ohno/*.json|*.md `
+              + "(not state.json) so plan propose/freeze is not deadlocked; "
+              + "write review JSON then ohno plan propose --file …",
+          });
+        }
+
         if (
           model.next_action === "PROJECT_COMPLETE"
           && model.task_count > 0

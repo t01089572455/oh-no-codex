@@ -124,7 +124,7 @@ ohno skill install        # 鍙埛鏂?skill
 ohno skill status
 # 鏂板紑涓€涓?Codex 浼氳瘽锛屾柟渚?skill 琚壂鍒?```
 
-闇€瑕?Node.js **鈮?22.20**銆傚寘鍚嶏細[oh-no-codex](https://www.npmjs.com/package/oh-no-codex)锛坄0.1.5`锛夈€?
+闇€瑕?Node.js **鈮?22.20**銆傚寘鍚嶏細[oh-no-codex](https://www.npmjs.com/package/oh-no-codex)锛坄0.1.6`锛夈€?
 ---
 
 ## 椹鹃┒鑸辨€庝箞寮€
@@ -264,7 +264,7 @@ ohno install
 | CLI / hooks / 鍘熷瓙鐘舵€?| `LOCAL_PASS` |
 | 椹鹃┒鑸?= status JSON | `LOCAL_PASS` |
 | 鐪熷疄椤圭洰鍓湰璇曢獙 | `TRIAL_PASS`锛圥01鈥揚06锛?|
-| npm | **`0.1.5`**锛?3 涓棩甯?skill锛沬nit/install 浠呯粓绔級 |
+| npm | **`0.1.6`**锛?3 涓棩甯?skill锛沬nit/install 浠呯粓绔級 |
 
 鍚堝悓锛歔浜у搧](./docs/PRODUCT-CONTRACT.md) 路 [璁捐](./docs/DESIGN.md) 路 [楠屾敹](./docs/ACCEPTANCE.md) 路 [鍗佸叓瀹楃姜](./docs/CODEX-SINS.md)
 

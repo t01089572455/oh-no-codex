@@ -261,6 +261,100 @@ test("PreToolUse denies a parseable mutation when no task is active", async (t) 
   assertDenied(output, /no active task.*next.*PROPOSE_PLAN/i);
 });
 
+test("PreToolUse allows .ohno plan JSON when next is PROPOSE_PLAN (freeze path)", async (t) => {
+  const projectPath = await createProject(t);
+  await initialize(projectPath);
+
+  const planFile = preToolUse(projectPath, "apply_patch", {
+    command: applyPatchCommand(".ohno/review-plan.json"),
+  });
+  assert.equal(
+    planFile.hookSpecificOutput?.permissionDecision,
+    undefined,
+    "plan draft under .ohno must be allowed before task start",
+  );
+
+  const stateDenied = preToolUse(projectPath, "apply_patch", {
+    command: applyPatchCommand(".ohno/state.json"),
+  });
+  assertDenied(stateDenied, /state\.json|only \.ohno plan/i);
+
+  const productDenied = preToolUse(projectPath, "apply_patch", {
+    command: applyPatchCommand("src/app.js"),
+  });
+  assertDenied(productDenied, /no active task.*PROPOSE_PLAN|only \.ohno plan/i);
+});
+
+test("PreToolUse allows .ohno plan JSON when next is FREEZE_TASK", async (t) => {
+  const projectPath = await createProject(t);
+  await initialize(projectPath);
+  await writeFile(
+    resolve(projectPath, "pass.mjs"),
+    "process.exit(0);\n",
+    "utf8",
+  );
+  const passCmd = `"${process.execPath}" "pass.mjs"`;
+  const planPath = ".ohno/freeze-setup.json";
+  await writeFile(
+    resolve(projectPath, planPath),
+    `${JSON.stringify({
+      cursor: 0,
+      ordered_tasks: [
+        frozenPlanTask({
+          id: "done-slice",
+          title: "Done slice",
+          expected_behavior: "A pass script exits zero",
+          test_command: passCmd,
+          stop_condition: "Stop after pass",
+          allowed_files: ["pass.mjs"],
+          time_budget_minutes: 30,
+        }),
+        {
+          id: "outline-next",
+          title: "Outline next",
+          goal: "freeze later",
+          status: "OUTLINE",
+        },
+      ],
+    }, null, 2)}\n`,
+    "utf8",
+  );
+  const proposed = runCli(projectPath, ["plan", "propose", "--file", planPath]);
+  assert.equal(proposed.status, 0, proposed.stderr);
+  const revision = /^PLAN_REVISION: ([a-f0-9]{64})$/m.exec(proposed.stdout)?.[1];
+  const diff = /^DIFF_DIGEST: ([a-f0-9]{64})$/m.exec(proposed.stdout)?.[1];
+  assert.ok(revision && diff);
+  const accepted = runCli(projectPath, [
+    "plan",
+    "accept",
+    "--revision",
+    revision,
+    "--diff",
+    diff,
+  ]);
+  assert.equal(accepted.status, 0, accepted.stderr);
+  const started = runCli(projectPath, ["task", "start"]);
+  assert.equal(started.status, 0, started.stderr);
+  const verified = runCli(projectPath, ["verify"]);
+  assert.equal(verified.status, 0, verified.stderr);
+  const next = runCli(projectPath, ["next"]);
+  assert.match(next.stdout, /FREEZE_TASK:outline-next/);
+
+  const allowed = preToolUse(projectPath, "apply_patch", {
+    command: applyPatchCommand(".ohno/product-plan-v2.json"),
+  });
+  assert.equal(
+    allowed.hookSpecificOutput?.permissionDecision,
+    undefined,
+    "FREEZE path must allow writing plan JSON under .ohno",
+  );
+
+  const deniedProduct = preToolUse(projectPath, "apply_patch", {
+    command: applyPatchCommand("src/extra.js"),
+  });
+  assertDenied(deniedProduct, /FREEZE_TASK|only \.ohno plan/i);
+});
+
 test("PreToolUse allows required doc sync and denies unrelated mutation", async (t) => {
   const projectPath = await createProject(t);
   await initialize(projectPath);

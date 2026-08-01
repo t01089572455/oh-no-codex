@@ -1,10 +1,18 @@
-import { access } from "node:fs/promises";
+import { access, realpath } from "node:fs/promises";
 import { resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 
 export interface SiblingOhnoWorktree {
   path: string;
   branch: string | null;
+}
+
+function normalizePathKey(absolutePath: string): string {
+  const resolved = resolve(absolutePath);
+  // Windows: git porcelain and Node resolve may differ by case or slash.
+  return process.platform === "win32"
+    ? resolved.replaceAll("/", "\\").toLowerCase()
+    : resolved;
 }
 
 /**
@@ -22,7 +30,12 @@ export async function listSiblingOhnoWorktrees(
     return [];
   }
   const blocks = result.stdout.split(/\n\n/u).filter((b) => b.trim() !== "");
-  const self = resolve(projectPath);
+  let selfKey = normalizePathKey(projectPath);
+  try {
+    selfKey = normalizePathKey(await realpath(projectPath));
+  } catch {
+    // keep resolve-only key
+  }
   const out: SiblingOhnoWorktree[] = [];
   for (const block of blocks) {
     const pathLine = /^worktree (.+)$/mu.exec(block);
@@ -30,7 +43,13 @@ export async function listSiblingOhnoWorktrees(
       continue;
     }
     const wtPath = resolve(pathLine[1]);
-    if (wtPath === self) {
+    let wtKey = normalizePathKey(wtPath);
+    try {
+      wtKey = normalizePathKey(await realpath(wtPath));
+    } catch {
+      // keep resolve-only key
+    }
+    if (wtKey === selfKey) {
       continue;
     }
     try {

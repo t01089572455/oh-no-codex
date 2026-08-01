@@ -219,10 +219,13 @@ test("field trial: cockpit copy is plan-complete not product complete", async ()
   );
   assert.match(js, /PLAN DONE|This linear plan is complete/);
   assert.doesNotMatch(js, /sub: "Project complete"/);
-  assert.match(js, /plan · /);
+  // 0.1.6: primary label is "N of M plan tasks" (no bare percent product vibe).
+  assert.match(js, /plan tasks/);
+  assert.match(js, /not product completion/i);
   const html = await readFile(
     new URL("../../assets/cockpit/index.html", import.meta.url),
     "utf8",
   );
   assert.match(html, /PLAN CURSOR/);
+  assert.match(html, /not product completion/i);
 });

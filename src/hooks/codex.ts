@@ -1,5 +1,5 @@
 import { readModel } from "../read-model.js";
-import { serializeResume } from "../resume.js";
+import { serializeResumeWithWorktrees } from "../resume.js";
 import { readState } from "../state.js";
 import { isAbsolute } from "node:path";
 import { findProjectRoot } from "./project-root.js";
@@ -193,8 +193,28 @@ async function handlePreToolUse(
 
   if (state.active_task === null) {
     const model = await readModel(projectPath);
+    const next = model.next_action;
+    // Field trial / 0.1.6: FREEZE_TASK and plan propose need to write review
+    // JSON under .ohno/ before task start. Blanket deny created a deadlock
+    // (plan propose requires a file; apply_patch was always refused).
+    if (isPlanMaintenanceNextAction(next)) {
+      const outsidePlan = targets.filter(({ relativePath }) =>
+        relativePath === null
+        || !isOhnoPlanMaintenancePath(relativePath)
+      );
+      if (outsidePlan.length === 0) {
+        return {};
+      }
+      return denial(
+        `no active task; next is ${next}; only .ohno plan/maintenance files `
+        + `(not state.json) may be written before task start. `
+        + `Outside: ${displayPaths(outsidePlan)}. `
+        + "Write .ohno/*plan*.json then: ohno plan propose --file … "
+        + "&& ohno plan accept --revision … --diff …",
+      );
+    }
     return denial(
-      `no active task; next is ${model.next_action}`,
+      `no active task; next is ${next}`,
     );
   }
 
@@ -209,6 +229,32 @@ async function handlePreToolUse(
     );
   }
   return {};
+}
+
+/** Next actions where agents must author a plan file without an ACTIVE task. */
+function isPlanMaintenanceNextAction(nextAction: string): boolean {
+  return nextAction === "PROPOSE_PLAN"
+    || nextAction === "PROJECT_COMPLETE"
+    || nextAction.startsWith("FREEZE_TASK:");
+}
+
+/**
+ * Cooperative allowance: plan review JSON and related maintenance under
+ * `.ohno/`, never the sole authority `state.json`.
+ */
+function isOhnoPlanMaintenancePath(relativePath: string): boolean {
+  if (relativePath === ".ohno/state.json") {
+    return false;
+  }
+  if (!relativePath.startsWith(".ohno/")) {
+    return false;
+  }
+  // Runtime pointer only — agents should use ohno cockpit, not hand-edit.
+  if (relativePath === ".ohno/cockpit.runtime.json") {
+    return false;
+  }
+  return relativePath.endsWith(".json")
+    || relativePath.endsWith(".md");
 }
 
 interface CompletionMarker {
@@ -307,7 +353,11 @@ async function capsule(projectPath: string): Promise<string> {
   } catch {
     // Cooperative: never fail SessionStart/PostCompact on projector I/O.
   }
-  return serializeResume(await readModel(projectPath));
+  // Same capsule as `ohno resume` (includes sibling worktree authority note).
+  return serializeResumeWithWorktrees(
+    await readModel(projectPath),
+    projectPath,
+  );
 }
 
 export async function handleCodexHook(

@@ -363,25 +363,34 @@ function render(model, meta = {}) {
   const available = model.availability === "AVAILABLE";
   const task = model.current_task;
   const ratio = progressRatio(model);
-  const percent = `${Math.round(ratio * 100)}%`;
-  // FT-01: never bare "100%" as product complete — always plan-cursor framing.
+  // 0.1.6: do not lead with a bare percent — that reads as product complete.
+  // Keep fraction as the primary truth (plan cursor only).
   const progressLabel = model.task_count > 0
-    ? `${model.cursor}/${model.task_count} plan · ${percent}`
-    : "0/0 plan";
+    ? `${model.cursor} of ${model.task_count} plan tasks`
+    : "0 of 0 plan tasks (no reviewed plan)";
   const mission = missionCenter(model);
   const nextDisplay = model.next_action === "PROJECT_COMPLETE"
     ? "PROJECT_COMPLETE (this plan only — propose next phase)"
     : model.next_action;
 
   document.body.dataset.tone = stateTone(model);
-  document.documentElement.style.setProperty("--progress", percent);
+  // Progress fill still uses ratio; label text stays fraction-only (FT-01 / 0.1.6).
+  document.documentElement.style.setProperty(
+    "--progress",
+    `${Math.round(ratio * 100)}%`,
+  );
   elements.main.setAttribute("aria-busy", "false");
   elements.unavailable.hidden = available;
   if (!available) {
     setUnavailableGate(meta.offline ? "offline" : "state");
   }
 
-  elements.goal.textContent = model.goal ?? "NO GOAL AVAILABLE";
+  elements.goal.textContent = model.goal
+    ?? (
+      model.next_action === "PROJECT_COMPLETE"
+        ? "THIS PLAN ONLY — not product complete"
+        : "NO GOAL AVAILABLE"
+    );
   elements.status.textContent = model.status;
   elements.stageTitle.textContent = stageTitle(model);
   elements.nowHeading.textContent = task?.id ?? (
@@ -413,15 +422,20 @@ function render(model, meta = {}) {
   elements.planRevision.title = model.plan_revision ?? "No reviewed plan";
   elements.progressLabel.textContent = progressLabel;
   elements.progressLabel.title =
-    "Plan cursor progress only (cursor/task_count). Not product completion.";
-  elements.progressFill.style.width = percent;
+    "Plan cursor only (cursor/task_count). Never product completion %.";
+  elements.progressFill.style.width = `${Math.round(ratio * 100)}%`;
   elements.progressAria.setAttribute(
     "aria-valuenow",
-    String(Math.round(ratio * 100)),
+    String(model.task_count > 0 ? model.cursor : 0),
+  );
+  elements.progressAria.setAttribute(
+    "aria-valuemax",
+    String(model.task_count > 0 ? model.task_count : 1),
   );
   elements.progressAria.setAttribute(
     "aria-label",
-    `Plan progress ${model.cursor} of ${model.task_count} tasks`,
+    `Plan cursor ${model.cursor} of ${model.task_count} tasks `
+      + "(not product completion)",
   );
   elements.missionLabel.textContent = mission.label;
   elements.missionSub.textContent = mission.sub;
