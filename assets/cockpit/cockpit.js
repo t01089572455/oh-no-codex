@@ -3,6 +3,9 @@ const elements = {
   goal: document.querySelector("#goal-value"),
   refresh: document.querySelector("#refresh-button"),
   unavailable: document.querySelector("#unavailable-gate"),
+  unavailableEyebrow: document.querySelector("#unavailable-eyebrow"),
+  unavailableTitle: document.querySelector("#unavailable-title"),
+  unavailableBody: document.querySelector("#unavailable-body"),
   rail: document.querySelector("#calibration-rail"),
   railSummary: document.querySelector("#rail-summary"),
   planRevision: document.querySelector("#plan-revision"),
@@ -326,7 +329,37 @@ function renderVector(model) {
   }
 }
 
-function render(model) {
+function setUnavailableGate(kind) {
+  if (!elements.unavailableEyebrow || !elements.unavailableTitle
+    || !elements.unavailableBody) {
+    return;
+  }
+  if (kind === "offline") {
+    elements.unavailableEyebrow.textContent = "SERVER";
+    elements.unavailableTitle.textContent = "COCKPIT SERVER OFFLINE";
+    elements.unavailableBody.innerHTML =
+      "This browser tab cannot reach the local cockpit process "
+      + "(wrong/old port, or the process exited). "
+      + "In the project root run <code>ohno cockpit</code> "
+      + "(or <code>ohno cockpit --replace</code>), open the "
+      + "<strong>new</strong> URL printed in the terminal, "
+      + "and close this tab. To free a port: "
+      + "<code>ohno cockpit stop</code>. "
+      + "This is usually <em>not</em> a corrupt "
+      + "<code>.ohno/state.json</code>.";
+    return;
+  }
+  elements.unavailableEyebrow.textContent = "STATE";
+  elements.unavailableTitle.textContent = "LOCAL STATE UNAVAILABLE";
+  elements.unavailableBody.innerHTML =
+    "The local state is missing, corrupt, or unsupported. Repair "
+    + "<code>.ohno/state.json</code>, then refresh. "
+    + "If the terminal still prints a Cockpit URL and "
+    + "<code>ohno status</code> works, you may be on a dead tab — "
+    + "open the latest URL instead.";
+}
+
+function render(model, meta = {}) {
   const available = model.availability === "AVAILABLE";
   const task = model.current_task;
   const ratio = progressRatio(model);
@@ -344,6 +377,9 @@ function render(model) {
   document.documentElement.style.setProperty("--progress", percent);
   elements.main.setAttribute("aria-busy", "false");
   elements.unavailable.hidden = available;
+  if (!available) {
+    setUnavailableGate(meta.offline ? "offline" : "state");
+  }
 
   elements.goal.textContent = model.goal ?? "NO GOAL AVAILABLE";
   elements.status.textContent = model.status;
@@ -475,10 +511,18 @@ async function refreshState() {
         accept: "application/json",
       },
     });
-    const model = await response.json();
-    render(model);
+    let model;
+    try {
+      model = await response.json();
+    } catch {
+      render(unavailableProjection, { offline: true });
+      return;
+    }
+    // Network reached server: use API availability (503 = real state problem).
+    render(model, { offline: false });
   } catch {
-    render(unavailableProjection);
+    // fetch failed: process gone, wrong port, or tab left open after stop.
+    render(unavailableProjection, { offline: true });
   } finally {
     setRefreshBusy(false);
   }

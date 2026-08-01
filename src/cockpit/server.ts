@@ -10,6 +10,15 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { readModel } from "../read-model.js";
+import {
+  clearCockpitRuntime,
+  ensureProjectInitialized,
+  findLiveCockpit,
+  readCockpitRuntime,
+  stopProjectCockpit,
+  writeCockpitRuntime,
+  type CockpitStartOptions,
+} from "./lifecycle.js";
 
 interface StaticAsset {
   bytes: Buffer;
@@ -224,7 +233,7 @@ async function handleRequest(
   );
 }
 
-async function listen(server: Server): Promise<number> {
+async function listen(server: Server, port: number): Promise<number> {
   await new Promise<void>((resolvePromise, rejectPromise) => {
     const onError = (error: Error) => {
       server.off("listening", onListening);
@@ -238,7 +247,7 @@ async function listen(server: Server): Promise<number> {
     server.once("listening", onListening);
     server.listen({
       host: "127.0.0.1",
-      port: 0,
+      port,
     });
   });
   const address = server.address();
@@ -250,6 +259,7 @@ async function listen(server: Server): Promise<number> {
 
 export async function startCockpitServer(
   projectPath: string,
+  options: { port?: number } = {},
 ): Promise<RunningCockpit> {
   const assets = await loadStaticAssets();
   const server = createServer((request, response) => {
@@ -265,10 +275,33 @@ export async function startCockpitServer(
     socket.end("HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n");
   });
 
-  const port = await listen(server);
+  const requestedPort = options.port ?? 0;
+  let port: number;
+  try {
+    port = await listen(server, requestedPort);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (requestedPort > 0) {
+      throw new Error(
+        `port ${requestedPort} is unavailable (${message}). `
+          + "Try another --port, or: ohno cockpit stop / ohno cockpit --replace",
+      );
+    }
+    throw error;
+  }
+  const url = `http://127.0.0.1:${port}/`;
+  const record = {
+    pid: process.pid,
+    port,
+    url,
+    cwd: resolve(projectPath),
+    started_at: new Date().toISOString(),
+  };
+  await writeCockpitRuntime(projectPath, record);
+
   let closed = false;
   return {
-    url: `http://127.0.0.1:${port}/`,
+    url,
     close: async () => {
       if (closed) {
         return;
@@ -284,13 +317,52 @@ export async function startCockpitServer(
           }
         });
       });
+      const current = await readCockpitRuntime(projectPath);
+      if (current?.pid === process.pid) {
+        await clearCockpitRuntime(projectPath);
+      }
     },
   };
 }
 
-export async function runCockpit(projectPath: string): Promise<void> {
-  const cockpit = await startCockpitServer(projectPath);
+export async function runCockpit(
+  projectPath: string,
+  options: CockpitStartOptions = {},
+): Promise<void> {
+  await ensureProjectInitialized(projectPath);
+
+  if (!options.replace) {
+    const live = await findLiveCockpit(projectPath);
+    if (live !== null) {
+      process.stdout.write(
+        `Cockpit already running: ${live.url}\n`
+          + `pid=${live.pid} port=${live.port}\n`
+          + "Reuse this URL, or run: ohno cockpit --replace"
+          + (options.port !== undefined ? ` --port ${options.port}` : "")
+          + "\n"
+          + "To free the port: ohno cockpit stop\n",
+      );
+      return;
+    }
+  } else {
+    const stopped = await stopProjectCockpit(projectPath);
+    if (stopped.stopped && stopped.record !== null) {
+      process.stdout.write(
+        `Replaced previous cockpit pid=${stopped.record.pid} `
+          + `port=${stopped.record.port}\n`,
+      );
+    }
+  }
+
+  const listenOptions: { port?: number } = {};
+  if (options.port !== undefined) {
+    listenOptions.port = options.port;
+  }
+  const cockpit = await startCockpitServer(projectPath, listenOptions);
   process.stdout.write(`Cockpit: ${cockpit.url}\n`);
+  process.stdout.write(
+    "Stop: Ctrl+C in this terminal, or from another shell: ohno cockpit stop\n",
+  );
 
   await new Promise<void>((resolvePromise, rejectPromise) => {
     let closing = false;
@@ -309,4 +381,27 @@ export async function runCockpit(projectPath: string): Promise<void> {
     process.once("SIGINT", stop);
     process.once("SIGTERM", stop);
   });
+}
+
+export async function runCockpitStop(projectPath: string): Promise<void> {
+  await ensureProjectInitialized(projectPath);
+  const result = await stopProjectCockpit(projectPath);
+  if (result.record === null) {
+    process.stdout.write(
+      "No cockpit runtime recorded for this project "
+        + "(.ohno/cockpit.runtime.json missing or stale).\n",
+    );
+    return;
+  }
+  if (result.stopped) {
+    process.stdout.write(
+      `Stopped cockpit pid=${result.record.pid} port=${result.record.port}\n`
+        + `Was: ${result.record.url}\n`,
+    );
+    return;
+  }
+  process.stdout.write(
+    `Cleared stale cockpit record for port=${result.record.port} `
+      + `(process already gone).\n`,
+  );
 }

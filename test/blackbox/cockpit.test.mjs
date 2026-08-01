@@ -275,6 +275,106 @@ test("corrupt state returns the canonical unavailable model without overwrite", 
   }
 });
 
+test("cockpit stop frees the port; second start reuses live URL without stacking", async (t) => {
+  const projectPath = await createProject(t);
+  await initialize(projectPath);
+
+  const first = await startCockpit(t, projectPath);
+  try {
+    const runtimePath = resolve(projectPath, ".ohno", "cockpit.runtime.json");
+    const runtime = JSON.parse(await readFile(runtimePath, "utf8"));
+    assert.equal(typeof runtime.pid, "number");
+    assert.match(runtime.url, /^http:\/\/127\.0\.0\.1:\d+\/$/);
+    assert.equal(first.url, runtime.url);
+
+    // Second start should reuse, not open another listener.
+    const reuse = runCli(projectPath, ["cockpit"]);
+    assert.equal(reuse.status, 0, reuse.stderr);
+    assert.match(reuse.stdout, /Cockpit already running/);
+    assert.ok(
+      reuse.stdout.includes(first.url),
+      `expected reuse of ${first.url}\n${reuse.stdout}`,
+    );
+
+    const still = await fetch(new URL("api/state", first.url));
+    assert.equal(still.status, 200);
+
+    const stopped = runCli(projectPath, ["cockpit", "stop"]);
+    assert.equal(stopped.status, 0, stopped.stderr);
+    assert.match(stopped.stdout, /Stopped cockpit|Cleared stale/);
+
+    await assert.rejects(
+      fetch(first.url, { signal: AbortSignal.timeout(800) }),
+    );
+  } finally {
+    await first.stop().catch(() => undefined);
+    runCli(projectPath, ["cockpit", "stop"]);
+  }
+});
+
+test("cockpit --port binds a fixed port and --replace restarts it", async (t) => {
+  const projectPath = await createProject(t);
+  await initialize(projectPath);
+
+  // High port range: pick one unlikely to collide.
+  const port = 18_000 + Math.floor(Math.random() * 1000);
+  const expectedUrl = `http://127.0.0.1:${port}/`;
+
+  const startOnPort = async (extraArgs) => {
+    const child = spawn(
+      process.execPath,
+      [cliPath, "cockpit", ...extraArgs],
+      {
+        cwd: projectPath,
+        stdio: ["ignore", "pipe", "pipe"],
+      },
+    );
+    child.stdout.setEncoding("utf8");
+    child.stderr.setEncoding("utf8");
+    let stderr = "";
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk;
+    });
+    const exitPromise = once(child, "exit");
+    try {
+      const url = await waitForCockpitUrl(child, () => stderr);
+      return { child, url, exitPromise, stderr: () => stderr };
+    } catch (error) {
+      if (child.exitCode === null && child.signalCode === null) {
+        child.kill("SIGTERM");
+      }
+      await exitPromise.catch(() => undefined);
+      throw error;
+    }
+  };
+
+  const first = await startOnPort(["--port", String(port)]);
+  t.after(() => {
+    runCli(projectPath, ["cockpit", "stop"]);
+  });
+  assert.equal(first.url, expectedUrl, first.stderr());
+  assert.equal((await fetch(new URL("api/state", first.url))).status, 200);
+
+  // CLI stop (same path as --replace) must free the fixed port.
+  const stopped = runCli(projectPath, ["cockpit", "stop"]);
+  assert.equal(stopped.status, 0, stopped.stderr);
+  await first.exitPromise.catch(() => undefined);
+
+  const second = await startOnPort(["--replace", "--port", String(port)]);
+  t.after(() => {
+    runCli(projectPath, ["cockpit", "stop"]);
+    if (second.child.exitCode === null && second.child.signalCode === null) {
+      second.child.kill("SIGTERM");
+    }
+  });
+  assert.equal(second.url, expectedUrl, second.stderr());
+  assert.equal((await fetch(new URL("api/state", second.url))).status, 200);
+
+  const stopped2 = runCli(projectPath, ["cockpit", "stop"]);
+  assert.equal(stopped2.status, 0, stopped2.stderr);
+  await second.exitPromise.catch(() => undefined);
+});
+
 test("one running cockpit reflects task and proof changes from canonical state", async (t) => {
   const projectPath = await createProject(t);
   await initialize(projectPath);

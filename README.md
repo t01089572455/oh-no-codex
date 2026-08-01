@@ -131,7 +131,7 @@ ohno skill status
 # open a new Codex session so discovery picks them up
 ```
 
-Node.js **鈮?22.20**. Package: [oh-no-codex](https://www.npmjs.com/package/oh-no-codex) (`0.1.4`).
+Node.js **鈮?22.20**. Package: [oh-no-codex](https://www.npmjs.com/package/oh-no-codex) (`0.1.5`).
 
 ### Windows notes
 
@@ -146,20 +146,40 @@ Local **read-only** glass board. Same data as `ohno status --json`.
 
 ```bash
 cd your-git-repo          # must already have run ohno init
-# If you use a git worktree, cd into THAT worktree 鈥?each tree has its own .ohno/
+# If you use a git worktree, cd into THAT worktree — each tree has its own .ohno/
 ohno cockpit
+# optional fixed port (multi-project: pick different ports):
+ohno cockpit --port 13521
+# free the port / stop the process without finding the terminal:
+ohno cockpit stop
+# kill previous cockpit for this project and start a new one:
+ohno cockpit --replace
+ohno cockpit --replace --port 13521
 ```
 
 Terminal prints a loopback URL, for example:
 
 ```text
 Cockpit: http://127.0.0.1:53123/
+Stop: Ctrl+C in this terminal, or from another shell: ohno cockpit stop
 ```
 
 1. Open that URL in a browser on the same machine.  
 2. The page polls `/api/state` about every 2.5s.  
-3. Stop with Ctrl+C in the terminal (no background daemon).  
+3. **Stop** with Ctrl+C, or `ohno cockpit stop` (releases the port). Not a daemon.  
 4. Or ask Codex via skill **`oh-no-cockpit`**.
+
+### Port and multi-project rules
+
+| Rule | Behavior |
+| --- | --- |
+| Default port | OS ephemeral (`port: 0`) unless `--port N` |
+| Same project, already running | Prints the **existing** URL and exits (no second process) |
+| `--replace` | Stops the previous cockpit for **this** cwd, then starts |
+| `ohno cockpit stop` | Kills the recorded PID and frees the port |
+| Multi-project | One cockpit per project cwd; use different `--port` values if you want stable tabs |
+| Old browser tab | Dead port → **COCKPIT SERVER OFFLINE** (not "corrupt state.json") |
+| Runtime pointer | `.ohno/cockpit.runtime.json` (pid/url only; **not** plan authority) |
 
 ### Where cockpit data comes from
 
@@ -285,7 +305,7 @@ Shell details live inside each skill file for Codex; users need not memorize the
 | CLI / hooks / atomic state | `LOCAL_PASS` |
 | Cockpit = status JSON | `LOCAL_PASS` |
 | Disposable real copies | `TRIAL_PASS` (P01鈥揚06) |
-| npm | **`0.1.4`** (13 day-to-day skills; setup via CLI only) |
+| npm | **`0.1.5`** (13 day-to-day skills; setup via CLI only) |
 
 Contracts: [Product](./docs/PRODUCT-CONTRACT.md) 路 [Design](./docs/DESIGN.md) 路 [Acceptance](./docs/ACCEPTANCE.md) 路 [Sins](./docs/CODEX-SINS.md)
 

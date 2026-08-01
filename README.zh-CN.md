@@ -124,7 +124,7 @@ ohno skill install        # 鍙埛鏂?skill
 ohno skill status
 # 鏂板紑涓€涓?Codex 浼氳瘽锛屾柟渚?skill 琚壂鍒?```
 
-闇€瑕?Node.js **鈮?22.20**銆傚寘鍚嶏細[oh-no-codex](https://www.npmjs.com/package/oh-no-codex)锛坄0.1.4`锛夈€?
+闇€瑕?Node.js **鈮?22.20**銆傚寘鍚嶏細[oh-no-codex](https://www.npmjs.com/package/oh-no-codex)锛坄0.1.5`锛夈€?
 ---
 
 ## 椹鹃┒鑸辨€庝箞寮€
@@ -132,6 +132,10 @@ ohno skill status
 鏈湴**鍙**鐪嬫澘锛屾暟鎹拰 `ohno status --json` 涓€鑷淬€?
 ```bash
 cd 浣犵殑涓氬姟浠撳簱           # 鍏?ohno init 杩?ohno cockpit
+# 固定端口 / 关端口 / 顶掉旧进程
+ohno cockpit --port 13521
+ohno cockpit stop
+ohno cockpit --replace
 ```
 
 缁堢浼氭墦鍗版湰鏈哄湴鍧€锛屼緥濡傦細
@@ -144,6 +148,9 @@ Cockpit: http://127.0.0.1:53123/
 2. 椤甸潰澶х害姣?2.5 绉掓媺涓€娆?`/api/state`銆? 
 3. 缁堢閲?Ctrl+C 缁撴潫锛堟病鏈夊悗鍙板畧鎶よ繘绋嬶級銆? 
 4. 鎴栧湪 Codex 閲岀敤 skill **`oh-no-cockpit`** / 璇淬€屾墦寮€椹鹃┒鑸便€嶃€?
+
+
+**端口：** 默认随机；可用 `--port`；`ohno cockpit stop` 释放端口；同项目再开会复用已有 URL，不会叠开第二个进程。旧标签页显示 COCKPIT SERVER OFFLINE 通常是进程已停，不是 state.json 损坏。运行时指针：`.ohno/cockpit.runtime.json`（不是权威 state）。
 ### 椹鹃┒鑸辨暟鎹粠鍝潵锛堝畠涓嶃€岀銆嶈繘搴︼級
 
 ```text
@@ -257,7 +264,7 @@ ohno install
 | CLI / hooks / 鍘熷瓙鐘舵€?| `LOCAL_PASS` |
 | 椹鹃┒鑸?= status JSON | `LOCAL_PASS` |
 | 鐪熷疄椤圭洰鍓湰璇曢獙 | `TRIAL_PASS`锛圥01鈥揚06锛?|
-| npm | **`0.1.4`**锛?3 涓棩甯?skill锛沬nit/install 浠呯粓绔級 |
+| npm | **`0.1.5`**锛?3 涓棩甯?skill锛沬nit/install 浠呯粓绔級 |
 
 鍚堝悓锛歔浜у搧](./docs/PRODUCT-CONTRACT.md) 路 [璁捐](./docs/DESIGN.md) 路 [楠屾敹](./docs/ACCEPTANCE.md) 路 [鍗佸叓瀹楃姜](./docs/CODEX-SINS.md)
 

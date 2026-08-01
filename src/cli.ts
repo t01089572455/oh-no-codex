@@ -11,7 +11,8 @@ import {
   acceptPlan,
   proposePlan,
 } from "./plan.js";
-import { runCockpit } from "./cockpit/server.js";
+import { parseCockpitCliArgs } from "./cockpit/lifecycle.js";
+import { runCockpit, runCockpitStop } from "./cockpit/server.js";
 import { classifyTruthAtInit } from "./truth-inventory.js";
 import {
   acceptChange,
@@ -74,7 +75,8 @@ const usageText = [
   "  ohno plan accept --revision <sha256> --diff <sha256> [--allow-weak-plan]",
   "  ohno task start | ohno task reopen",
   "  ohno verify | ohno status [--json] | ohno resume | ohno next",
-  "  ohno cockpit",
+  "  ohno cockpit [--port <n>] [--replace]",
+  "  ohno cockpit stop",
   "  ohno projectors refresh [--no-agents]",
   "  ohno requirements note --text <owner words>",
   "  ohno requirements show",
@@ -492,12 +494,27 @@ async function main(): Promise<void> {
     return;
   }
 
-  if (
-    command === "cockpit"
-    && subcommand === undefined
-    && args.length === 0
-  ) {
-    await runCockpit(projectPath);
+  if (command === "cockpit") {
+    const cockpitArgs = [
+      ...(subcommand === undefined ? [] : [subcommand]),
+      ...args,
+    ];
+    const options = parseCockpitCliArgs(cockpitArgs);
+    if (options.stop) {
+      await runCockpitStop(projectPath);
+      return;
+    }
+    const startOptions: {
+      port?: number;
+      replace?: boolean;
+    } = {};
+    if (options.port !== undefined) {
+      startOptions.port = options.port;
+    }
+    if (options.replace) {
+      startOptions.replace = true;
+    }
+    await runCockpit(projectPath, startOptions);
     return;
   }
 
