@@ -28,7 +28,7 @@
 
 <p align="center">
   <a href="https://www.npmjs.com/package/oh-no-codex"><img alt="npm" src="https://img.shields.io/npm/v/oh-no-codex?style=flat-square&color=74D6B1&labelColor=202624&label=npm"></a>
-  <img alt="status" src="https://img.shields.io/badge/status-RELEASE_CHANGES_REQUIRED-E3B341?style=flat-square&labelColor=202624">
+  <img alt="status" src="https://img.shields.io/badge/status-ANTI_DRIFT_CORE_WORKS-3DDC97?style=flat-square&labelColor=202624">
   <img alt="codex" src="https://img.shields.io/badge/for-Codex_CLI-FF4B35?style=flat-square&labelColor=202624">
   <img alt="skills" src="https://img.shields.io/badge/13_个_Codex_skill-74D6B1?style=flat-square&labelColor=202624">
   <a href="./LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-FFF1CE?style=flat-square&labelColor=202624"></a>
@@ -68,11 +68,11 @@ ohno install
 | 声明 | 标签 |
 | --- | --- |
 | 核心防漂移 | `ANTI_DRIFT_CORE_WORKS` |
-| 公开发布 | `RELEASE_CHANGES_REQUIRED`（待 Owner 授权 npm publish） |
+| 公开发布 | Owner 已授权 **`0.1.7`**（非 `V1_TRIAL_ACCEPTED`；性能为本地 trial） |
 | CLI / hooks / 原子状态 | `LOCAL_PASS` |
 | Correction 4 结构化分母 | `LOCAL_PASS`（已合入 main） |
 | 可丢弃真实副本性能 P01–P06 | **`TRIAL_PASS`** LIVE — p95 ms A/B/C：status 139.361 / 140.512 / 132.802；next 169.689 / 157.331 / 136.215；resume 168.616 / 195.458 / 193.012；task_start 136.947 / 156.410 / 159.346；P06 163 / 178 / 164；P04 resume 4006 B（非全球性能保证；batch id 见 trial evidence JSON） |
-| npm | **`0.1.7` 本地候选 / 未发布**（registry 上仍以实际为准） |
+| npm | **`oh-no-codex@0.1.7`**（Owner 已授权；镜像可能延迟） |
 
 契约：[Product](./docs/PRODUCT-CONTRACT.md) · [Design](./docs/DESIGN.md) · [Acceptance](./docs/ACCEPTANCE.md)
 

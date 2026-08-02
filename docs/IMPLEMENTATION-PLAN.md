@@ -559,9 +559,9 @@ Owning checks: projectors, codex-hooks, resume-status-next, cockpit black boxes.
 
 There is exactly one. **Unique next:**
 
-> **`OWNER_AUTHORIZE_NPM_PUBLISH_0.1.7`.** Correction 4 is `LOCAL_PASS`.
-> Same-batch LIVE P01–P06 bound (sole `state.json` clock, Cockpit 100ms design).
-> Do **not** publish without explicit Owner authorization.
+> **`STOP`.** Owner authorized `0.1.7` push + npm publish. Correction 4 is
+> `LOCAL_PASS`. Same-batch LIVE P01–P06 bound. Do **not** republish, retag, or
+> open a new release without fresh Owner authorization.
 
 ## Shared implementation rules
 

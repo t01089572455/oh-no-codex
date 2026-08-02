@@ -29,7 +29,7 @@
 
 <p align="center">
   <a href="https://www.npmjs.com/package/oh-no-codex"><img alt="npm" src="https://img.shields.io/npm/v/oh-no-codex?style=flat-square&color=74D6B1&labelColor=202624&label=npm"></a>
-  <img alt="status" src="https://img.shields.io/badge/status-RELEASE_CHANGES_REQUIRED-E3B341?style=flat-square&labelColor=202624">
+  <img alt="status" src="https://img.shields.io/badge/status-ANTI_DRIFT_CORE_WORKS-3DDC97?style=flat-square&labelColor=202624">
   <img alt="codex" src="https://img.shields.io/badge/for-Codex_CLI-FF4B35?style=flat-square&labelColor=202624">
   <img alt="skills" src="https://img.shields.io/badge/UX-13_Codex_skills-74D6B1?style=flat-square&labelColor=202624">
   <a href="./LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-FFF1CE?style=flat-square&labelColor=202624"></a>
@@ -132,7 +132,7 @@ ohno skill status
 # open a new Codex session so discovery picks them up
 ```
 
-Node.js **>= 22.20**. Package: [oh-no-codex](https://www.npmjs.com/package/oh-no-codex) (`0.1.7` local).
+Node.js **>= 22.20**. Package: [oh-no-codex](https://www.npmjs.com/package/oh-no-codex) (`0.1.7`).
 
 ### Windows notes
 
@@ -304,12 +304,12 @@ Shell details live inside each skill file for Codex; users need not memorize the
 | Claim | Label |
 | --- | --- |
 | Core harness | `ANTI_DRIFT_CORE_WORKS` |
-| Release / public status | `RELEASE_CHANGES_REQUIRED` (await Owner npm publish) |
+| Release / public status | Owner-authorized **`0.1.7`** release (not `V1_TRIAL_ACCEPTED`; trials are local) |
 | CLI / hooks / atomic state | `LOCAL_PASS` |
 | Cockpit = status JSON | `LOCAL_PASS` |
 | Correction 4 structured basis | `LOCAL_PASS` (merged on main) |
 | Disposable real-copy P01–P06 | **`TRIAL_PASS`** LIVE — p95 ms A/B/C: status 139.361 / 140.512 / 132.802; next 169.689 / 157.331 / 136.215; resume 168.616 / 195.458 / 193.012; task_start 136.947 / 156.410 / 159.346; P06 163 / 178 / 164; P04 resume 4006 B (not a universal speed claim; batch id in trial evidence JSON) |
-| npm | **`0.1.7` local candidate / unpublished** until Owner authorizes publish |
+| npm | **`oh-no-codex@0.1.7`** (Owner-authorized; registry may lag mirrors) |
 | Schema 2 → 3 migrate | Two-phase: preview then `--diff`/`--head` apply (see DESIGN) |
 
 Contracts: [Product](./docs/PRODUCT-CONTRACT.md) · [Design](./docs/DESIGN.md) · [Acceptance](./docs/ACCEPTANCE.md) · [Sins](./docs/CODEX-SINS.md)

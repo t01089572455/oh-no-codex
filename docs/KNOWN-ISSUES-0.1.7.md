@@ -9,7 +9,7 @@ Package: oh-no-codex@0.1.7
 | --- | --- |
 | `ANTI_DRIFT_CORE_WORKS` | Core cooperative harness works on real multi-slice Codex sessions |
 | `FIELD_TRIAL_PARTIAL` | Field trial is partial; not every product loop closed on real projects |
-| `RELEASE_CHANGES_REQUIRED` | Do not claim `V1_TRIAL_ACCEPTED` / publish until Owner authorizes npm |
+| `RELEASE_CHANGES_REQUIRED` | Retired for 0.1.7 after Owner-authorized npm publish; still do not claim `V1_TRIAL_ACCEPTED` |
 
 ## Fixed in 0.1.7 (+ Codex follow-up)
 
@@ -35,7 +35,7 @@ Package: oh-no-codex@0.1.7
 | CORR3-OPEN-01 | — | **Closed for 0.1.7 candidate:** LIVE P01–P06 receipts; performance gate green |
 | CORR3-OPEN-02 | — | **Closed:** README.zh-CN rewritten UTF-8, aligned with EN status |
 | CORR3-OPEN-03 | P2 | Existing trial projects need goal/truth/handoff hygiene |
-| PUBLISH-01 | P1 | `npm publish` still requires explicit Owner authorization |
+| PUBLISH-01 | — | **Closed for 0.1.7:** Owner authorized push + npm publish |
 
 ## Non-goals
 
