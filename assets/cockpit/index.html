@@ -140,10 +140,18 @@
                 <p class="eyebrow" id="recent-heading">RECENT</p>
                 <p class="section-sub">Completed stages</p>
               </div>
+              <p class="list-meta" id="recent-meta" aria-live="polite">0 done</p>
             </div>
-            <ol class="recent-list" id="recent-list">
-              <li class="empty-ledger">NO COMPLETED TASKS</li>
-            </ol>
+            <div
+              class="scroll-panel"
+              tabindex="0"
+              role="region"
+              aria-labelledby="recent-heading"
+            >
+              <ol class="recent-list" id="recent-list">
+                <li class="empty-ledger">NO COMPLETED TASKS</li>
+              </ol>
+            </div>
           </section>
         </section>
 
@@ -206,20 +214,35 @@
                   Done / half / ready / outline — same state as resume
                 </p>
               </div>
+              <p class="list-meta" id="board-meta" aria-live="polite">0 tasks</p>
             </div>
-            <ol class="board-list" id="plan-board-list">
-              <li class="empty-ledger">NO REVIEWED PLAN</li>
-            </ol>
-            <p class="section-sub">
+            <div
+              class="scroll-panel scroll-panel-board"
+              tabindex="0"
+              role="region"
+              aria-labelledby="board-heading"
+            >
+              <ol class="board-list" id="plan-board-list">
+                <li class="empty-ledger">NO REVIEWED PLAN</li>
+              </ol>
+            </div>
+            <p class="section-sub truth-meta-line">
               Truth targets:
               <strong id="truth-target-count">0</strong>
               · Doc sync:
               <strong id="doc-sync-status">CLEAN</strong>
             </p>
-            <ul class="truth-list" id="truth-targets-list">
-              <li class="empty-ledger">NO TRUTH TARGETS</li>
-            </ul>
-            <p class="section-sub" id="handoff-line">
+            <div
+              class="scroll-panel scroll-panel-truth"
+              tabindex="0"
+              role="region"
+              aria-label="Truth targets"
+            >
+              <ul class="truth-list" id="truth-targets-list">
+                <li class="empty-ledger">NO TRUTH TARGETS</li>
+              </ul>
+            </div>
+            <p class="section-sub handoff-line" id="handoff-line">
               Handoff: unknown
             </p>
           </article>

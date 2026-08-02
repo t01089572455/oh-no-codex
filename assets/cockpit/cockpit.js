@@ -41,6 +41,8 @@ const elements = {
   guardFail: document.querySelector(".guardrail-segment.fail"),
   vectorStops: document.querySelectorAll(".vector-stop"),
   planBoard: document.querySelector("#plan-board-list"),
+  boardMeta: document.querySelector("#board-meta"),
+  recentMeta: document.querySelector("#recent-meta"),
   truthTargetCount: document.querySelector("#truth-target-count"),
   truthTargetsList: document.querySelector("#truth-targets-list"),
   docSyncStatus: document.querySelector("#doc-sync-status"),
@@ -195,21 +197,45 @@ function missionCenter(model) {
   };
 }
 
+function setListMeta(node, text) {
+  if (node) {
+    node.textContent = text;
+  }
+}
+
+function scrollFocusIntoPanel(item) {
+  if (!item || typeof item.scrollIntoView !== "function") {
+    return;
+  }
+  // Keep active/half tasks visible without yanking the whole page.
+  item.scrollIntoView({ block: "nearest", inline: "nearest" });
+}
+
 function renderRecent(model) {
   elements.recent.replaceChildren();
-  if (model.completed.length === 0) {
+  const completed = model.completed ?? [];
+  setListMeta(
+    elements.recentMeta,
+    completed.length === 0
+      ? "0 done"
+      : `${completed.length} done · scroll`,
+  );
+  if (completed.length === 0) {
     const empty = document.createElement("li");
     empty.className = "empty-ledger";
     empty.textContent = "NO COMPLETED TASKS";
     elements.recent.append(empty);
     return;
   }
-  for (const entry of model.completed) {
+  // Newest completed last in state; show newest first for scanability.
+  for (const entry of [...completed].toReversed()) {
     const item = document.createElement("li");
     const id = document.createElement("strong");
     const behavior = document.createElement("span");
     id.textContent = entry.id;
+    id.title = entry.id;
     behavior.textContent = entry.expected_behavior;
+    behavior.title = entry.expected_behavior;
     item.append(id, behavior);
     elements.recent.append(item);
   }
@@ -221,6 +247,13 @@ function renderPlanBoard(model) {
   }
   elements.planBoard.replaceChildren();
   const board = model.plan_board ?? [];
+  const activeId = model.current_task?.id ?? null;
+  setListMeta(
+    elements.boardMeta,
+    board.length === 0
+      ? "0 tasks"
+      : `${board.length} tasks · scroll`,
+  );
   if (board.length === 0) {
     const empty = document.createElement("li");
     empty.className = "empty-ledger";
@@ -228,19 +261,37 @@ function renderPlanBoard(model) {
     elements.planBoard.append(empty);
     return;
   }
+  let focusItem = null;
   for (const entry of board) {
     const item = document.createElement("li");
-    item.className = `board-item phase-${String(entry.phase).toLowerCase()}`;
+    const phaseName = String(entry.phase).toLowerCase();
+    item.className = `board-item phase-${phaseName}`;
+    if (
+      entry.id === activeId
+      || phaseName === "half"
+      || phaseName === "active"
+    ) {
+      item.classList.add("is-focus");
+      if (focusItem === null) {
+        focusItem = item;
+      }
+    }
     const phase = document.createElement("span");
     phase.className = "board-phase";
     phase.textContent = entry.phase;
     const id = document.createElement("strong");
     id.textContent = entry.id;
+    id.title = entry.id;
     const title = document.createElement("span");
     title.textContent = entry.title;
+    title.title = entry.title;
     item.append(phase, id, title);
     elements.planBoard.append(item);
   }
+  // After layout: keep the current/half row in the scroll panel.
+  requestAnimationFrame(() => {
+    scrollFocusIntoPanel(focusItem);
+  });
 }
 
 function renderRing(model) {
@@ -490,6 +541,7 @@ function render(model, meta = {}) {
       for (const path of targets) {
         const item = document.createElement("li");
         item.textContent = path;
+        item.title = path;
         elements.truthTargetsList.append(item);
       }
     }
