@@ -214,7 +214,8 @@ function inventoryWithProjectedAgents(
 
 /**
  * Rebind schema-2 pending to schema-3 with a v3 exactPlanDiff that accept
- * will recompute. Returns null when source is unreadable → clear pending.
+ * will recompute. Returns null when source is unreadable or no longer
+ * accept-able against the basis → clear pending to PROPOSE_PLAN.
  */
 async function rebindLegacyPending(
   projectPath: string,
@@ -251,6 +252,17 @@ async function rebindLegacyPending(
   }
   if (proposal.acceptance_source !== basisPath) {
     // Schema-2 sources without basis path cannot rebind to an accept-able pending.
+    return null;
+  }
+  // Re-validate current source tasks against basis (source may have drifted
+  // after the original pending was recorded).
+  try {
+    const loaded = await loadStructuredAcceptanceBasis(projectPath, basisPath);
+    if (loaded.digest !== basisDigest) {
+      return null;
+    }
+    assertFrozenTasksMatchBasis(proposal.ordered_tasks, loaded.document);
+  } catch {
     return null;
   }
   // Recompute revision/diff from normalized proposal (accept's authority).
@@ -304,6 +316,7 @@ function buildExactMigrateDiff(input: {
   head: string;
   basisPath: string;
   basisDigest: string;
+  pendingDisposition: PendingDisposition;
 }): string {
   return `${JSON.stringify({
     format: "ohno-acceptance-basis-migrate-v2",
@@ -320,6 +333,8 @@ function buildExactMigrateDiff(input: {
     },
     before: sideEffectSlice(input.before),
     after: input.semanticAfter,
+    // Explain-only: not a state field (do not put inside `after`).
+    pending_disposition: input.pendingDisposition,
     apply_metadata: {
       plan_review_fields_at_apply: [
         "diff_digest",
@@ -330,6 +345,8 @@ function buildExactMigrateDiff(input: {
         "plan_review.diff_digest equals DIFF_DIGEST of this exact migrate document",
       timestamps: "proposed_at and recorded_at are wall-clock RFC3339 at apply",
       review_provenance: "caller-returned local review (not Owner identity)",
+      pending_disposition:
+        "advisory only; not written to state.json",
     },
   }, null, 2)}\n`;
 }
@@ -447,7 +464,6 @@ async function planMigration(
     completed: state.completed,
     plan_review: planReviewSemantic,
     pending_plan: nextPending,
-    pending_disposition: pendingDisposition,
     active_task: null,
     last_verification: null,
     truth_inventory: nextInventory,
@@ -461,6 +477,7 @@ async function planMigration(
     head,
     basisPath,
     basisDigest,
+    pendingDisposition,
   });
   const diffDigest = sha256(exactDiff);
 
@@ -521,10 +538,13 @@ function formatPreview(plan: MigratePlan): string {
     "APPLY: re-run with the same --file and returned digests:",
     `  ohno migrate acceptance-basis --file ${plan.basisPath} `
       + `--diff ${plan.diffDigest} --head ${plan.head}`,
-    "NOTE: apply re-validates under state.cas.lock, atomically replaces Truth,",
-    "      then CAS-writes state; LOCAL_REVIEW_RECORDED only on successful apply.",
-    "NOTE: plan_review.diff_digest/proposed_at/recorded_at are apply_metadata",
-    "      (see EXACT_MIGRATE_DIFF.apply_metadata); other after fields are final.",
+    "NOTE: apply re-validates under state.cas.lock (state + Truth exact bytes),",
+    "      atomically replaces Truth, then CAS-writes state;",
+    "      LOCAL_REVIEW_RECORDED only on successful apply.",
+    "NOTE: plan_review.diff_digest/proposed_at/recorded_at and",
+    "      pending_disposition are not final state fields",
+    "      (see EXACT_MIGRATE_DIFF.apply_metadata / pending_disposition).",
+    "      Other `after` fields match written authority.",
     "REVIEW_PROVENANCE: caller-returned local review (not Owner identity)",
     "",
     "EXACT_MIGRATE_DIFF:",
@@ -581,11 +601,49 @@ async function rollbackTruth(
 ): Promise<void> {
   const truthPath = resolve(projectPath, ".ohno", "truth.json");
   if (planned.action === "create") {
-    await rm(truthPath, { force: true }).catch(() => undefined);
+    await rm(truthPath, { force: true });
     return;
   }
   if (planned.action === "update" && planned.previousBytes !== null) {
     await writeTruthAtomic(projectPath, planned.previousBytes);
+  }
+}
+
+/** Under lock: Truth must still match the exact bytes preview reviewed. */
+async function assertTruthUnchangedSincePreview(
+  projectPath: string,
+  planned: PlannedTruth,
+): Promise<void> {
+  const truthPath = resolve(projectPath, ".ohno", "truth.json");
+  let current: string | null = null;
+  try {
+    current = await readFile(truthPath, "utf8");
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+      throw error;
+    }
+  }
+  if (planned.action === "create") {
+    if (current !== null) {
+      throw new Error(
+        "migrate apply refused: Truth appeared or changed since preview "
+          + "(exact-byte CAS) — re-preview",
+      );
+    }
+    return;
+  }
+  // update or unchanged: file must exist with exact previous bytes.
+  if (current === null) {
+    throw new Error(
+      "migrate apply refused: Truth disappeared since preview "
+        + "(exact-byte CAS) — re-preview",
+    );
+  }
+  if (current !== planned.previousBytes) {
+    throw new Error(
+      "migrate apply refused: Truth content changed since preview "
+        + "(exact-byte CAS) — re-preview",
+    );
   }
 }
 
@@ -641,37 +699,25 @@ export async function migrateAcceptanceBasis(
     next,
     {
       commit: async () => {
+        await assertTruthUnchangedSincePreview(
+          projectPath,
+          plan.plannedTruth,
+        );
         if (plan.plannedTruth.action === "unchanged") {
           return;
-        }
-        if (plan.plannedTruth.action === "create") {
-          try {
-            await access(resolve(projectPath, ".ohno", "truth.json"));
-            throw new Error(
-              "Truth appeared during migrate apply; refuse to overwrite — re-preview",
-            );
-          } catch (error) {
-            if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-              throw error;
-            }
-          }
-        } else {
-          try {
-            await access(resolve(projectPath, ".ohno", "truth.json"));
-          } catch (error) {
-            if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-              throw new Error(
-                "Truth disappeared during migrate apply; refuse create-via-update "
-                  + "— re-preview",
-              );
-            }
-            throw error;
-          }
         }
         await writeTruthAtomic(projectPath, plan.plannedTruth.serialized);
       },
       rollback: async () => {
-        await rollbackTruth(projectPath, plan.plannedTruth);
+        try {
+          await rollbackTruth(projectPath, plan.plannedTruth);
+        } catch (error) {
+          const detail = error instanceof Error ? error.message : String(error);
+          throw new Error(
+            "RECOVERY_REQUIRED: migrate state write failed after Truth commit "
+              + `and Truth rollback failed: ${detail}`,
+          );
+        }
       },
     },
   );

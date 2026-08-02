@@ -469,6 +469,140 @@ test("legacy schema 2 pending rebinds with accept-able v3 diff", async (t) => {
   assert.equal(finalNext.stdout.trim(), "START_TASK:cloudbase-data");
 });
 
+test("pending source shrink after pending clears to PROPOSE_PLAN not REVIEW_PLAN", async (t) => {
+  const projectPath = await createProject(t);
+  runInit(projectPath, ownerGoal);
+  await writePassScript(projectPath);
+  writeStructuredAcceptanceBasis(projectPath, [basisUnit], basisPath);
+  const tasks = [frozenUnit];
+  const planBody = `${JSON.stringify({
+    cursor: 0,
+    ordered_tasks: tasks,
+    acceptance_source: basisPath,
+  }, null, 2)}\n`;
+  await writeFile(resolve(projectPath, ".ohno", "plan.json"), planBody, "utf8");
+  const sourceDigest = createHash("sha256").update(planBody).digest("hex");
+  const rev = createHash("sha256").update(JSON.stringify(tasks)).digest("hex");
+  const now = new Date().toISOString();
+  const state = JSON.parse(
+    await readFile(resolve(projectPath, ".ohno", "state.json"), "utf8"),
+  );
+  state.schema_version = 2;
+  state.status = "IDLE";
+  state.plan_revision = null;
+  state.ordered_tasks = [];
+  state.cursor = 0;
+  state.plan_review = null;
+  state.active_task = null;
+  state.last_verification = null;
+  state.completed = [];
+  state.pending_plan = {
+    plan_revision: rev,
+    ordered_tasks: tasks,
+    cursor: 0,
+    diff_digest: rev,
+    head: "UNBORN",
+    proposed_at: now,
+    source_path: ".ohno/plan.json",
+    source_digest: sourceDigest,
+  };
+  await writeFile(
+    resolve(projectPath, ".ohno", "state.json"),
+    `${JSON.stringify(state, null, 2)}\n`,
+    "utf8",
+  );
+  // After pending: shrink plan source acceptance vs independent basis.
+  const shrunk = {
+    ...frozenUnit,
+    expected_behavior: "unit-only path; real browser path dropped",
+  };
+  await writeFile(
+    resolve(projectPath, ".ohno", "plan.json"),
+    `${JSON.stringify({
+      cursor: 0,
+      ordered_tasks: [shrunk],
+      acceptance_source: basisPath,
+    }, null, 2)}\n`,
+    "utf8",
+  );
+
+  const preview = runMigratePreview(projectPath);
+  assert.equal(preview.status, 0, preview.stderr);
+  assert.match(preview.stdout, /clear_pending|pending_disposition/);
+  assert.doesNotMatch(preview.stdout, /"pending_disposition": "rebind_schema3"/);
+  const applied = runMigrateApply(projectPath, preview.stdout);
+  assert.equal(applied.status, 0, applied.stderr);
+  const after = JSON.parse(
+    await readFile(resolve(projectPath, ".ohno", "state.json"), "utf8"),
+  );
+  assert.equal(after.schema_version, 3);
+  assert.equal(after.pending_plan, null);
+  const next = runCli(projectPath, ["next"]);
+  assert.equal(next.stdout.trim(), "PROPOSE_PLAN");
+});
+
+test("Truth concurrent edit since preview refuses apply without overwrite", async (t) => {
+  const projectPath = await createProject(t);
+  await writeSchema2ActiveFixture(projectPath);
+  writeStructuredAcceptanceBasis(projectPath, [basisUnit], basisPath);
+  // Existing Truth so migrate plans an update (not create).
+  await mkdir(resolve(projectPath, ".ohno"), { recursive: true });
+  await mkdir(resolve(projectPath, "docs"), { recursive: true });
+  await writeFile(
+    resolve(projectPath, "docs", "PRODUCT.md"),
+    "baseline product\n",
+    "utf8",
+  );
+  await writeFile(
+    resolve(projectPath, ".ohno", "truth.json"),
+    `${JSON.stringify({
+      schema_version: 1,
+      targets: [
+        { path: "docs/PRODUCT.md", concerns: ["requirements"] },
+      ],
+    }, null, 2)}\n`,
+    "utf8",
+  );
+
+  const preview = runMigratePreview(projectPath);
+  assert.equal(preview.status, 0, preview.stderr);
+  assert.match(preview.stdout, /"action": "update"/);
+
+  // Owner/other process edits Truth after preview.
+  await writeFile(
+    resolve(projectPath, "docs", "CONCURRENT.md"),
+    "owner concurrent note\n",
+    "utf8",
+  );
+  await writeFile(
+    resolve(projectPath, ".ohno", "truth.json"),
+    `${JSON.stringify({
+      schema_version: 1,
+      targets: [
+        { path: "docs/PRODUCT.md", concerns: ["requirements"] },
+        { path: "docs/CONCURRENT.md", concerns: ["requirements"] },
+      ],
+    }, null, 2)}\n`,
+    "utf8",
+  );
+
+  const applied = runMigrateApply(projectPath, preview.stdout);
+  assert.notEqual(applied.status, 0);
+  assert.match(applied.stderr, /Truth content changed|exact-byte CAS|re-preview/i);
+
+  const truth = JSON.parse(
+    await readFile(resolve(projectPath, ".ohno", "truth.json"), "utf8"),
+  );
+  assert.ok(
+    truth.targets.some((x) => x.path === "docs/CONCURRENT.md"),
+    "concurrent Truth target must not be silently deleted",
+  );
+  const still = JSON.parse(
+    await readFile(resolve(projectPath, ".ohno", "state.json"), "utf8"),
+  );
+  assert.equal(still.schema_version, 2);
+});
+
 test("failed migrate apply does not leave Truth half-written", async (t) => {
   const projectPath = await createProject(t);
   await writeSchema2ActiveFixture(projectPath);

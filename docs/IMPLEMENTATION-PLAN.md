@@ -926,9 +926,10 @@ First landing `4f316d9` used keyword detectors and broke schema-2 read → marke
 - Truth: only ENOENT may create; corrupt/invalid fail-closed (never overwrite).
   Basis validated before any Truth write. Full inventory rebuild (+ projected
   AGENTS) so `migrate → change begin` does not self-lock.
-- Pending: schema-2 pending **rebinds** with accept-able v3 exact plan diff
-  (black-box `plan accept`); unreadable source clears to `PROPOSE_PLAN`; stale
-  pending with accepted plan cleared only as explicit exact-diff side-effect.
+- Pending: schema-2 pending **rebinds** only when current source still matches
+  basis (`assertFrozenTasksMatchBasis`); else clear to `PROPOSE_PLAN`. Accept
+  black-box green. Stale pending with accepted plan cleared as exact-diff
+  side-effect. Truth apply uses exact-byte CAS under lock (no silent overwrite).
 - MIGRATE is sole next even over FAIL receipts (`read-model` priority).
 - `change begin` unions `acceptance-basis` concern targets only (not all
   black-box paths).

@@ -1005,7 +1005,22 @@ export async function compareAndSwapStateWithSideEffects(
     return true;
   } catch (error) {
     if (committed) {
-      await sideEffects.rollback().catch(() => undefined);
+      try {
+        await sideEffects.rollback();
+      } catch (rollbackError) {
+        const detail = rollbackError instanceof Error
+          ? rollbackError.message
+          : String(rollbackError);
+        // Prefer explicit recovery signal when Truth may be half-applied.
+        if (detail.startsWith("RECOVERY_REQUIRED:")) {
+          throw rollbackError;
+        }
+        throw new Error(
+          "RECOVERY_REQUIRED: state write failed after side-effect commit and "
+            + `rollback failed: ${detail}`,
+          { cause: error },
+        );
+      }
     }
     throw error;
   } finally {
