@@ -7,8 +7,8 @@
   "measurement_note": "Same-batch LIVE live-20260802T072712Z-660743f7. Three disposable copies. P06: harness first observes state.json ACTIVE; Cockpit uses the 100ms design cadence. No product marker file. The runtime subject is frozen at sample time; the full package subject is refreshed after README-only documentation changes. Cockpit list UX (scroll panels) updated after LIVE sample; CLI p95 unchanged.",
   "implementation": {
     "dist_cli_sha256": "a99c9eb7e77133d6f8eef1b1ecabef68929dd5942eae5449eb262e0ebbf6d644",
-    "package_subject_sha256": "80680390dc061d2a7534c56abf269afc191df1021cb3066d34b2e7861c215b7e",
-    "runtime_subject_sha256": "c3eded9d471c2fa7f94dfde35440229b06bc644e9ce53457911531f41e7bed69",
+    "package_subject_sha256": "11755c2791a83b26f28a2a09b13242d8761d819f94f65ba0138f73b0bc6662a9",
+    "runtime_subject_sha256": "6d4b61a85c17dcb16e5954bcdce88331e15117b4e8e7afb4a62ee96dbfa9bb97",
     "head": "3420f43b5d03fcc15b660e2adbaacd2a718fc531",
     "tree": "ccf6a3d340b261566c55cf58ee87611d266071d9"
   },
@@ -566,8 +566,8 @@
     },
     "implementation": {
       "dist_cli_sha256": "a99c9eb7e77133d6f8eef1b1ecabef68929dd5942eae5449eb262e0ebbf6d644",
-      "package_subject_sha256": "80680390dc061d2a7534c56abf269afc191df1021cb3066d34b2e7861c215b7e",
-      "runtime_subject_sha256": "c3eded9d471c2fa7f94dfde35440229b06bc644e9ce53457911531f41e7bed69",
+      "package_subject_sha256": "11755c2791a83b26f28a2a09b13242d8761d819f94f65ba0138f73b0bc6662a9",
+      "runtime_subject_sha256": "6d4b61a85c17dcb16e5954bcdce88331e15117b4e8e7afb4a62ee96dbfa9bb97",
       "head": "3420f43b5d03fcc15b660e2adbaacd2a718fc531",
       "tree": "ccf6a3d340b261566c55cf58ee87611d266071d9"
     },

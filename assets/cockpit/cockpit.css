@@ -760,16 +760,52 @@ body[data-live="polling"] #refresh-button {
 
 .mission-center {
   position: absolute;
-  inset: 28%;
+  inset: 26%;
   display: grid;
   place-content: center;
-  gap: 4px;
+  justify-items: center;
+  gap: 2px;
   text-align: center;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.72);
   border: 1px solid rgba(255, 255, 255, 0.9);
   box-shadow: var(--shadow-soft);
-  padding: 16px;
+  padding: 10px 12px;
+  overflow: hidden;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.mission-center .pulse-label,
+.mission-center #mission-center-label,
+.mission-center #mission-center-sub,
+.mission-center .plan-line {
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mission-center #mission-center-label {
+  font-size: clamp(0.85rem, 2.2vw, 1.15rem);
+  line-height: 1.15;
+}
+
+.mission-center #mission-center-sub {
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+}
+
+.mission-center .plan-line {
+  font-size: 0.65rem;
+  letter-spacing: 0.02em;
+}
+
+.mission-center #plan-revision {
+  display: inline;
+  font-family: ui-monospace, Consolas, monospace;
 }
 
 .pulse-label {
@@ -892,41 +928,112 @@ body[data-live="polling"] #refresh-button {
 
 .bottom-rail {
   border-radius: 18px;
-  padding: 10px 14px;
+  padding: 10px 14px 12px;
   display: grid;
   gap: 8px;
   flex: 0 0 auto;
   min-height: 0;
+  overflow: visible;
 }
 
 .completion-header {
   justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.completion-header .section-sub {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 .vector-rail {
   display: grid;
-  gap: 8px;
+  gap: 6px;
+  min-height: 0;
+  overflow: visible;
 }
 
 .vector-track {
-  height: 14px;
+  position: relative;
+  min-height: 34px;
+  height: 34px;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   align-items: center;
+  overflow: visible;
+}
+
+/* Keep the fill bar thin; labels sit on top and must not be clipped. */
+.vector-track .vector-progress {
+  top: 50%;
+  bottom: auto;
+  height: 10px;
+  transform: translateY(-50%);
+  z-index: 0;
 }
 
 .vector-stop {
   position: relative;
   z-index: 1;
   justify-self: center;
-  padding: 4px 10px;
+  padding: 6px 12px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.92);
   border: 1px solid rgba(255, 255, 255, 0.95);
-  font-size: 0.68rem;
+  font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 0.04em;
   color: var(--ink-soft);
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.footer-copy {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.lang-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.55);
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+
+.lang-toggle button {
+  appearance: none;
+  border: 0;
+  border-radius: 0;
+  margin: 0;
+  padding: 8px 12px;
+  background: transparent;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.lang-toggle button.is-active {
+  background: linear-gradient(135deg, #7c5cff, #4f8cff);
+  color: #fff;
+}
+
+.lang-toggle button:focus-visible {
+  outline: 2px solid #111827;
+  outline-offset: 1px;
+  z-index: 1;
 }
 
 .vector-stop.is-active {

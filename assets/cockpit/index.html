@@ -15,7 +15,7 @@
     <div id="unavailable-gate" class="unavailable-gate" hidden role="alert">
       <div class="gate-card glass">
         <p class="eyebrow" id="unavailable-eyebrow">STATE</p>
-        <h2 id="unavailable-title">LOCAL STATE UNAVAILABLE</h2>
+        <h2 id="unavailable-title" data-i18n="stateUnavailableTitle">LOCAL STATE UNAVAILABLE</h2>
         <p id="unavailable-body">
           The local state is missing, corrupt, or unsupported. Repair
           <code>.ohno/state.json</code>, then refresh.
@@ -37,14 +37,14 @@
           <div class="brand-copy">
             <h1>OH NO, CODEX!</h1>
             <p class="brand-sub">
-              Fast, cooperative vibe-coding harness
+              <span data-i18n="brandSub">Fast, cooperative vibe-coding harness</span>
               <span class="locality">LOCAL · READ ONLY</span>
             </p>
           </div>
         </div>
 
         <div class="stage-cluster" aria-label="Current stage">
-          <p class="eyebrow">CURRENT STAGE</p>
+          <p class="eyebrow" data-i18n="currentStage">CURRENT STAGE</p>
           <div class="stage-chip">
             <span id="stage-title">WAITING</span>
             <span class="stage-badge" id="status-value">UNAVAILABLE</span>
@@ -54,11 +54,11 @@
 
         <div class="progress-cluster" aria-label="Plan cursor progress">
           <div class="progress-head">
-            <p class="eyebrow">PLAN CURSOR — not product completion</p>
+            <p class="eyebrow" data-i18n="planCursorNote">PLAN CURSOR — not product completion</p>
             <p class="progress-meta">
               <span id="progress-label">0 of 0 plan tasks</span>
               ·
-              closed
+              <span data-i18n="closed">closed</span>
               <span id="completed-count">0</span>
               /
               <span id="task-count-disp">0</span>
@@ -88,57 +88,65 @@
               <span class="profile-name">OH NO, CODEX</span>
               <span class="profile-meta">
                 <span class="status-dot"></span>
-                Local · Read Only
+                <span data-i18n="localReadOnly">Local · Read Only</span>
               </span>
             </div>
+          </div>
+          <div class="lang-toggle" role="group" aria-label="Language" data-i18n-aria="language">
+            <button type="button" id="lang-en" data-lang="en" class="is-active">
+              EN
+            </button>
+            <button type="button" id="lang-zh" data-lang="zh">中文</button>
           </div>
           <button
             id="refresh-button"
             type="button"
             aria-label="Refresh local project state"
+            data-i18n="refresh"
+            data-i18n-aria="refreshAria"
           >REFRESH</button>
         </div>
       </header>
 
       <main class="dashboard" id="main-dashboard">
-        <section class="left-rail" aria-label="Mission actions">
+        <section class="left-rail" aria-label="Mission actions" data-i18n-aria="missionActions">
           <article class="card glass action-card now-card">
             <div class="card-header">
-              <span class="tag tag-now">NOW</span>
+              <span class="tag tag-now" data-i18n="now">NOW</span>
               <span class="action-id" id="now-heading">NO ACTIVE TASK</span>
             </div>
             <p class="action-body" id="behavior-value">
-              Waiting for the canonical read model.
+              <span data-i18n="waitingReadModel">Waiting for the canonical read model.</span>
             </p>
             <div class="test-well" id="test-well" hidden>
-              <p class="eyebrow">EXACT TEST</p>
+              <p class="eyebrow" data-i18n="exactTest">EXACT TEST</p>
               <code id="test-value">NONE</code>
             </div>
           </article>
 
           <article class="card glass action-card next-card">
             <div class="card-header">
-              <span class="tag tag-next">NEXT</span>
+              <span class="tag tag-next" data-i18n="next">NEXT</span>
             </div>
             <p class="next-value" id="next-value">NONE</p>
           </article>
 
           <article class="card glass action-card attention-card" id="attention-card">
             <div class="card-header">
-              <span class="tag tag-attention">ATTENTION</span>
-              <span class="tag tag-drift">DRIFT</span>
+              <span class="tag tag-attention" data-i18n="attention">ATTENTION</span>
+              <span class="tag tag-drift" data-i18n="drift">DRIFT</span>
             </div>
             <p class="signal-value" id="blocker-value">NONE</p>
             <p class="action-hint">
-              Blockers and drift signals from the harness appear here.
+              <span data-i18n="blockerHint">Blockers and drift signals from the harness appear here.</span>
             </p>
           </article>
 
           <section class="card glass ledger-card" aria-labelledby="recent-heading">
             <div class="ledger-header">
               <div>
-                <p class="eyebrow" id="recent-heading">RECENT</p>
-                <p class="section-sub">Completed stages</p>
+                <p class="eyebrow" id="recent-heading" data-i18n="recent">RECENT</p>
+                <p class="section-sub" data-i18n="completedStages">Completed stages</p>
               </div>
               <p class="list-meta" id="recent-meta" aria-live="polite">0 done</p>
             </div>
@@ -149,17 +157,17 @@
               aria-labelledby="recent-heading"
             >
               <ol class="recent-list" id="recent-list">
-                <li class="empty-ledger">NO COMPLETED TASKS</li>
+                <li class="empty-ledger" data-i18n="noCompleted">NO COMPLETED TASKS</li>
               </ol>
             </div>
           </section>
         </section>
 
-        <section class="center-stage" aria-label="Mission pulse">
+        <section class="center-stage" aria-label="Mission pulse" data-i18n-aria="missionPulse">
           <div class="mission-card glass">
             <div class="mission-header">
-              <span class="eyebrow">MISSION</span>
-              <span class="mission-lock" aria-hidden="true">READ ONLY</span>
+              <span class="eyebrow" data-i18n="mission">MISSION</span>
+              <span class="mission-lock" aria-hidden="true" data-i18n="readOnly">READ ONLY</span>
             </div>
 
             <div class="ring-wrap">
@@ -184,11 +192,11 @@
               </svg>
 
               <div class="mission-center">
-                <p class="pulse-label">PULSE</p>
+                <p class="pulse-label" data-i18n="pulse">PULSE</p>
                 <h2 id="mission-center-label">IDLE</h2>
-                <p id="mission-center-sub">Waiting for plan</p>
+                <p id="mission-center-sub" data-i18n="waitingForPlan">Waiting for plan</p>
                 <p class="plan-line">
-                  PLAN
+                  <span data-i18n="plan">PLAN</span>
                   <span id="plan-revision">NONE</span>
                 </p>
               </div>
@@ -199,19 +207,19 @@
               id="calibration-rail"
               aria-labelledby="rail-heading"
             >
-              <p class="eyebrow" id="rail-heading">CALIBRATION RAIL</p>
+              <p class="eyebrow" id="rail-heading" data-i18n="calibrationRail">CALIBRATION RAIL</p>
               <p class="rail-summary" id="rail-summary">READING LOCAL STATE</p>
             </div>
           </div>
         </section>
 
-        <section class="right-rail" aria-label="Instruments">
+        <section class="right-rail" aria-label="Instruments" data-i18n-aria="instruments">
           <article class="card glass board-card" aria-labelledby="board-heading">
             <div class="ledger-header">
               <div>
-                <p class="eyebrow" id="board-heading">PLAN BOARD</p>
+                <p class="eyebrow" id="board-heading" data-i18n="planBoard">PLAN BOARD</p>
                 <p class="section-sub">
-                  Done / half / ready / outline — same state as resume
+                  <span data-i18n="planBoardSub">Done / half / ready / outline — same state as resume</span>
                 </p>
               </div>
               <p class="list-meta" id="board-meta" aria-live="polite">0 tasks</p>
@@ -223,13 +231,13 @@
               aria-labelledby="board-heading"
             >
               <ol class="board-list" id="plan-board-list">
-                <li class="empty-ledger">NO REVIEWED PLAN</li>
+                <li class="empty-ledger" data-i18n="noReviewedPlan">NO REVIEWED PLAN</li>
               </ol>
             </div>
             <p class="section-sub truth-meta-line">
-              Truth targets:
+              <span data-i18n="truthTargets">Truth targets:</span>
               <strong id="truth-target-count">0</strong>
-              · Doc sync:
+              · <span data-i18n="docSync">Doc sync:</span>
               <strong id="doc-sync-status">CLEAN</strong>
             </p>
             <div
@@ -239,7 +247,7 @@
               aria-label="Truth targets"
             >
               <ul class="truth-list" id="truth-targets-list">
-                <li class="empty-ledger">NO TRUTH TARGETS</li>
+                <li class="empty-ledger" data-i18n="noTruthTargets">NO TRUTH TARGETS</li>
               </ul>
             </div>
             <p class="section-sub handoff-line" id="handoff-line">
@@ -250,7 +258,7 @@
           <article class="card glass instrument-card proof-instrument">
             <div class="instrument-header">
               <div>
-                <p class="eyebrow" id="proof-heading">PROOF</p>
+                <p class="eyebrow" id="proof-heading" data-i18n="proof">PROOF</p>
                 <p class="section-sub">Verification freshness</p>
               </div>
               <p class="signal-value" id="proof-value">NONE</p>
@@ -285,19 +293,19 @@
           </article>
 
           <article class="card glass summary-card">
-            <p class="eyebrow">VECTOR SNAPSHOT</p>
-            <p class="section-sub">Honest counts from the same read model</p>
+            <p class="eyebrow" data-i18n="vectorSnapshot">VECTOR SNAPSHOT</p>
+            <p class="section-sub" data-i18n="honestCounts">Honest counts from the same read model</p>
             <div class="summary-grid">
               <div class="summary-cell">
-                <span class="summary-label">Cursor</span>
+                <span class="summary-label" data-i18n="cursor">Cursor</span>
                 <span class="summary-number" id="cursor-disp">0</span>
               </div>
               <div class="summary-cell">
-                <span class="summary-label">Tasks</span>
+                <span class="summary-label" data-i18n="tasks">Tasks</span>
                 <span class="summary-number" id="tasks-disp">0</span>
               </div>
               <div class="summary-cell">
-                <span class="summary-label">Done</span>
+                <span class="summary-label" data-i18n="done">Done</span>
                 <span class="summary-number" id="done-disp">0</span>
               </div>
             </div>
@@ -307,20 +315,19 @@
 
       <footer class="bottom-rail glass" role="contentinfo">
         <div class="completion-header">
-          <p class="eyebrow">COMPLETION VECTOR</p>
-          <p class="section-sub">Plan progress from partial to complete</p>
+          <p class="eyebrow" data-i18n="completionVector">COMPLETION VECTOR</p>
+          <p class="section-sub" data-i18n="planProgressSub">Plan progress from partial to complete</p>
         </div>
         <div class="vector-rail">
           <div class="vector-track">
             <div id="vector-progress" class="vector-progress"></div>
-            <span class="vector-stop" data-stop="partial">PARTIAL</span>
-            <span class="vector-stop" data-stop="review">REVIEW</span>
-            <span class="vector-stop" data-stop="ready">READY</span>
+            <span class="vector-stop" data-stop="partial" data-i18n="partial">PARTIAL</span>
+            <span class="vector-stop" data-stop="review" data-i18n="review">REVIEW</span>
+            <span class="vector-stop" data-stop="ready" data-i18n="ready">READY</span>
           </div>
         </div>
         <p class="footer-copy">
-          Cooperative local guardrail. This view cannot authorize work or stop a
-          same-user process.
+          <span data-i18n="footerCopy">Cooperative local guardrail. This view cannot authorize work or stop a same-user process.</span>
         </p>
       </footer>
     </div>
