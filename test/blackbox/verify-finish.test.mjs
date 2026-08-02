@@ -20,6 +20,7 @@ import {
   reviewPlan,
   runCli,
   spawnCli,
+  runInit,
 } from "../helpers/blackbox.mjs";
 
 const nextAction = "START_TASK:verify-next";
@@ -118,9 +119,7 @@ async function initializeTask(
   },
 ) {
   const projectPath = suppliedProjectPath ?? await createProject(t);
-  const initialized = runCli(projectPath, [
-    "init",
-  ]);
+  const initialized = runInit(projectPath);
   assert.equal(initialized.status, 0, initialized.stderr);
 
   reviewPlan(projectPath, {

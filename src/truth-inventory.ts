@@ -58,6 +58,7 @@ async function truthIfPresent(
     }
     throw error;
   }
+  // Present but unreadable/invalid: fail closed (never treat as missing).
   return readTruth(projectPath);
 }
 
@@ -113,11 +114,14 @@ async function assertTargetExists(
 
 async function scan(
   projectPath: string,
+  truthOverride?: TruthDocument | null,
 ): Promise<{
   inventory: TruthInventory;
   truthTargets: Set<string>;
 }> {
-  const truth = await truthIfPresent(projectPath);
+  const truth = truthOverride !== undefined
+    ? truthOverride
+    : await truthIfPresent(projectPath);
   const truthTargets = new Set(
     truth?.targets.map(({ path }) => path) ?? [],
   );
@@ -174,6 +178,17 @@ export async function classifyTruthAtInit(
   projectPath: string,
 ): Promise<TruthInventory> {
   return (await scan(projectPath)).inventory;
+}
+
+/**
+ * Full high-risk inventory as if `truth` were already on disk.
+ * Used by zero-write migrate preview so apply digests stay stable.
+ */
+export async function classifyWithTruthDocument(
+  projectPath: string,
+  truth: TruthDocument,
+): Promise<TruthInventory> {
+  return (await scan(projectPath, truth)).inventory;
 }
 
 export async function refreshTruthAtChangeBegin(

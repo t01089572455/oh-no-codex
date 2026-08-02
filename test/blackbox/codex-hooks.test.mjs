@@ -16,6 +16,7 @@ import {
   readState,
   runCli,
   startTaskFromPlan,
+  runInit,
 } from "../helpers/blackbox.mjs";
 
 const goal = "Keep Codex mutations inside one bounded task";
@@ -56,7 +57,7 @@ function parseHookResult(result) {
 }
 
 async function initialize(projectPath) {
-  const initialized = runCli(projectPath, ["init"]);
+  const initialized = runInit(projectPath);
   assert.equal(initialized.status, 0, initialized.stderr);
 }
 
@@ -295,27 +296,35 @@ test("PreToolUse allows .ohno plan JSON when next is FREEZE_TASK", async (t) => 
   );
   const passCmd = `"${process.execPath}" "pass.mjs"`;
   const planPath = ".ohno/freeze-setup.json";
+  const tasks = [
+    frozenPlanTask({
+      id: "done-slice",
+      title: "Done slice",
+      expected_behavior: "A pass script exits zero",
+      test_command: passCmd,
+      stop_condition: "Stop after pass",
+      allowed_files: ["pass.mjs"],
+      time_budget_minutes: 30,
+    }),
+    {
+      id: "outline-next",
+      title: "Outline next",
+      goal: "freeze later",
+      status: "OUTLINE",
+    },
+  ];
+  const {
+    writeDefaultAcceptanceBasis,
+    syncTruthInventoryForBasis,
+  } = await import("../helpers/blackbox.mjs");
+  writeDefaultAcceptanceBasis(projectPath, tasks, ".ohno/acceptance-basis.json");
+  syncTruthInventoryForBasis(projectPath, ".ohno/acceptance-basis.json");
   await writeFile(
     resolve(projectPath, planPath),
     `${JSON.stringify({
       cursor: 0,
-      ordered_tasks: [
-        frozenPlanTask({
-          id: "done-slice",
-          title: "Done slice",
-          expected_behavior: "A pass script exits zero",
-          test_command: passCmd,
-          stop_condition: "Stop after pass",
-          allowed_files: ["pass.mjs"],
-          time_budget_minutes: 30,
-        }),
-        {
-          id: "outline-next",
-          title: "Outline next",
-          goal: "freeze later",
-          status: "OUTLINE",
-        },
-      ],
+      ordered_tasks: tasks,
+      acceptance_source: ".ohno/acceptance-basis.json",
     }, null, 2)}\n`,
     "utf8",
   );

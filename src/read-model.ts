@@ -204,14 +204,55 @@ function nextActionFor(
   state: ProjectState,
   freshness: ProofFreshness,
 ): string {
+  // Schema-2 migrate is the sole next while required — even over FAIL/UNKNOWN.
+  const planNext = nextActionFromPlan(state);
+  if (planNext === "MIGRATE_ACCEPTANCE_BASIS") {
+    return planNext;
+  }
   if (
     freshness === "FAIL"
     || freshness === "UNKNOWN"
     || freshness === "STALE"
   ) {
+    // Still one active contract: re-run its exact black box (not next task).
+    if (state.active_task !== null) {
+      return `RUN_EXACT_TEST:${state.active_task.id}`;
+    }
+    // Closed task with STALE proof: reopen, do not invent RUN_EXACT_TEST.
+    if (freshness === "STALE" && state.completed.length > 0) {
+      const last = state.completed.at(-1);
+      if (last !== undefined) {
+        return `REOPEN_TASK:${last.id}`;
+      }
+    }
     return "NONE";
   }
-  return nextActionFromPlan(state);
+  return planNext;
+}
+
+/**
+ * Sole project-level Owner goal from state. Never substitutes a plan-task
+ * goal (#10). Empty string (legacy / corrupt-empty) projects as null.
+ */
+export function projectGoal(state: ProjectState): string | null {
+  return state.goal === "" ? null : state.goal;
+}
+
+/** Active or cursor task goal for TASK_GOAL projection only. */
+export function currentTaskGoal(state: ProjectState): string | null {
+  if (state.active_task !== null) {
+    const match = state.ordered_tasks.find(
+      (task) => task.id === state.active_task!.id,
+    );
+    if (match !== undefined && match.goal !== "") {
+      return match.goal;
+    }
+  }
+  const cursorTask = state.ordered_tasks[state.cursor];
+  if (cursorTask !== undefined && cursorTask.goal !== "") {
+    return cursorTask.goal;
+  }
+  return null;
 }
 
 function planBoardFor(
@@ -337,7 +378,7 @@ export async function readModel(projectPath: string): Promise<ReadModel> {
   return {
     schema_version: 2,
     availability: "AVAILABLE",
-    goal: state.goal === "" ? null : state.goal,
+    goal: projectGoal(state),
     status: state.status,
     plan_revision: state.plan_revision,
     cursor: state.cursor,

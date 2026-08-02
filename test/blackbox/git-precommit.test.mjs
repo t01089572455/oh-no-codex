@@ -17,6 +17,7 @@ import {
   readState,
   runCli,
   startTaskFromPlan,
+  runInit,
 } from "../helpers/blackbox.mjs";
 
 function runGit(projectPath, args) {
@@ -37,9 +38,7 @@ function quotePowerShell(value) {
 }
 
 async function initialize(projectPath) {
-  const result = runCli(projectPath, [
-    "init",
-  ]);
+  const result = runInit(projectPath);
   assert.equal(result.status, 0, result.stderr);
 }
 

@@ -1,5 +1,12 @@
 #!/usr/bin/env node
 
+import { realpathSync } from "node:fs";
+import {
+  access,
+  writeFile,
+} from "node:fs/promises";
+import { resolve } from "node:path";
+
 import {
   displayFieldByteLimits,
   displayTextIssue,
@@ -13,6 +20,10 @@ import {
 } from "./plan.js";
 import { parseCockpitCliArgs } from "./cockpit/lifecycle.js";
 import { runCockpit, runCockpitStop } from "./cockpit/server.js";
+import {
+  ensureDefaultTruth,
+  ensureOhnoRuntimeGitignore,
+} from "./truth.js";
 import { classifyTruthAtInit } from "./truth-inventory.js";
 import {
   acceptChange,
@@ -43,7 +54,6 @@ import {
   agentsBeginMarker,
   agentsEndMarker,
   refreshProjectors,
-  renderAgentsManagedBlock,
 } from "./projectors.js";
 import { readModel } from "./read-model.js";
 import {
@@ -64,13 +74,11 @@ import { serializeStatus } from "./status.js";
 import { startTask } from "./task-start.js";
 import { reopenLastCompletedTask } from "./task-reopen.js";
 import { verifyTask } from "./verify.js";
-import { realpathSync } from "node:fs";
-import { writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { migrateAcceptanceBasis } from "./migrate-acceptance.js";
 
 const usageText = [
   "usage:",
-  "  ohno init",
+  "  ohno init --goal <owner-authored project goal>",
   "  ohno plan propose --file <review.json>",
   "  ohno plan accept --revision <sha256> --diff <sha256> [--allow-weak-plan]",
   "  ohno task start | ohno task reopen",
@@ -88,6 +96,7 @@ const usageText = [
   "  ohno change diff | ohno change accept --change <id> --diff <displayed digest>",
   "  ohno install | ohno hooks status --json",
   "  ohno skill install | ohno skill status",
+  "  ohno migrate acceptance-basis --file <structured-basis.json> [--diff <sha256> --head <git-head>]",
   "  ohno hook | ohno git pre-commit",
   "",
   "Hook classification: COOPERATIVE_GUARDRAIL.",
@@ -123,41 +132,71 @@ function boundedDisplayValue(
   return value;
 }
 
-async function initialize(projectPath: string, args: string[]): Promise<void> {
-  // Project-level slogans removed from UX. Scope lives in plan tasks + notes.
-  if (args.includes("--goal")) {
-    throw new Error(
-      "ohno init no longer takes --goal; put product intent in plan tasks "
-      + "or `ohno requirements note`",
-    );
+async function ensureAgentsShell(projectPath: string): Promise<"created" | "preserved"> {
+  const agentsPath = resolve(projectPath, "AGENTS.md");
+  try {
+    await access(agentsPath);
+    return "preserved";
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+      throw error;
+    }
   }
-  if (args.length > 0) {
-    throw new Error("usage: ohno init");
-  }
-  if (await stateExists(projectPath)) {
-    throw new Error("project is already initialized");
-  }
-
-  const truthInventory = await classifyTruthAtInit(projectPath);
-  await writeStateAtomic(projectPath, initialState("", truthInventory));
-  const prefs = await ensurePreferences(projectPath);
-  const model = await readModel(projectPath);
   await writeFile(
-    resolve(projectPath, "AGENTS.md"),
+    agentsPath,
     [
       "# Agent instructions",
       "",
       "Owner rules live outside the Oh No managed block below.",
       "",
-      renderAgentsManagedBlock(model, prefs),
-      "",
     ].join("\n"),
     "utf8",
   );
+  return "created";
+}
+
+async function initialize(projectPath: string, args: string[]): Promise<void> {
+  // A01 / DESIGN: one Owner-authored project goal is required at init.
+  // Task goals stay on plan tasks and are never substituted for this field.
+  let goalRaw: string;
+  try {
+    goalRaw = requiredValue(args, "--goal");
+  } catch {
+    throw new Error(
+      "usage: ohno init --goal <owner-authored project goal>",
+    );
+  }
+  const goal = boundedDisplayValue(
+    goalRaw,
+    "--goal",
+    displayFieldByteLimits.goal,
+  );
+  const leftover = args.filter((arg, index) => {
+    if (arg === "--goal") {
+      return false;
+    }
+    if (index > 0 && args[index - 1] === "--goal") {
+      return false;
+    }
+    return true;
+  });
+  if (leftover.length > 0) {
+    throw new Error("usage: ohno init --goal <owner-authored project goal>");
+  }
+  if (await stateExists(projectPath)) {
+    throw new Error("project is already initialized");
+  }
+
+  // AGENTS shell before default Truth (targets must exist when classified).
+  const agentsMode = await ensureAgentsShell(projectPath);
+  await ensureOhnoRuntimeGitignore(projectPath);
+  const truthSeeded = await ensureDefaultTruth(projectPath);
+  const truthInventory = await classifyTruthAtInit(projectPath);
+  await writeStateAtomic(projectPath, initialState(goal, truthInventory));
+  await ensurePreferences(projectPath);
   await appendRequirementsNote(
     projectPath,
-    "Project initialized. Capture Owner intent with plan tasks and "
-    + "`ohno requirements note` (no project-level goal field in the UX).",
+    `Project initialized with Owner goal: ${goal}`,
     "init",
   ).catch(() => undefined);
   await appendRequirementsNote(
@@ -166,13 +205,26 @@ async function initialize(projectPath: string, args: string[]): Promise<void> {
     + "frontend adapt-not-invent. Configure: ohno preferences show|set|reset",
     "init-preferences",
   ).catch(() => undefined);
+  // Upserts managed block; never wipes Owner prose outside markers.
   await refreshProjectors(projectPath).catch(() => undefined);
   process.stdout.write(
     "Initialized\n"
-    + `AGENTS: managed block ${agentsBeginMarker} … ${agentsEndMarker}\n`
+    + `GOAL: ${goal}\n`
+    + `AGENTS: ${agentsMode === "preserved" ? "preserved existing file; " : ""}`
+    + `managed block ${agentsBeginMarker} … ${agentsEndMarker}\n`
     + "REQUIREMENTS: .ohno/REQUIREMENTS.md\n"
     + "PREFERENCES: .ohno/preferences.json\n"
-    + "TIP: git add .ohno AGENTS.md so authority travels with the repo (FT-07)\n"
+    + `TRUTH: ${
+      truthSeeded
+        ? "seeded .ohno/truth.json (present high-risk paths)"
+        : "kept existing .ohno/truth.json"
+    }\n`
+    + "RUNTIME_GITIGNORE: .ohno/.gitignore (locks/cockpit.runtime.json)\n"
+    + "TIP: commit canonical harness only:\n"
+    + "  git add AGENTS.md .ohno/state.json .ohno/truth.json "
+    + ".ohno/acceptance-basis.json .ohno/REQUIREMENTS.md "
+    + ".ohno/preferences.json .ohno/PROGRESS.md .ohno/.gitignore\n"
+    + "  (do not commit verify.lock / cockpit.runtime.json)\n"
     + "Next: ohno install  (hooks + skills), then ohno cockpit when you want the board\n",
   );
 }
@@ -300,6 +352,51 @@ async function main(): Promise<void> {
     return;
   }
 
+  if (
+    command === "migrate"
+    && subcommand === "acceptance-basis"
+  ) {
+    const file = requiredValue(args, "--file");
+    const hasDiff = args.includes("--diff");
+    const hasHead = args.includes("--head");
+    if (hasDiff !== hasHead) {
+      throw new Error(
+        "migrate apply requires both --diff <sha256> and --head <git-head> "
+          + "(omit both for zero-write preview)",
+      );
+    }
+    const apply = hasDiff
+      ? {
+        diffDigest: requiredValue(args, "--diff"),
+        head: requiredValue(args, "--head"),
+      }
+      : null;
+    const consumed = new Set(["--file", "--diff", "--head"]);
+    const leftover = args.filter((arg, index) => {
+      if (consumed.has(arg)) {
+        return false;
+      }
+      if (index > 0 && consumed.has(args[index - 1] ?? "")) {
+        return false;
+      }
+      return true;
+    });
+    if (leftover.length > 0) {
+      throw new Error(
+        "usage: ohno migrate acceptance-basis --file <structured-basis.json> "
+          + "[--diff <sha256> --head <git-head>]",
+      );
+    }
+    const message = await migrateAcceptanceBasis(projectPath, file, apply);
+    // Preview is zero-write — do not refresh projectors (would create AGENTS.md
+    // and drift the migrate inventory digest between preview and apply).
+    if (apply !== null) {
+      await refreshProjectors(projectPath).catch(() => undefined);
+    }
+    process.stdout.write(message);
+    return;
+  }
+
   if (command === "task" && subcommand === "start") {
     const contract = await startTask(projectPath, args);
     await refreshProjectors(projectPath).catch(() => undefined);
@@ -334,6 +431,8 @@ async function main(): Promise<void> {
       `DIFF_DIGEST: ${proposal.diffDigest}`,
       `HEAD: ${proposal.head}`,
       `PROPOSED_AT: ${proposal.proposedAt}`,
+      `ACCEPTANCE_SOURCE: ${proposal.acceptanceSourcePath}`,
+      `ACCEPTANCE_DIGEST: ${proposal.acceptanceSourceDigest}`,
       `EXACT_PLAN_DIFF_BYTES: ${
         Buffer.byteLength(proposal.exactDiff, "utf8")
       }`,

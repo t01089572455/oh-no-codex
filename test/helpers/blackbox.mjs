@@ -4,7 +4,8 @@ import {
   readFile,
   rm,
 } from "node:fs/promises";
-import { writeFileSync } from "node:fs";
+import { writeFileSync, readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -45,6 +46,17 @@ export function runCli(cwd, args, options = {}) {
   });
 }
 
+/** A01: init requires Owner project goal. */
+export function runInit(
+  cwd,
+  goal = "Disposable Owner goal for black-box tests",
+  options = {},
+) {
+  const result = runCli(cwd, ["init", "--goal", goal], options);
+  assert.equal(result.status, 0, result.stderr);
+  return result;
+}
+
 export function spawnCli(cwd, args) {
   return spawn(process.execPath, [cliPath, ...args], {
     cwd,
@@ -79,19 +91,81 @@ export function frozenPlanTask(overrides = {}) {
   };
 }
 
+/**
+ * Write structured acceptance basis independently (never reverse-generate
+ * from plan silently in product code). Tests pass explicit basis tasks.
+ */
+export function writeStructuredAcceptanceBasis(
+  cwd,
+  basisTasks,
+  relativePath = ".ohno/acceptance-basis.json",
+) {
+  const document = {
+    schema_version: 1,
+    tasks: basisTasks.map((task) => ({
+      id: task.id,
+      expected_behavior: task.expected_behavior,
+      test_command: task.test_command,
+      stop_condition: task.stop_condition,
+    })),
+  };
+  writeFileSync(
+    resolve(cwd, relativePath),
+    `${JSON.stringify(document, null, 2)}\n`,
+    "utf8",
+  );
+  return relativePath;
+}
+
+/**
+ * Ensure Truth lists the basis path as a truth target (required for propose).
+ */
+/** @deprecated Use writeStructuredAcceptanceBasis with independent content. */
+export function writeDefaultAcceptanceBasis(cwd, tasks, relativePath) {
+  const frozen = tasks.filter((task) => task.status === "FROZEN");
+  return writeStructuredAcceptanceBasis(
+    cwd,
+    frozen.map((task) => ({
+      id: task.id,
+      expected_behavior: task.expected_behavior,
+      test_command: task.test_command,
+      stop_condition: task.stop_condition,
+    })),
+    relativePath ?? ".ohno/acceptance-basis.json",
+  );
+}
+
 export function reviewPlan(
   cwd,
   {
     tasks = [frozenPlanTask()],
     cursor = 0,
     fileName = ".ohno/test-plan.json",
+    acceptanceSource = ".ohno/acceptance-basis.json",
+    allowWeakPlan = false,
   } = {},
 ) {
+  // Independent basis first (same field values as frozen tasks by fixture design).
+  const frozen = tasks.filter((t) => t.status === "FROZEN");
+  writeStructuredAcceptanceBasis(
+    cwd,
+    frozen.map((task) => ({
+      id: task.id,
+      expected_behavior: task.expected_behavior,
+      test_command: task.test_command,
+      stop_condition: task.stop_condition,
+    })),
+    acceptanceSource,
+  );
+  // Refresh truth inventory in state for basis path (init may already list it).
+  syncTruthInventoryForBasis(cwd, acceptanceSource);
+
   writeFileSync(
     resolve(cwd, fileName),
     `${JSON.stringify({
       cursor,
       ordered_tasks: tasks,
+      acceptance_source: acceptanceSource,
     }, null, 2)}\n`,
     "utf8",
   );
@@ -110,21 +184,94 @@ export function reviewPlan(
   )?.[1];
   assert.ok(revision, "plan proposal must expose its exact revision");
   assert.ok(diff, "plan proposal must expose its exact diff digest");
-  const accepted = runCli(cwd, [
+  const acceptArgs = [
     "plan",
     "accept",
     "--revision",
     revision,
     "--diff",
     diff,
-  ]);
+  ];
+  if (allowWeakPlan) {
+    acceptArgs.push("--allow-weak-plan");
+  }
+  const accepted = runCli(cwd, acceptArgs);
   assert.equal(accepted.status, 0, accepted.stderr);
   return {
     revision,
     diff,
     proposed,
     accepted,
+    acceptanceSource,
   };
+}
+
+/**
+ * Patch live state truth_inventory so basis path is truth_target without
+ * full change-begin. Test-only helper (not a product command).
+ */
+/**
+ * Ensure basis path is a Truth target without rewriting live state inventory
+ * mid-change (which would break change-id CAS). Prefer init seed for
+ * `.ohno/acceptance-basis.json`. For alternate paths, only update truth.json;
+ * caller should re-init inventory via change begin or re-run classify at init.
+ */
+export function syncTruthInventoryForBasis(cwd, basisPath) {
+  const truthPath = resolve(cwd, ".ohno", "truth.json");
+  let truth;
+  try {
+    truth = JSON.parse(readFileSync(truthPath, "utf8"));
+  } catch {
+    truth = { schema_version: 1, targets: [] };
+  }
+  if (!Array.isArray(truth.targets)) {
+    truth.targets = [];
+  }
+  if (!truth.targets.some((t) => t.path === basisPath)) {
+    truth.targets.push({
+      path: basisPath,
+      concerns: ["acceptance-basis", "black-box"],
+    });
+    writeFileSync(truthPath, `${JSON.stringify(truth, null, 2)}\n`);
+  }
+
+  // Only patch state inventory when not in a pending document sync.
+  const statePath = resolve(cwd, ".ohno", "state.json");
+  const state = JSON.parse(readFileSync(statePath, "utf8"));
+  if (state.document_sync?.status === "PENDING_REVIEW") {
+    return;
+  }
+  const classification = [...(state.truth_inventory?.classification ?? [])];
+  const idx = classification.findIndex((e) => e.path === basisPath);
+  if (idx === -1) {
+    classification.push({
+      path: basisPath,
+      classification: "TRUTH_TARGET",
+      governing: true,
+      truth_target: true,
+    });
+  } else {
+    classification[idx] = {
+      ...classification[idx],
+      classification: "TRUTH_TARGET",
+      truth_target: true,
+      governing: true,
+    };
+  }
+  classification.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+  const inventory_digest = createHash("sha256")
+    .update(JSON.stringify(classification.map(({
+      path,
+      classification: kind,
+      truth_target,
+    }) => ({
+      path,
+      classification: kind,
+      truth_target,
+    }))))
+    .digest("hex");
+  state.truth_inventory = { inventory_digest, classification };
+  writeFileSync(statePath, `${JSON.stringify(state, null, 2)}\n`);
 }
 
 export function startTaskFromPlan(

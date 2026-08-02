@@ -1,3 +1,4 @@
+import { assertMigrationNotRequired } from "./migration-guard.js";
 import {
   compareAndSwapStateAtomic,
   contractDigestFor,
@@ -19,6 +20,7 @@ export async function startTask(
     );
   }
   const state = await readState(projectPath);
+  assertMigrationNotRequired(state);
   if (state.active_task !== null) {
     throw new Error(`active task ${state.active_task.id} already exists`);
   }
@@ -29,6 +31,13 @@ export async function startTask(
   }
   if (state.plan_revision === null || state.plan_review === null) {
     throw new Error("no locally reviewed plan; next action is PROPOSE_PLAN");
+  }
+  if (
+    !("acceptance_source_path" in state.plan_review)
+  ) {
+    throw new Error(
+      "plan review lacks acceptance basis; next is MIGRATE_ACCEPTANCE_BASIS",
+    );
   }
   const task = state.ordered_tasks[state.cursor];
   if (task === undefined) {

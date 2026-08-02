@@ -10,6 +10,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { isDeepStrictEqual } from "node:util";
 
 import { runExactCommand } from "./process.js";
+import { assertMigrationNotRequired } from "./migration-guard.js";
 import { nextActionFromPlan } from "./plan-next.js";
 import {
   digestAllowedFiles,
@@ -189,6 +190,7 @@ async function verifyTaskWithLock(
   projectPath: string,
 ): Promise<VerificationOutcome> {
   const state = await readState(projectPath);
+  assertMigrationNotRequired(state);
   const task = state.active_task;
   if (task === null) {
     return assertLastPassFresh(projectPath, state);

@@ -8,28 +8,35 @@ import {
   frozenPlanTask,
   reviewPlan,
   runCli,
+  runInit,
+  writeDefaultAcceptanceBasis,
+  syncTruthInventoryForBasis,
 } from "../helpers/blackbox.mjs";
 
 test("field trial: plan propose warns and accept refuses micro-plan without override", async (t) => {
   const projectPath = await createProject(t);
-  assert.equal(runCli(projectPath, ["init"]).status, 0);
+  assert.equal(runInit(projectPath).status, 0);
+  const tasks = [
+    frozenPlanTask({
+      id: "commit-design-doc",
+      title: "Commit design document only",
+      goal: "Submit the design markdown",
+      expected_behavior: "Design doc is staged and format-checked",
+      test_command: "git diff --cached --check -- docs/design.md",
+      allowed_files: ["docs/design.md"],
+      stop_condition: "Only the design doc",
+      time_budget_minutes: 15,
+    }),
+  ];
+  writeDefaultAcceptanceBasis(projectPath, tasks, ".ohno/acceptance-basis.json");
+  syncTruthInventoryForBasis(projectPath, ".ohno/acceptance-basis.json");
   const planPath = resolve(projectPath, ".ohno", "toy-plan.json");
   await writeFile(
     planPath,
     JSON.stringify({
       cursor: 0,
-      ordered_tasks: [
-        frozenPlanTask({
-          id: "commit-design-doc",
-          title: "Commit design document only",
-          goal: "Submit the design markdown",
-          expected_behavior: "Design doc is staged and format-checked",
-          test_command: "git diff --cached --check -- docs/design.md",
-          allowed_files: ["docs/design.md"],
-          stop_condition: "Only the design doc",
-          time_budget_minutes: 15,
-        }),
-      ],
+      ordered_tasks: tasks,
+      acceptance_source: ".ohno/acceptance-basis.json",
     }, null, 2),
     "utf8",
   );
@@ -75,7 +82,7 @@ test("field trial: plan propose warns and accept refuses micro-plan without over
 
 test("field trial: resume frames plan progress and authority cwd", async (t) => {
   const projectPath = await createProject(t);
-  assert.equal(runCli(projectPath, ["init"]).status, 0);
+  assert.equal(runInit(projectPath).status, 0);
   reviewPlan(projectPath, {
     tasks: [
       frozenPlanTask({
@@ -94,23 +101,27 @@ test("field trial: resume frames plan progress and authority cwd", async (t) => 
 
 test("field trial: doctor warns on weak blackbox when weak plan forced", async (t) => {
   const projectPath = await createProject(t);
-  assert.equal(runCli(projectPath, ["init"]).status, 0);
+  assert.equal(runInit(projectPath).status, 0);
+  const tasks = [
+    frozenPlanTask({
+      id: "commit-design-doc",
+      title: "Commit design document only",
+      goal: "Submit the design markdown",
+      expected_behavior: "Design doc is staged and format-checked",
+      test_command: "git diff --cached --check -- docs/design.md",
+      allowed_files: ["docs/design.md"],
+      stop_condition: "Only the design doc",
+    }),
+  ];
+  writeDefaultAcceptanceBasis(projectPath, tasks, ".ohno/acceptance-basis.json");
+  syncTruthInventoryForBasis(projectPath, ".ohno/acceptance-basis.json");
   const planPath = resolve(projectPath, ".ohno", "toy-plan.json");
   await writeFile(
     planPath,
     JSON.stringify({
       cursor: 0,
-      ordered_tasks: [
-        frozenPlanTask({
-          id: "commit-design-doc",
-          title: "Commit design document only",
-          goal: "Submit the design markdown",
-          expected_behavior: "Design doc is staged and format-checked",
-          test_command: "git diff --cached --check -- docs/design.md",
-          allowed_files: ["docs/design.md"],
-          stop_condition: "Only the design doc",
-        }),
-      ],
+      ordered_tasks: tasks,
+      acceptance_source: ".ohno/acceptance-basis.json",
     }, null, 2),
     "utf8",
   );
@@ -143,7 +154,7 @@ test("field trial: doctor warns on weak blackbox when weak plan forced", async (
 
 test("field trial: requirements note accepts up to 4096 bytes", async (t) => {
   const projectPath = await createProject(t);
-  assert.equal(runCli(projectPath, ["init"]).status, 0);
+  assert.equal(runInit(projectPath).status, 0);
   const long = "x".repeat(2000);
   const note = runCli(projectPath, ["requirements", "note", "--text", long]);
   assert.equal(note.status, 0, note.stderr + note.stdout);
@@ -155,7 +166,7 @@ test("field trial: requirements note accepts up to 4096 bytes", async (t) => {
 
 test("field trial: task reopen re-activates last completed without double advance", async (t) => {
   const projectPath = await createProject(t);
-  assert.equal(runCli(projectPath, ["init"]).status, 0);
+  assert.equal(runInit(projectPath).status, 0);
   await mkdir(resolve(projectPath, "test"), { recursive: true });
   await writeFile(
     resolve(projectPath, "test", "ok.test.mjs"),

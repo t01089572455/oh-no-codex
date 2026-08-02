@@ -117,6 +117,76 @@ export function weakBlackboxSummary(testCommand: string): string | null {
   return "test_command looks trivial (always-pass / non-behavioral)";
 }
 
+/**
+ * Heavy acceptance-path signals. When present in freeze contract or external
+ * acceptance basis but absent from frozen test_command, that is denominator
+ * shrink (#7/#9). Hard-gated on plan propose/accept (not overridable by
+ * --allow-weak-plan).
+ */
+const heavyPathSignals: Array<{ re: RegExp; label: string }> = [
+  { re: /微信开发者工具/u, label: "WeChat DevTools" },
+  { re: /devtools/iu, label: "devtools" },
+  { re: /\be2e\b/iu, label: "e2e" },
+  { re: /playwright|cypress|puppeteer/iu, label: "browser automation" },
+  { re: /manual\s+(qa|test|验收|smoke)/iu, label: "manual QA/smoke" },
+  { re: /multi[- ]?user|多用户/iu, label: "multi-user path" },
+  { re: /真实(设备|环境|路径)|real[- ]world/iu, label: "real-world path" },
+];
+
+/**
+ * Detect heavier acceptance language in freeze contract prose and/or an
+ * optional external acceptance source (detailed plan) that is not covered by
+ * the frozen test_command. Contract-only hits are "internal contradiction";
+ * external-only hits are true acceptance-source denominator shrink (Task2).
+ */
+export function denominatorShrinkSummary(
+  task: {
+    id?: string;
+    expected_behavior?: string;
+    stop_condition?: string;
+    test_command?: string;
+  },
+  externalAcceptanceProse = "",
+): string | null {
+  const test = task.test_command ?? "";
+  if (test.trim() === "") {
+    return null;
+  }
+  const contractProse =
+    `${task.expected_behavior ?? ""}\n${task.stop_condition ?? ""}`;
+  const external = externalAcceptanceProse;
+  const contractHits: string[] = [];
+  const externalHits: string[] = [];
+  for (const signal of heavyPathSignals) {
+    if (signal.re.test(test)) {
+      continue;
+    }
+    if (signal.re.test(contractProse)) {
+      contractHits.push(signal.label);
+    } else if (external !== "" && signal.re.test(external)) {
+      externalHits.push(signal.label);
+    }
+  }
+  if (contractHits.length === 0 && externalHits.length === 0) {
+    return null;
+  }
+  const who = task.id !== undefined ? `task ${task.id}: ` : "";
+  if (externalHits.length > 0) {
+    return (
+      `${who}acceptance source mentions ${externalHits.join(", ")} but frozen `
+      + "test_command does not — acceptance-denominator shrink vs governing "
+      + "plan (#7/#9). Bind the heavier path into test_command / stop, or "
+      + "narrow the external plan claim for this slice."
+    );
+  }
+  return (
+    `${who}stop/expected mentions ${contractHits.join(", ")} but frozen `
+    + "test_command does not — freeze-contract internal contradiction "
+    + "(#7/#9). Align test_command with the claimed path, or reword stop/"
+    + "expected so the frozen black box is the full claim."
+  );
+}
+
 export interface PlanDisciplineViolation {
   code: "WEAK_BLACKBOX" | "COMMIT_LICENSE_MICRO_PLAN";
   message: string;
@@ -158,6 +228,68 @@ export function planDisciplineViolations(tasks: Array<{
     }
   }
   return out;
+}
+
+/** Soft warnings for propose (never hard-gate alone; denominator is hard). */
+export function planSoftWarnings(
+  tasks: Array<{
+    id: string;
+    title: string;
+    goal: string;
+    status: string;
+    expected_behavior?: string;
+    stop_condition?: string;
+    allowed_files?: string[];
+    test_command?: string;
+  }>,
+  options: {
+    externalAcceptanceProse?: string;
+    skipDenominator?: boolean;
+  } = {},
+): string[] {
+  const warnings: string[] = [];
+  if (planLooksLikeCommitLicense(tasks)) {
+    warnings.push(
+      "WARN: plan looks like a commit-license / docs-only micro-plan "
+        + "(FT-05/14). Accepting will make cockpit show this plan as complete "
+        + "at 100% of plan tasks — not product done.",
+    );
+  }
+  const external = options.externalAcceptanceProse ?? "";
+  for (const task of tasks) {
+    if (task.status !== "FROZEN") {
+      continue;
+    }
+    const weak = weakBlackboxSummary(task.test_command ?? "");
+    if (weak !== null) {
+      warnings.push(`WARN: task ${task.id}: ${weak}`);
+    }
+    if (options.skipDenominator !== true) {
+      const shrink = denominatorShrinkSummary(task, external);
+      if (shrink !== null) {
+        warnings.push(`WARN: ${shrink}`);
+      }
+    }
+  }
+  return warnings;
+}
+
+/**
+ * @deprecated Keyword detector is not the Correction 4 hard gate.
+ * Structured acceptance basis exact-match is authoritative (acceptance-basis.ts).
+ * Kept only for diagnostic reference; do not use as a product gate.
+ */
+export function assertAcceptanceDenominator(
+  _tasks: Array<{
+    id?: string;
+    status?: string;
+    expected_behavior?: string;
+    stop_condition?: string;
+    test_command?: string;
+  }>,
+  _externalAcceptanceProse: string,
+): void {
+  // no-op: keyword model intentionally retired as denominator authority
 }
 
 export function assertPlanDiscipline(

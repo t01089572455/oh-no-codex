@@ -11,18 +11,22 @@ import {
   frozenPlanTask,
   reviewPlan,
   runCli,
+  runInit,
 } from "../helpers/blackbox.mjs";
 
 test("projectors write PROGRESS.md and AGENTS managed block from state", async (t) => {
   const projectPath = await createProject(t);
-  const init = runCli(projectPath, [
-    "init",
-  ]);
+  const init = runInit(projectPath);
   assert.equal(init.status, 0, init.stderr);
 
   await writeFile(
     resolve(projectPath, "AGENTS.md"),
     "# Owner rules\n\nDo not invent architecture.\n",
+    "utf8",
+  );
+  await writeFile(
+    resolve(projectPath, "board-active.test.mjs"),
+    "import test from \"node:test\";\ntest(\"board\", () => {});\n",
     "utf8",
   );
 
@@ -33,9 +37,9 @@ test("projectors write PROGRESS.md and AGENTS managed block from state", async (
         title: "Active board row",
         goal: "Show ACTIVE phase",
         expected_behavior: "Board marks the active task",
-        test_command: `"${process.execPath}" -e "process.exit(0)"`,
+        test_command: "node --test board-active.test.mjs",
         stop_condition: "Stop after green",
-        allowed_files: ["subject.txt"],
+        allowed_files: ["subject.txt", "board-active.test.mjs"],
         time_budget_minutes: 20,
       }),
       {
@@ -134,7 +138,7 @@ test("projectors write PROGRESS.md and AGENTS managed block from state", async (
 
 test("plan board marks HALF when active proof is FAIL", async (t) => {
   const projectPath = await createProject(t);
-  runCli(projectPath, ["init"]);
+  runInit(projectPath);
   await writeFile(resolve(projectPath, "subject.txt"), "x\n", "utf8");
   await writeFile(
     resolve(projectPath, "fail.mjs"),
@@ -172,7 +176,7 @@ test("plan board marks HALF when active proof is FAIL", async (t) => {
 
 test("doctor reports state and projection health", async (t) => {
   const projectPath = await createProject(t);
-  runCli(projectPath, ["init"]);
+  runInit(projectPath);
   const doctor = runCli(projectPath, ["doctor"]);
   assert.equal(doctor.status, 0, doctor.stderr);
   assert.match(doctor.stdout, /^OK: YES$/m);

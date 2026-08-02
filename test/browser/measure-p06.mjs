@@ -23,6 +23,7 @@ import {
   frozenPlanTask,
   reviewPlan,
   runCli,
+  runInit,
 } from "../helpers/blackbox.mjs";
 
 const require = createRequire(import.meta.url);
@@ -73,9 +74,7 @@ async function createMeasuredProject() {
   await mkdir(resolve(projectPath, "src"), { recursive: true });
   await writeFile(resolve(projectPath, "subject.txt"), "subject\n", "utf8");
   await writeFile(resolve(projectPath, "pass.mjs"), "process.exit(0);\n", "utf8");
-  const initialized = runCli(projectPath, [
-    "init",
-  ]);
+  const initialized = runInit(projectPath);
   assert.equal(initialized.status, 0, initialized.stderr);
   reviewPlan(projectPath, {
     tasks: [

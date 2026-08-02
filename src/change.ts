@@ -226,10 +226,24 @@ export async function beginChange(
     options.concerns,
     options.candidates,
   );
+  // Always include acceptance-basis Truth targets (not every black-box path)
+  // so requirement change stays coupled to the acceptance denominator.
+  const basisPaths = truth.targets
+    .filter((target) => target.concerns.includes("acceptance-basis"))
+    .map((target) => target.path);
+  const currentBasisPath = state.plan_review !== null
+    && "acceptance_source_path" in state.plan_review
+    ? state.plan_review.acceptance_source_path
+    : null;
+  const requiredWithBasis = [...new Set([
+    ...requiredPaths,
+    ...basisPaths,
+    ...(currentBasisPath === null ? [] : [currentBasisPath]),
+  ])].toSorted();
   const selectedPlanPaths = truth.targets
     .filter((target) => (
       target.concerns.includes("plan")
-      && requiredPaths.includes(target.path)
+      && requiredWithBasis.includes(target.path)
     ))
     .map((target) => target.path);
   if (selectedPlanPaths.length === 0) {
@@ -251,7 +265,7 @@ export async function beginChange(
     document_sync: {
       status: "PENDING_REVIEW",
       change_id: "pending-identity",
-      required_paths: requiredPaths,
+      required_paths: requiredWithBasis,
       reviewed_diff_digest: null,
       base_plan_revision: state.plan_revision,
       base_cursor: state.cursor,
@@ -265,7 +279,7 @@ export async function beginChange(
     document_sync: {
       status: "PENDING_REVIEW",
       change_id: changeId,
-      required_paths: requiredPaths,
+      required_paths: requiredWithBasis,
       reviewed_diff_digest: null,
       base_plan_revision: state.plan_revision,
       base_cursor: state.cursor,
@@ -279,7 +293,7 @@ export async function beginChange(
   }
   return [
     `Started ${changeId}`,
-    `Required paths: ${requiredPaths.join(", ")}`,
+    `Required paths: ${requiredWithBasis.join(", ")}`,
     "Next: SYNC_GOVERNING_DOCUMENTS",
     "",
   ].join("\n");

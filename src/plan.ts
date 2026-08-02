@@ -3,26 +3,35 @@ import { readFile } from "node:fs/promises";
 import { relative, resolve } from "node:path";
 
 import {
+  assertFrozenTasksMatchBasis,
+  loadStructuredAcceptanceBasis,
+  sha256Text,
+} from "./acceptance-basis.js";
+import {
   assertPlanDiscipline,
-  planLooksLikeCommitLicense,
-  weakBlackboxSummary,
+  planSoftWarnings,
 } from "./discipline.js";
+import { assertSafeProjectRelativePath } from "./paths.js";
 import { readGitHead } from "./subject-digest.js";
 import {
   compareAndSwapStateAtomic,
   isPlanTask,
+  needsAcceptanceBasisMigration,
   planRevisionFor,
   readState,
 } from "./state.js";
 import type {
+  AcceptanceBasis,
   PendingPlan,
   PlanTask,
   ProjectState,
 } from "./state.js";
 
-interface PlanProposalFile {
+export interface PlanProposalFile {
   cursor: number;
   ordered_tasks: PlanTask[];
+  /** Project-relative path to structured acceptance basis JSON (Truth target). */
+  acceptance_source: string;
 }
 
 export interface PlanProposalEvidence {
@@ -31,20 +40,13 @@ export interface PlanProposalEvidence {
   head: string;
   proposedAt: string;
   exactDiff: string;
+  acceptanceSourcePath: string;
+  acceptanceSourceDigest: string;
   warnings: string[];
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function hasExactKeys(
-  value: Record<string, unknown>,
-  keys: readonly string[],
-): boolean {
-  const actual = Object.keys(value);
-  return actual.length === keys.length
-    && actual.every((key) => keys.includes(key));
 }
 
 function safeSourcePath(projectPath: string, input: string): {
@@ -72,7 +74,12 @@ function normalizeTask(value: unknown): PlanTask {
     throw new Error("every ordered task must be one object");
   }
   if (value.status === "OUTLINE") {
-    if (!hasExactKeys(value, ["id", "title", "goal", "status"])) {
+    if (
+      Object.keys(value).length !== 4
+      || value.id === undefined
+      || value.title === undefined
+      || value.goal === undefined
+    ) {
       throw new Error(
         "OUTLINE tasks contain only stable task id, title, goal, and status",
       );
@@ -89,7 +96,7 @@ function normalizeTask(value: unknown): PlanTask {
     return task;
   }
   if (value.status === "FROZEN") {
-    if (!hasExactKeys(value, [
+    const frozenKeys = [
       "id",
       "title",
       "goal",
@@ -99,7 +106,18 @@ function normalizeTask(value: unknown): PlanTask {
       "allowed_files",
       "stop_condition",
       "time_budget_minutes",
-    ])) {
+    ] as const;
+    const actualKeys = Object.keys(value);
+    const unknown = actualKeys.filter(
+      (key) => !(frozenKeys as readonly string[]).includes(key),
+    );
+    if (unknown.length > 0) {
+      throw new Error(
+        `ACCEPTANCE_UNKNOWN_FIELD: FROZEN task has unsupported field(s): `
+          + `${unknown.join(", ")} (silent drop forbidden)`,
+      );
+    }
+    if (actualKeys.length !== frozenKeys.length) {
       throw new Error(
         "FROZEN cursor contract must bind behavior, test, files, stop, and budget",
       );
@@ -126,7 +144,8 @@ function normalizeTask(value: unknown): PlanTask {
   throw new Error("ordered task status must be FROZEN or OUTLINE");
 }
 
-function parsePlan(bytes: string): PlanProposalFile {
+/** Parse a plan proposal file body (same rules as plan propose/accept). */
+export function parsePlan(bytes: string): PlanProposalFile {
   let parsed: unknown;
   try {
     parsed = JSON.parse(bytes);
@@ -135,16 +154,32 @@ function parsePlan(bytes: string): PlanProposalFile {
   }
   if (
     !isRecord(parsed)
-    || !hasExactKeys(parsed, ["cursor", "ordered_tasks"])
     || !Number.isSafeInteger(parsed.cursor)
     || (parsed.cursor as number) < 0
     || !Array.isArray(parsed.ordered_tasks)
     || parsed.ordered_tasks.length === 0
   ) {
     throw new Error(
-      "plan proposal must contain only cursor and non-empty ordered_tasks",
+      "plan proposal must contain cursor and non-empty ordered_tasks",
     );
   }
+  const keys = Object.keys(parsed);
+  const allowed = new Set(["cursor", "ordered_tasks", "acceptance_source"]);
+  if (
+    !keys.includes("cursor")
+    || !keys.includes("ordered_tasks")
+    || !keys.includes("acceptance_source")
+    || !keys.every((key) => allowed.has(key))
+  ) {
+    throw new Error(
+      "ACCEPTANCE_BASIS_REQUIRED: plan proposal must contain cursor, "
+        + "ordered_tasks, and acceptance_source (structured basis JSON path)",
+    );
+  }
+  const acceptanceSource = assertSafeProjectRelativePath(
+    parsed.acceptance_source,
+    "acceptance_source",
+  );
   const orderedTasks = parsed.ordered_tasks.map(normalizeTask);
   if ((parsed.cursor as number) > orderedTasks.length) {
     throw new Error("plan cursor cannot exceed ordered_tasks length");
@@ -156,31 +191,49 @@ function parsePlan(bytes: string): PlanProposalFile {
   return {
     cursor: parsed.cursor as number,
     ordered_tasks: orderedTasks,
+    acceptance_source: acceptanceSource,
   };
 }
 
-function exactPlanDiff(
+/** Exact plan diff body used by propose/accept (and migrate pending rebind). */
+export function exactPlanDiff(
   state: ProjectState,
   proposal: PlanProposalFile,
   planRevision: string,
+  basis: AcceptanceBasis,
 ): string {
+  const beforeBasis = state.plan_review !== null
+    && "acceptance_source_path" in state.plan_review
+    ? {
+      path: state.plan_review.acceptance_source_path,
+      digest: state.plan_review.acceptance_source_digest,
+    }
+    : null;
   return `${JSON.stringify({
-    format: "ohno-linear-plan-diff-v1",
+    format: "ohno-linear-plan-diff-v3",
     before: {
       plan_revision: state.plan_revision,
       ordered_tasks: state.ordered_tasks,
       cursor: state.cursor,
+      acceptance_basis: beforeBasis,
     },
     after: {
       plan_revision: planRevision,
       ordered_tasks: proposal.ordered_tasks,
       cursor: proposal.cursor,
+      acceptance_basis: basis,
     },
   }, null, 2)}\n`;
 }
 
 function sha256(value: string): string {
   return createHash("sha256").update(value).digest("hex");
+}
+
+function isTruthTarget(state: ProjectState, path: string): boolean {
+  return state.truth_inventory.classification.some(
+    (entry) => entry.path === path && entry.truth_target === true,
+  );
 }
 
 async function readSource(
@@ -210,9 +263,38 @@ export async function proposePlan(
   sourcePath: string,
 ): Promise<PlanProposalEvidence> {
   const state = await readState(projectPath);
+  if (needsAcceptanceBasisMigration(state)) {
+    throw new Error(
+      "ACCEPTANCE_BASIS_MIGRATE_REQUIRED: next is MIGRATE_ACCEPTANCE_BASIS; "
+        + "run `ohno migrate acceptance-basis --file <structured-basis.json>` "
+        + "before proposing a new plan",
+    );
+  }
   const source = await readSource(projectPath, sourcePath);
-  const planRevision = planRevisionFor(source.proposal.ordered_tasks);
-  const exactDiff = exactPlanDiff(state, source.proposal, planRevision);
+  if (!isTruthTarget(state, source.proposal.acceptance_source)) {
+    throw new Error(
+      "ACCEPTANCE_BASIS_NOT_IN_TRUTH: acceptance_source must be a Truth "
+        + `target (truth_target=true): ${source.proposal.acceptance_source}`,
+    );
+  }
+
+  const loaded = await loadStructuredAcceptanceBasis(
+    projectPath,
+    source.proposal.acceptance_source,
+  );
+  assertFrozenTasksMatchBasis(source.proposal.ordered_tasks, loaded.document);
+
+  const basis: AcceptanceBasis = {
+    path: loaded.path,
+    digest: loaded.digest,
+  };
+  const planRevision = planRevisionFor(source.proposal.ordered_tasks, basis);
+  const exactDiff = exactPlanDiff(
+    state,
+    source.proposal,
+    planRevision,
+    basis,
+  );
   const diffDigest = sha256(exactDiff);
   const head = readGitHead(projectPath);
   const proposedAt = new Date().toISOString();
@@ -225,33 +307,21 @@ export async function proposePlan(
     proposed_at: proposedAt,
     source_path: source.sourcePath,
     source_digest: source.sourceDigest,
+    acceptance_source_path: basis.path,
+    acceptance_source_digest: basis.digest,
   };
   const recorded = await compareAndSwapStateAtomic(projectPath, state, {
     ...state,
+    schema_version: 3,
     pending_plan: pendingPlan,
   });
   if (!recorded) {
     throw new Error("current state changed while recording the plan proposal");
   }
 
-  // Soft discipline warnings (FT-02/05/14) — cooperative, not reject.
-  const warnings: string[] = [];
-  if (planLooksLikeCommitLicense(source.proposal.ordered_tasks)) {
-    warnings.push(
-      "WARN: plan looks like a commit-license / docs-only micro-plan "
-        + "(FT-05/14). Accepting will make cockpit show this plan as complete "
-        + "at 100% of plan tasks — not product done.",
-    );
-  }
-  for (const task of source.proposal.ordered_tasks) {
-    if (task.status !== "FROZEN") {
-      continue;
-    }
-    const weak = weakBlackboxSummary(task.test_command);
-    if (weak !== null) {
-      warnings.push(`WARN: task ${task.id}: ${weak}`);
-    }
-  }
+  const warnings = planSoftWarnings(source.proposal.ordered_tasks, {
+    skipDenominator: true,
+  });
 
   return {
     planRevision,
@@ -259,6 +329,8 @@ export async function proposePlan(
     head,
     proposedAt,
     exactDiff,
+    acceptanceSourcePath: basis.path,
+    acceptanceSourceDigest: basis.digest,
     warnings,
   };
 }
@@ -270,9 +342,20 @@ export async function acceptPlan(
   options: { allowWeakPlan?: boolean } = {},
 ): Promise<string> {
   const state = await readState(projectPath);
+  if (needsAcceptanceBasisMigration(state)) {
+    throw new Error(
+      "ACCEPTANCE_BASIS_MIGRATE_REQUIRED: next is MIGRATE_ACCEPTANCE_BASIS",
+    );
+  }
   const pending = state.pending_plan;
   if (pending === null) {
     throw new Error("no pending plan proposal to review");
+  }
+  if (!("acceptance_source_path" in pending)) {
+    throw new Error(
+      "ACCEPTANCE_BASIS_MIGRATE_REQUIRED: pending proposal predates structured "
+        + "basis; migrate or re-propose under schema 3",
+    );
   }
   if (
     revision !== pending.plan_revision
@@ -292,8 +375,40 @@ export async function acceptPlan(
       "plan proposal file changed; record a new exact local plan review",
     );
   }
-  const currentRevision = planRevisionFor(source.proposal.ordered_tasks);
-  const currentDiff = exactPlanDiff(state, source.proposal, currentRevision);
+  if (source.proposal.acceptance_source !== pending.acceptance_source_path) {
+    throw new Error(
+      "ACCEPTANCE_BASIS_DRIFT: acceptance_source path changed after propose",
+    );
+  }
+  if (!isTruthTarget(state, pending.acceptance_source_path)) {
+    throw new Error(
+      "ACCEPTANCE_BASIS_NOT_IN_TRUTH: acceptance_source must remain a Truth target",
+    );
+  }
+
+  const loaded = await loadStructuredAcceptanceBasis(
+    projectPath,
+    pending.acceptance_source_path,
+  );
+  if (loaded.digest !== pending.acceptance_source_digest) {
+    throw new Error(
+      "ACCEPTANCE_BASIS_DRIFT: acceptance_source content changed after propose; "
+        + "record a new plan propose",
+    );
+  }
+  assertFrozenTasksMatchBasis(source.proposal.ordered_tasks, loaded.document);
+
+  const basis: AcceptanceBasis = {
+    path: loaded.path,
+    digest: loaded.digest,
+  };
+  const currentRevision = planRevisionFor(source.proposal.ordered_tasks, basis);
+  const currentDiff = exactPlanDiff(
+    state,
+    source.proposal,
+    currentRevision,
+    basis,
+  );
   if (
     currentRevision !== pending.plan_revision
     || sha256(currentDiff) !== pending.diff_digest
@@ -303,7 +418,6 @@ export async function acceptPlan(
     );
   }
 
-  // Hard gate (FT-02/05/14): Owner may override with --allow-weak-plan only.
   assertPlanDiscipline(source.proposal.ordered_tasks, {
     allowWeakPlan: options.allowWeakPlan === true,
   });
@@ -311,6 +425,7 @@ export async function acceptPlan(
   const recordedAt = new Date().toISOString();
   const accepted = await compareAndSwapStateAtomic(projectPath, state, {
     ...state,
+    schema_version: 3,
     status: state.document_sync.status === "PENDING_REVIEW"
       ? "BLOCKED_DOC_SYNC"
       : "IDLE",
@@ -324,6 +439,8 @@ export async function acceptPlan(
       head: pending.head,
       proposed_at: pending.proposed_at,
       recorded_at: recordedAt,
+      acceptance_source_path: pending.acceptance_source_path,
+      acceptance_source_digest: pending.acceptance_source_digest,
     },
     pending_plan: null,
     active_task: null,
@@ -335,5 +452,12 @@ export async function acceptPlan(
   const weakNote = options.allowWeakPlan
     ? "WEAK_PLAN_OVERRIDE: Owner passed --allow-weak-plan\n"
     : "";
-  return `${weakNote}LOCAL_REVIEW_RECORDED: ${pending.plan_revision}\n`;
+  return (
+    `${weakNote}LOCAL_REVIEW_RECORDED: ${pending.plan_revision}\n`
+    + `ACCEPTANCE_SOURCE: ${pending.acceptance_source_path}\n`
+    + `ACCEPTANCE_DIGEST: ${pending.acceptance_source_digest}\n`
+  );
 }
+
+// Re-export for tests that may import sha256 of basis prose.
+export { sha256Text };

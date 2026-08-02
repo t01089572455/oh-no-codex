@@ -24,6 +24,9 @@ import {
   readState,
   readStateBytes,
   runCli,
+  runInit,
+  writeDefaultAcceptanceBasis,
+  syncTruthInventoryForBasis,
 } from "../helpers/blackbox.mjs";
 
 const repositoryRoot = resolve(
@@ -74,7 +77,7 @@ function emptyCommit(projectPath, message) {
 }
 
 async function initialize(projectPath) {
-  const result = runCli(projectPath, ["init"]);
+  const result = runInit(projectPath);
   assert.equal(result.status, 0, result.stderr);
 }
 
@@ -105,11 +108,15 @@ function outlineTask(id, overrides = {}) {
 
 async function writePlan(projectPath, name, orderedTasks, cursor = 0) {
   const path = resolve(projectPath, name);
+  const basis = ".ohno/acceptance-basis.json";
+  writeDefaultAcceptanceBasis(projectPath, orderedTasks, basis);
+  syncTruthInventoryForBasis(projectPath, basis);
   await writeFile(
     path,
     `${JSON.stringify({
       cursor,
       ordered_tasks: orderedTasks,
+      acceptance_source: basis,
     }, null, 2)}\n`,
     "utf8",
   );
@@ -169,7 +176,10 @@ function accept(projectPath, evidence) {
   ]);
   assert.equal(result.status, 0, result.stderr);
   assert.equal(result.stderr, "");
-  assert.match(result.stdout, /^LOCAL_REVIEW_RECORDED: [0-9a-f]{64}\r?\n$/);
+  assert.match(
+    result.stdout,
+    /^LOCAL_REVIEW_RECORDED: [0-9a-f]{64}\r?\nACCEPTANCE_SOURCE: .+\r?\nACCEPTANCE_DIGEST: [0-9a-f]{64}\r?\n$/,
+  );
   assert.doesNotMatch(
     result.stdout,
     /OWNER_(?:AUTHORIZED|CONFIRMED)|LOCAL_OWNER_CONFIRMATION/i,
@@ -334,7 +344,11 @@ test("plan review records bounded local evidence and documents keep one dynamic 
     head: evidence.head,
     proposed_at: evidence.proposedAt,
     recorded_at: state.plan_review.recorded_at,
+    acceptance_source_path: state.plan_review.acceptance_source_path,
+    acceptance_source_digest: state.plan_review.acceptance_source_digest,
   });
+  assert.equal(state.plan_review.acceptance_source_path, ".ohno/acceptance-basis.json");
+  assert.match(state.plan_review.acceptance_source_digest, /^[a-f0-9]{64}$/);
   assert.ok(Number.isFinite(Date.parse(state.plan_review.recorded_at)));
   assert.equal(state.pending_plan, null);
   assert.doesNotMatch(
@@ -421,7 +435,7 @@ test("accepted plans expose one revision, ordered tasks, cursor, and stable boun
   const evidence = await installPlan(projectPath, tasks);
   const state = await readState(projectPath);
 
-  assert.equal(state.schema_version, 2);
+  assert.equal(state.schema_version, 3);
   assert.equal(state.plan_revision, evidence.revision);
   assert.equal(state.cursor, 0);
   assert.deepEqual(state.ordered_tasks, tasks);

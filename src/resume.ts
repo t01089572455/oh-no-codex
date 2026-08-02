@@ -46,6 +46,24 @@ function honestyLines(model: ReadModel): string[] {
         + "propose next phase with ohno plan propose",
     );
   }
+  if (model.next_action.startsWith("CONTINUE_ACTIVE:")) {
+    lines.push(
+      "ACTIVE_NOTE: next means continue this task then ohno verify "
+        + "(not permission to start another task)",
+    );
+  }
+  if (model.next_action.startsWith("RUN_EXACT_TEST:")) {
+    lines.push(
+      "PROOF_NOTE: re-run ohno verify for the active contract "
+        + "(FAIL/UNKNOWN/STALE proof)",
+    );
+  }
+  if (model.next_action.startsWith("REOPEN_TASK:")) {
+    lines.push(
+      "STALE_NOTE: last closed task proof is STALE — "
+        + "ohno task reopen then fix then ohno verify",
+    );
+  }
   if (
     model.blocker === "STALE_PASS"
     && model.current_task === null
@@ -53,6 +71,20 @@ function honestyLines(model: ReadModel): string[] {
   ) {
     lines.push(
       "RECOVERY: STALE after close — ohno task reopen then fix then ohno verify",
+    );
+  }
+  if (model.goal === null) {
+    lines.push(
+      "GOAL_NOTE: project Owner goal is empty; "
+        + "new projects require ohno init --goal (A01)",
+    );
+  }
+  if (model.next_action === "MIGRATE_ACCEPTANCE_BASIS") {
+    lines.push(
+      "MIGRATE_NOTE: schema predates structured acceptance basis — "
+        + "preview with ohno migrate acceptance-basis --file <basis.json>, "
+        + "then apply with returned --diff and --head "
+        + "(cursor/completed preserved)",
     );
   }
   return lines;

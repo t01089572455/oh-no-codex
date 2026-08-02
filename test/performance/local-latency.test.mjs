@@ -46,6 +46,23 @@ test("three anonymous real-project receipts prove P01-P05 and the maximum P04 fi
   assert.equal(evidence.schema_version, 1);
   assert.equal(evidence.classification, "TRIAL_EVIDENCE");
   assert.match(evidence.generated_at, /^\d{4}-\d{2}-\d{2}T/u);
+  const binding = evidence.measurement_binding ?? "LIVE";
+  if (binding === "HISTORICAL") {
+    assert.match(
+      evidence.measurement_note ?? "",
+      /not re-run|historical|unverified/i,
+    );
+    assert.notEqual(
+      evidence.implementation.dist_cli_sha256,
+      sha256(await readFile(cliPath)),
+      "HISTORICAL dist digest must not be silently rebased onto current CLI",
+    );
+    assert.fail(
+      "trial evidence is HISTORICAL — three disposable copies were not "
+        + "re-measured for the current package. Set measurement_binding=LIVE "
+        + "only after a full remeasure before claiming P01–P05 release green.",
+    );
+  }
   assert.equal(
     evidence.implementation.dist_cli_sha256,
     sha256(await readFile(cliPath)),

@@ -101,6 +101,8 @@ function stateTone(model) {
   if (
     model.status === "ACTIVE"
     || model.next_action.startsWith("START_TASK:")
+    || model.next_action.startsWith("CONTINUE_ACTIVE:")
+    || model.next_action.startsWith("RUN_EXACT_TEST:")
   ) {
     return "active";
   }
@@ -371,6 +373,10 @@ function render(model, meta = {}) {
   const mission = missionCenter(model);
   const nextDisplay = model.next_action === "PROJECT_COMPLETE"
     ? "PROJECT_COMPLETE (this plan only — propose next phase)"
+    : model.next_action.startsWith("CONTINUE_ACTIVE:")
+    ? `${model.next_action} (stay on this task — then ohno verify)`
+    : model.next_action.startsWith("RUN_EXACT_TEST:")
+    ? `${model.next_action} (re-run frozen black box)`
     : model.next_action;
 
   document.body.dataset.tone = stateTone(model);

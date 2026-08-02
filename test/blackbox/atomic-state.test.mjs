@@ -19,12 +19,11 @@ import {
   reviewPlan,
   runCli,
   spawnCli,
+  runInit,
 } from "../helpers/blackbox.mjs";
 
 async function initialize(projectPath) {
-  const initialized = runCli(projectPath, [
-    "init",
-  ]);
+  const initialized = runInit(projectPath);
   assert.equal(initialized.status, 0, initialized.stderr);
 }
 

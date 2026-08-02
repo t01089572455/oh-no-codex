@@ -27,7 +27,7 @@
 
 <p align="center">
   <a href="https://www.npmjs.com/package/oh-no-codex"><img alt="npm" src="https://img.shields.io/npm/v/oh-no-codex?style=flat-square&color=74D6B1&labelColor=202624&label=npm"></a>
-  <img alt="鐘舵€? src="https://img.shields.io/badge/status-V1_TRIAL_ACCEPTED-74D6B1?style=flat-square&labelColor=202624">
+  <img alt="鐘舵€? src="https://img.shields.io/badge/status-RELEASE_CHANGES_REQUIRED-E3B341?style=flat-square&labelColor=202624">
   <img alt="codex" src="https://img.shields.io/badge/for-Codex_CLI-FF4B35?style=flat-square&labelColor=202624">
   <img alt="skills" src="https://img.shields.io/badge/13_涓猒Codex_skill-74D6B1?style=flat-square&labelColor=202624">
   <a href="./LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-FFF1CE?style=flat-square&labelColor=202624"></a>

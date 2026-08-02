@@ -20,6 +20,7 @@ import { fileURLToPath } from "node:url";
 import {
   cliPath,
   frozenPlanTask,
+  runInit,
 } from "../helpers/blackbox.mjs";
 
 const repositoryRoot = resolve(
@@ -175,11 +176,52 @@ function trialTask({
 
 async function reviewPlan(cwd, tasks, fileName) {
   const planPath = resolve(cwd, fileName);
+  const basis = ".ohno/acceptance-basis.json";
+  const frozen = tasks.filter((t) => t.status === "FROZEN");
+  await writeFile(
+    resolve(cwd, basis),
+    `${JSON.stringify({
+      schema_version: 1,
+      tasks: frozen.map((task) => ({
+        id: task.id,
+        expected_behavior: task.expected_behavior,
+        test_command: task.test_command,
+        stop_condition: task.stop_condition,
+      })),
+    }, null, 2)}\n`,
+    "utf8",
+  );
+  // Patch truth inventory so basis is a Truth target.
+  const statePath = resolve(cwd, ".ohno", "state.json");
+  const state = JSON.parse(await readFile(statePath, "utf8"));
+  const classification = [...(state.truth_inventory?.classification ?? [])];
+  if (!classification.some((e) => e.path === basis)) {
+    classification.push({
+      path: basis,
+      classification: "TRUTH_TARGET",
+      governing: true,
+      truth_target: true,
+    });
+    classification.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+    const { createHash } = await import("node:crypto");
+    state.truth_inventory = {
+      inventory_digest: createHash("sha256")
+        .update(JSON.stringify(classification.map(({
+          path,
+          classification: kind,
+          truth_target,
+        }) => ({ path, classification: kind, truth_target }))))
+        .digest("hex"),
+      classification,
+    };
+    await writeFile(statePath, `${JSON.stringify(state, null, 2)}\n`, "utf8");
+  }
   await writeFile(
     planPath,
     `${JSON.stringify({
       cursor: 0,
       ordered_tasks: tasks,
+      acceptance_source: basis,
     }, null, 2)}\n`,
     "utf8",
   );
@@ -459,9 +501,7 @@ async function initializeTrialProject(cwd) {
   const installed = requireSuccess(runCli(cwd, ["install"]), "ohno install");
   assert.match(installed.stdout, /COOPERATIVE_GUARDRAIL/u);
   requireSuccess(
-    runCli(cwd, [
-      "init",
-    ]),
+    runInit(cwd),
     "ohno init",
   );
 }
@@ -721,7 +761,7 @@ async function measureLargestAcceptedCapsule() {
     await writeFile(resolve(projectPath, "subject.txt"), "bounded\n", "utf8");
     await writeFile(resolve(projectPath, "fail.mjs"), "process.exit(9);\n", "utf8");
     requireSuccess(
-      runCli(projectPath, ["init"]),
+      runInit(projectPath, maximumGoal),
       "P04 ohno init",
     );
     const maximumTest = paddedCommand(

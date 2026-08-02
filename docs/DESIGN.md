@@ -47,7 +47,7 @@ The sole current runtime authority. Conceptual fields:
 
 ```json
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "goal": "Owner-authored project goal",
   "status": "IDLE | ACTIVE | BLOCKED_DOC_SYNC",
   "plan_revision": "sha256 or null",
@@ -77,8 +77,11 @@ The sole current runtime authority. Conceptual fields:
     "diff_digest": "sha256",
     "head": "git commit or UNBORN",
     "proposed_at": "RFC3339",
-    "recorded_at": "RFC3339"
+    "recorded_at": "RFC3339",
+    "acceptance_source_path": ".ohno/acceptance-basis.json",
+    "acceptance_source_digest": "sha256"
   },
+  "pending_plan": null,
   "truth_inventory": {
     "inventory_digest": "sha256",
     "classification": []
@@ -96,6 +99,7 @@ The sole current runtime authority. Conceptual fields:
   "last_verification": {
     "result": "PASS | FAIL | UNKNOWN",
     "command": "exact command",
+    "contract_digest": "sha256",
     "plan_revision": "sha256",
     "head": "git commit or UNBORN",
     "subject_digest": "sha256",
@@ -111,6 +115,25 @@ The sole current runtime authority. Conceptual fields:
   }
 }
 ```
+
+Schema **2** (pre–structured basis) remains readable. While migration is
+required, the sole next action is `MIGRATE_ACCEPTANCE_BASIS` (even over FAIL
+proof). Migration is two-phase and fail-closed:
+
+1. `ohno migrate acceptance-basis --file <basis.json>` — zero-write preview of
+   the semantic side-effect exact diff (Truth action, inventory rebuild, active
+   task clear, pending rebind-or-clear, status); wall-clock review fields are
+   marked `apply_metadata`;
+2. re-run with caller-returned `--diff <sha256> --head <git-head>` — under
+   `state.cas.lock`, atomic Truth replace then state CAS (rollback Truth on
+   state-write failure). Provenance is **caller-returned local review**, not
+   Owner identity.
+
+Only ENOENT may create `.ohno/truth.json`; corrupt Truth is never overwritten.
+Pending schema-2 proposals rebind with a fresh v3 exact plan diff when the
+proposal source is still accept-able; otherwise pending is cleared to
+`PROPOSE_PLAN`. Stale pending alongside an accepted plan is cleared only as an
+explicit side-effect in the exact migrate diff.
 
 This is a conceptual public contract, not a demand for a generalized domain
 model. The implementation may serialize a flatter equivalent if public
@@ -168,11 +191,48 @@ ohno plan accept --revision <sha256> --diff <sha256>
 ohno task start
 ```
 
-The proposal is a minimal linear plan: a revision over `ordered_tasks`, a
-runtime cursor, and unique stable ids. The cursor task must be `FROZEN` with
-behavior, exact test, file scope, stop condition, and budget. Later tasks may
-be `OUTLINE` with only id, title, and goal. Reordering, deletion, editing, or
-freezing changes the revision.
+The proposal is a minimal linear plan: a revision over `ordered_tasks` **and**
+the structured acceptance basis (path + content digest), a runtime cursor, and
+unique stable ids. Plan JSON requires `acceptance_source` pointing at a Truth
+target that holds structured basis JSON:
+
+```json
+{
+  "schema_version": 1,
+  "tasks": [
+    {
+      "id": "stable-task-id",
+      "expected_behavior": "exact user-visible behavior",
+      "test_command": "exact black-box command",
+      "stop_condition": "exact stop boundary"
+    }
+  ]
+}
+```
+
+Every `FROZEN` task id must appear exactly once in the basis with **identical**
+`expected_behavior`, `test_command`, and `stop_condition` strings (no regex or
+NLP). `OUTLINE` tasks must not carry full basis contracts until frozen.
+Propose and accept both re-read the basis; path/content drift or mismatch
+refuses the operation.
+
+Schema 2 projects that still lack structured basis remain readable; `next` is
+`MIGRATE_ACCEPTANCE_BASIS` until the two-phase migrate above upgrades them to
+schema 3 without dropping cursor or completed history. Empty Truth inventories
+are migratable; migrate rebuilds the full high-risk inventory (including
+Truth file and projector-owned AGENTS path) so `change begin` does not
+self-lock. `LOCAL_REVIEW_RECORDED` is written only on successful apply after
+caller-returned digest/HEAD (local review, not Owner identity)—not
+self-approved before display. While
+migration is required, verify, task start, pre-commit, and Codex completion
+hooks refuse product work (parseable PreToolUse mutations; arbitrary Bash
+remains an honest cooperative limitation). Unknown FROZEN plan fields are
+hard-rejected. `change begin` always unions Truth targets that carry the
+`acceptance-basis` concern (not every black-box path).
+
+The cursor task must be `FROZEN` with behavior, exact test, file scope, stop
+condition, and budget. Later tasks may be `OUTLINE` with only id, title, and
+goal. Reordering, deletion, editing, or freezing changes the revision.
 
 Proposal output frames the exact plan diff and binds its digest, revision, Git
 HEAD, and time. Acceptance records only `LOCAL_REVIEW_RECORDED`; it is local

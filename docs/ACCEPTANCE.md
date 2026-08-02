@@ -8,7 +8,7 @@ named user-visible behavior.
 
 | ID | Required user-visible evidence |
 | --- | --- |
-| A01 | In a disposable Git repository, `ohno init` requires and preserves one Owner goal. Plan proposal/acceptance records only `LOCAL_REVIEW_RECORDED` bound to exact revision/diff/HEAD/time. The accepted state contains one `plan_revision`, `ordered_tasks`, cursor, and unique stable ids; only the cursor's frozen behavior/test/files/stop/budget can be activated by argument-free `ohno task start`. An `OUTLINE` cursor cannot start and reports only `FREEZE_TASK:<id>`. |
+| A01 | In a disposable Git repository, `ohno init` requires and preserves one Owner goal. Plan proposal requires a Truth-listed structured `acceptance_source` whose FROZEN task contracts match plan fields by exact string equality; `plan_revision` binds that path and content digest; propose/accept re-read the basis; unknown FROZEN fields hard-refuse. Proposal/acceptance records only `LOCAL_REVIEW_RECORDED` bound to exact revision/diff/HEAD/time/basis. The accepted state contains one `plan_revision`, `ordered_tasks`, cursor, unique stable ids, and acceptance basis provenance; only the cursor's frozen behavior/test/files/stop/budget can be activated by argument-free `ohno task start`. An `OUTLINE` cursor cannot start and reports only `FREEZE_TASK:<id>`. Schema 2 plans (including empty Truth) stay readable with next `MIGRATE_ACCEPTANCE_BASIS`; migrate registers basis, records fresh re-review evidence, preserves cursor/completed; verify/hooks/pre-commit block until migrate. |
 | A02 | Starting a second task while one is active exits non-zero and preserves the original task byte-for-byte. |
 | A03 | A failing exact black-box command leaves the current task active, records FAIL for that command, and returns non-zero. |
 | A04 | A passing exact command with unchanged subject creates a fresh receipt, closes that task, advances the plan cursor exactly once, and derives the next action from `ordered_tasks`; the end is `PROJECT_COMPLETE`. |
@@ -52,6 +52,7 @@ test/blackbox/task-start.test.mjs
 test/blackbox/verify-finish.test.mjs
 test/blackbox/resume-status-next.test.mjs
 test/blackbox/requirement-change.test.mjs
+test/blackbox/acceptance-denominator.test.mjs
 test/blackbox/codex-hooks.test.mjs
 test/blackbox/git-precommit.test.mjs
 test/blackbox/cockpit.test.mjs
@@ -111,13 +112,18 @@ Expected:
 
 ## Completion language
 
-Public product status is earned only from the rows above and the ledger:
+Public product status is earned only from the rows above and the ledger.
+Core harness success and release readiness are named separately so a green
+harness label cannot paper over unfinished release evidence (#17).
 
-> **Current (earned):** `V1_TRIAL_ACCEPTED` — Codex-only cooperative harness
-> accepted on the named local black-box and disposable-project trials; no
-> hostile-agent, production authority, package publication, or universal speed
-> claim.
+> **Core harness (field):** `ANTI_DRIFT_CORE_WORKS` — cooperative Codex harness
+> (bounded plan, freeze, verify, resume, hooks, read-only Cockpit) works on
+> real multi-slice sessions. Not a coverage score over the eighteen sins.
 
-If any A/P row later fails or is withdrawn, status returns to
-`V1_CHANGES_REQUIRED` with the exact failing rows. Do not use older phrases
-such as “still PLANNED before Task 7” as current status.
+> **Release / public status:** `RELEASE_CHANGES_REQUIRED` — full A/P matrix,
+> performance budgets, package publication claims, and honest public surfaces
+> are not all green. Do not display `V1_TRIAL_ACCEPTED` until those close.
+
+If any A/P row later fails or is withdrawn, keep or return to
+`RELEASE_CHANGES_REQUIRED` with the exact failing rows. Do not use older
+phrases such as “still PLANNED before Task 7” as current status.

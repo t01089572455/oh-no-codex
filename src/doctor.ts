@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 
 import {
+  denominatorShrinkSummary,
   looksLikeTrivialBlackbox,
   planLooksLikeCommitLicense,
   weakBlackboxSummary,
@@ -66,11 +67,23 @@ export async function runDoctor(projectPath: string): Promise<DoctorReport> {
             model.handoff.dirty ? "YES" : "NO"
           }`,
       });
+      let truthFilePresent = false;
+      try {
+        await access(resolve(projectPath, ".ohno", "truth.json"));
+        truthFilePresent = true;
+      } catch {
+        truthFilePresent = false;
+      }
       checks.push({
         id: "truth",
-        status: model.truth_target_count > 0 ? "PASS" : "WARN",
-        detail: `${model.truth_target_count} truth targets; `
-          + `doc_sync=${model.document_sync_status}`,
+        status: model.truth_target_count > 0 && truthFilePresent
+          ? "PASS"
+          : "WARN",
+        detail: truthFilePresent
+          ? `${model.truth_target_count} truth targets; `
+            + `doc_sync=${model.document_sync_status}`
+          : "truth.json missing — requirement-change path is incomplete; "
+            + "seed with ohno init on a new project or add .ohno/truth.json",
       });
 
       // Eighteen-sins + field-trial pressure: broad scope, weak black boxes,
@@ -103,6 +116,27 @@ export async function runDoctor(projectPath: string): Promise<DoctorReport> {
               ? `${weak} — risk of test theatre (FT-02)`
               : "active test_command present",
           });
+          const planTask = state.ordered_tasks.find((t) => t.id === active.id);
+          const shrink = denominatorShrinkSummary({
+            id: active.id,
+            expected_behavior: active.expected_behavior,
+            stop_condition: active.stop_condition,
+            test_command: active.test_command,
+          }) ?? (planTask !== undefined && planTask.status === "FROZEN"
+            ? denominatorShrinkSummary({
+              id: planTask.id,
+              expected_behavior: planTask.expected_behavior,
+              stop_condition: planTask.stop_condition,
+              test_command: planTask.test_command,
+            })
+            : null);
+          if (shrink !== null) {
+            checks.push({
+              id: "denominator_honesty",
+              status: "WARN",
+              detail: shrink,
+            });
+          }
         } else if (state.ordered_tasks.length > 0) {
           const frozen = state.ordered_tasks.filter((t) => t.status === "FROZEN");
           const weakFrozen = frozen.find((t) =>
@@ -186,8 +220,10 @@ export async function runDoctor(projectPath: string): Promise<DoctorReport> {
             id: "harness_versioned",
             status: untrackedHarness ? "WARN" : "PASS",
             detail: untrackedHarness
-              ? ".ohno/ and/or AGENTS.md appear untracked — authority may not "
-                + "travel with commits (FT-07/22/31); consider committing harness"
+              ? "canonical harness untracked (AGENTS.md / .ohno state, truth, "
+                + "requirements, preferences) — authority may not travel with "
+                + "clone (FT-07). Commit those files; keep verify.lock and "
+                + "cockpit.runtime.json out via .ohno/.gitignore"
               : "harness paths not showing as untracked (or not a git repo)",
           });
         }

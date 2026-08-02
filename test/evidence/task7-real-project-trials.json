@@ -673,5 +673,7 @@
     "Real-project trials are bounded harness trials: each copy uses ohno-trial fixtures rather than deep native business-test integration for TypeScript CLI / React Vite / Python OCR stacks.",
     "P06 was measured with system Chrome/Edge via puppeteer-core after the Owner authorized external-browser acceptance when the in-app Browser rejected loopback navigation.",
     "Package subject digest binds shipped runtime files only; it is not a signature or release attestation."
-  ]
+  ],
+  "measurement_binding": "HISTORICAL",
+  "measurement_note": "Measured 2026-07-31 on head 9833bb7 / package of that era. Digests intentionally NOT rebased for oh-no-codex@0.1.7. Re-run three disposable trials before any LIVE release claim. Unverified for current HEAD."
 }

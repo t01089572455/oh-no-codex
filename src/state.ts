@@ -12,6 +12,8 @@ import { resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { isDeepStrictEqual } from "node:util";
 
+import { isSafeProjectRelativePath } from "./paths.js";
+
 export const displayFieldByteLimits = Object.freeze({
   goal: 256,
   taskId: 96,
@@ -80,7 +82,14 @@ export interface VerificationReceipt {
   finished_at: string;
 }
 
-export interface PlanReview {
+/** External acceptance basis bound into plan_revision (structured basis). */
+export interface AcceptanceBasis {
+  path: string;
+  digest: string;
+}
+
+/** Pre–structured-basis plan review (schema 2). */
+export interface PlanReviewLegacy {
   status: "LOCAL_REVIEW_RECORDED";
   plan_revision: string;
   diff_digest: string;
@@ -89,7 +98,22 @@ export interface PlanReview {
   recorded_at: string;
 }
 
-export interface PendingPlan {
+/** Schema 3 plan review with structured acceptance basis binding. */
+export interface PlanReview {
+  status: "LOCAL_REVIEW_RECORDED";
+  plan_revision: string;
+  diff_digest: string;
+  head: string;
+  proposed_at: string;
+  recorded_at: string;
+  acceptance_source_path: string;
+  acceptance_source_digest: string;
+}
+
+export type AnyPlanReview = PlanReview | PlanReviewLegacy;
+
+/** Pre-basis pending proposal (schema 2). */
+export interface PendingPlanLegacy {
   plan_revision: string;
   ordered_tasks: PlanTask[];
   cursor: number;
@@ -99,6 +123,22 @@ export interface PendingPlan {
   source_path: string;
   source_digest: string;
 }
+
+/** Schema 3 pending proposal with structured basis binding. */
+export interface PendingPlan {
+  plan_revision: string;
+  ordered_tasks: PlanTask[];
+  cursor: number;
+  diff_digest: string;
+  head: string;
+  proposed_at: string;
+  source_path: string;
+  source_digest: string;
+  acceptance_source_path: string;
+  acceptance_source_digest: string;
+}
+
+export type AnyPendingPlan = PendingPlan | PendingPlanLegacy;
 
 export type TruthClassification =
   | "AGENT_INSTRUCTIONS"
@@ -121,14 +161,15 @@ export interface TruthInventory {
 }
 
 export interface ProjectState {
-  schema_version: 2;
+  /** 2 = pre–structured-basis (migrate); 3 = structured acceptance basis. */
+  schema_version: 2 | 3;
   goal: string;
   status: "IDLE" | "ACTIVE" | "BLOCKED_DOC_SYNC";
   plan_revision: string | null;
   ordered_tasks: PlanTask[];
   cursor: number;
-  plan_review: PlanReview | null;
-  pending_plan: PendingPlan | null;
+  plan_review: AnyPlanReview | null;
+  pending_plan: AnyPendingPlan | null;
   truth_inventory: TruthInventory;
   active_task: TaskContract | null;
   last_verification: VerificationReceipt | null;
@@ -217,17 +258,12 @@ function isStableTaskId(value: unknown): value is string {
     && /^[A-Za-z0-9][A-Za-z0-9._-]*$/u.test(value);
 }
 
+/** @deprecated Prefer isSafeProjectRelativePath from paths.ts — same rules. */
 function isSafePath(value: unknown): value is string {
-  if (!isNonBlankString(value)) {
-    return false;
-  }
-  const normalized = value.replaceAll("\\", "/");
-  return value === normalized
-    && !normalized.startsWith("/")
-    && !/^[A-Za-z]:/u.test(normalized)
-    && !normalized.split("/").includes("..")
-    && !/[\0\r\n]/u.test(normalized);
+  return isSafeProjectRelativePath(value);
 }
+
+export { isSafeProjectRelativePath };
 
 /**
  * Allowed-file patterns must stay inside a non-root static directory or name a
@@ -292,10 +328,36 @@ export function isPlanTask(value: unknown): value is PlanTask {
     && isFrozenFields(value);
 }
 
-export function planRevisionFor(tasks: readonly PlanTask[]): string {
+/** Legacy schema 2: revision over ordered_tasks only. */
+export function planRevisionForTasksOnly(tasks: readonly PlanTask[]): string {
   return createHash("sha256")
     .update(JSON.stringify(tasks))
     .digest("hex");
+}
+
+/**
+ * Schema 3: revision binds ordered_tasks and structured acceptance basis
+ * (path + content digest).
+ */
+export function planRevisionFor(
+  tasks: readonly PlanTask[],
+  acceptanceBasis: AcceptanceBasis | null = null,
+): string {
+  return createHash("sha256")
+    .update(JSON.stringify({
+      format: "ohno-plan-revision-v3",
+      ordered_tasks: tasks,
+      acceptance_basis: acceptanceBasis,
+    }))
+    .digest("hex");
+}
+
+/** True when schema 2 state still has a plan/pending that needs explicit migrate. */
+export function needsAcceptanceBasisMigration(state: ProjectState): boolean {
+  if (state.schema_version !== 2) {
+    return false;
+  }
+  return state.plan_revision !== null || state.pending_plan !== null;
 }
 
 function unsignedContract(contract: Omit<TaskContract, "contract_digest">) {
@@ -392,7 +454,7 @@ function isVerificationReceipt(
   return value.exit_code === null;
 }
 
-function isPlanReview(value: unknown): value is PlanReview {
+function isPlanReviewLegacy(value: unknown): value is PlanReviewLegacy {
   return isRecord(value)
     && hasExactKeys(value, [
       "status",
@@ -411,6 +473,29 @@ function isPlanReview(value: unknown): value is PlanReview {
     && Date.parse(value.recorded_at) >= Date.parse(value.proposed_at);
 }
 
+function isPlanReviewModern(value: unknown): value is PlanReview {
+  return isRecord(value)
+    && hasExactKeys(value, [
+      "status",
+      "plan_revision",
+      "diff_digest",
+      "head",
+      "proposed_at",
+      "recorded_at",
+      "acceptance_source_path",
+      "acceptance_source_digest",
+    ])
+    && value.status === "LOCAL_REVIEW_RECORDED"
+    && isSha256(value.plan_revision)
+    && isSha256(value.diff_digest)
+    && isGitHead(value.head)
+    && isRfc3339Timestamp(value.proposed_at)
+    && isRfc3339Timestamp(value.recorded_at)
+    && Date.parse(value.recorded_at) >= Date.parse(value.proposed_at)
+    && isSafePath(value.acceptance_source_path)
+    && isSha256(value.acceptance_source_digest);
+}
+
 function isOrderedTasks(value: unknown): value is PlanTask[] {
   if (!Array.isArray(value) || value.length === 0 || !value.every(isPlanTask)) {
     return false;
@@ -419,9 +504,10 @@ function isOrderedTasks(value: unknown): value is PlanTask[] {
   return new Set(ids).size === ids.length;
 }
 
-function isPendingPlan(value: unknown): value is PendingPlan {
-  return isRecord(value)
-    && hasExactKeys(value, [
+function isPendingPlanLegacy(value: unknown): value is PendingPlanLegacy {
+  if (
+    !isRecord(value)
+    || !hasExactKeys(value, [
       "plan_revision",
       "ordered_tasks",
       "cursor",
@@ -431,17 +517,62 @@ function isPendingPlan(value: unknown): value is PendingPlan {
       "source_path",
       "source_digest",
     ])
-    && isSha256(value.plan_revision)
-    && isOrderedTasks(value.ordered_tasks)
-    && value.plan_revision === planRevisionFor(value.ordered_tasks)
-    && Number.isSafeInteger(value.cursor)
-    && (value.cursor as number) >= 0
-    && (value.cursor as number) <= value.ordered_tasks.length
-    && isSha256(value.diff_digest)
-    && isGitHead(value.head)
-    && isRfc3339Timestamp(value.proposed_at)
-    && isSafePath(value.source_path)
-    && isSha256(value.source_digest);
+    || !isSha256(value.plan_revision)
+    || !isOrderedTasks(value.ordered_tasks)
+    || !Number.isSafeInteger(value.cursor)
+    || (value.cursor as number) < 0
+    || (value.cursor as number) > value.ordered_tasks.length
+    || !isSha256(value.diff_digest)
+    || !isGitHead(value.head)
+    || !isRfc3339Timestamp(value.proposed_at)
+    || !isSafePath(value.source_path)
+    || !isSha256(value.source_digest)
+  ) {
+    return false;
+  }
+  return value.plan_revision === planRevisionForTasksOnly(
+    value.ordered_tasks as PlanTask[],
+  );
+}
+
+function isPendingPlanModern(value: unknown): value is PendingPlan {
+  if (
+    !isRecord(value)
+    || !hasExactKeys(value, [
+      "plan_revision",
+      "ordered_tasks",
+      "cursor",
+      "diff_digest",
+      "head",
+      "proposed_at",
+      "source_path",
+      "source_digest",
+      "acceptance_source_path",
+      "acceptance_source_digest",
+    ])
+    || !isSha256(value.plan_revision)
+    || !isOrderedTasks(value.ordered_tasks)
+    || !Number.isSafeInteger(value.cursor)
+    || (value.cursor as number) < 0
+    || (value.cursor as number) > value.ordered_tasks.length
+    || !isSha256(value.diff_digest)
+    || !isGitHead(value.head)
+    || !isRfc3339Timestamp(value.proposed_at)
+    || !isSafePath(value.source_path)
+    || !isSha256(value.source_digest)
+    || !isSafePath(value.acceptance_source_path)
+    || !isSha256(value.acceptance_source_digest)
+  ) {
+    return false;
+  }
+  const basis: AcceptanceBasis = {
+    path: value.acceptance_source_path as string,
+    digest: value.acceptance_source_digest as string,
+  };
+  return value.plan_revision === planRevisionFor(
+    value.ordered_tasks as PlanTask[],
+    basis,
+  );
 }
 
 const truthClassifications: readonly TruthClassification[] = [
@@ -575,18 +706,10 @@ function isProjectState(value: unknown): value is ProjectState {
       "completed",
       "document_sync",
     ])
-    || value.schema_version !== 2
+    || (value.schema_version !== 2 && value.schema_version !== 3)
     || !isProjectGoal(value.goal)
     || !Number.isSafeInteger(value.cursor)
     || (value.cursor as number) < 0
-    || !(
-      value.plan_review === null
-      || isPlanReview(value.plan_review)
-    )
-    || !(
-      value.pending_plan === null
-      || isPendingPlan(value.pending_plan)
-    )
     || !isTruthInventory(value.truth_inventory)
     || !(
       value.active_task === null
@@ -603,6 +726,35 @@ function isProjectState(value: unknown): value is ProjectState {
     return false;
   }
 
+  const schema = value.schema_version as 2 | 3;
+
+  // Schema 2: legacy plan_review + optional legacy pending (no basis fields).
+  if (schema === 2) {
+    if (
+      !(
+        value.plan_review === null
+        || isPlanReviewLegacy(value.plan_review)
+      )
+      || !(
+        value.pending_plan === null
+        || isPendingPlanLegacy(value.pending_plan)
+      )
+    ) {
+      return false;
+    }
+  } else if (
+    !(
+      value.plan_review === null
+      || isPlanReviewModern(value.plan_review)
+    )
+    || !(
+      value.pending_plan === null
+      || isPendingPlanModern(value.pending_plan)
+    )
+  ) {
+    return false;
+  }
+
   if (value.plan_revision === null) {
     if (
       !Array.isArray(value.ordered_tasks)
@@ -615,12 +767,32 @@ function isProjectState(value: unknown): value is ProjectState {
   } else if (
     !isSha256(value.plan_revision)
     || !isOrderedTasks(value.ordered_tasks)
-    || value.plan_revision !== planRevisionFor(value.ordered_tasks)
-    || (value.cursor as number) > value.ordered_tasks.length
     || value.plan_review === null
     || value.plan_review.plan_revision !== value.plan_revision
+    || (value.cursor as number) > value.ordered_tasks.length
   ) {
     return false;
+  } else if (schema === 2) {
+    if (!isPlanReviewLegacy(value.plan_review)) {
+      return false;
+    }
+    if (
+      value.plan_revision
+        !== planRevisionForTasksOnly(value.ordered_tasks as PlanTask[])
+    ) {
+      return false;
+    }
+  } else {
+    if (!isPlanReviewModern(value.plan_review)) {
+      return false;
+    }
+    const basis: AcceptanceBasis = {
+      path: value.plan_review.acceptance_source_path,
+      digest: value.plan_review.acceptance_source_digest,
+    };
+    if (value.plan_revision !== planRevisionFor(value.ordered_tasks, basis)) {
+      return false;
+    }
   }
 
   if (value.status === "ACTIVE") {
@@ -676,7 +848,7 @@ export function initialState(
   truthInventory = emptyTruthInventory(),
 ): ProjectState {
   return {
-    schema_version: 2,
+    schema_version: 3,
     goal,
     status: "IDLE",
     plan_revision: null,
@@ -751,11 +923,9 @@ export async function writeStateAtomic(
   }
 }
 
-export async function compareAndSwapStateAtomic(
+async function acquireStateCasLock(
   projectPath: string,
-  expected: ProjectState,
-  next: ProjectState,
-): Promise<boolean> {
+): Promise<FileHandle> {
   const directory = stateDirectory(projectPath);
   const lockPath = resolve(directory, "state.cas.lock");
   const deadline = Date.now() + 2_000;
@@ -775,7 +945,27 @@ export async function compareAndSwapStateAtomic(
       await delay(10);
     }
   }
+  return handle;
+}
 
+async function releaseStateCasLock(
+  projectPath: string,
+  handle: FileHandle,
+): Promise<void> {
+  const lockPath = resolve(stateDirectory(projectPath), "state.cas.lock");
+  try {
+    await handle.close();
+  } finally {
+    await rm(lockPath, { force: true });
+  }
+}
+
+export async function compareAndSwapStateAtomic(
+  projectPath: string,
+  expected: ProjectState,
+  next: ProjectState,
+): Promise<boolean> {
+  const handle = await acquireStateCasLock(projectPath);
   try {
     const current = await readState(projectPath);
     if (!isDeepStrictEqual(current, expected)) {
@@ -784,10 +974,56 @@ export async function compareAndSwapStateAtomic(
     await writeStateAtomic(projectPath, next);
     return true;
   } finally {
-    try {
-      await handle.close();
-    } finally {
-      await rm(lockPath, { force: true });
+    await releaseStateCasLock(projectPath, handle);
+  }
+}
+
+/**
+ * CAS under the same state.cas.lock: after expected matches, run side-effect
+ * commit (e.g. atomic Truth replace), then write next state. On state write
+ * failure, invoke rollback so ordinary failures leave no half-migration.
+ */
+export async function compareAndSwapStateWithSideEffects(
+  projectPath: string,
+  expected: ProjectState,
+  next: ProjectState,
+  sideEffects: {
+    commit: () => Promise<void>;
+    rollback: () => Promise<void>;
+  },
+): Promise<boolean> {
+  const handle = await acquireStateCasLock(projectPath);
+  let committed = false;
+  try {
+    const current = await readState(projectPath);
+    if (!isDeepStrictEqual(current, expected)) {
+      return false;
     }
+    await sideEffects.commit();
+    committed = true;
+    await writeStateAtomic(projectPath, next);
+    return true;
+  } catch (error) {
+    if (committed) {
+      try {
+        await sideEffects.rollback();
+      } catch (rollbackError) {
+        const detail = rollbackError instanceof Error
+          ? rollbackError.message
+          : String(rollbackError);
+        // Prefer explicit recovery signal when Truth may be half-applied.
+        if (detail.startsWith("RECOVERY_REQUIRED:")) {
+          throw rollbackError;
+        }
+        throw new Error(
+          "RECOVERY_REQUIRED: state write failed after side-effect commit and "
+            + `rollback failed: ${detail}`,
+          { cause: error },
+        );
+      }
+    }
+    throw error;
+  } finally {
+    await releaseStateCasLock(projectPath, handle);
   }
 }

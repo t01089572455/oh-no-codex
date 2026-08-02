@@ -1,11 +1,14 @@
 # Codex-only V1 implementation plan
 
-Status: **V1_TRIAL_ACCEPTED**
+Status: **RELEASE_CHANGES_REQUIRED** (core: **ANTI_DRIFT_CORE_WORKS**)
 
 Owner authorization: Tasks 1–7 below, including 6A–6C, were authorized as the
 complete V1 implementation scope on 2026-07-30. Correction 2 (audit F3/F4/F5/F8,
 gate truth, external-browser A14/P06) was authorized by Owner handoff on
-2026-07-31. Do not publish a package without new authorization.
+2026-07-31. Correction 3 (release honesty + ACTIVE next + Goal/Truth init +
+denominator warn + AGENTS-safe init) authorized by Owner on 2026-08-01 after
+Grok/Codex joint field judgment. Do not publish a package without new
+authorization.
 
 ## Ledger
 
@@ -22,6 +25,8 @@ gate truth, external-browser A14/P06) was authorized by Owner handoff on
 | Task 6C — browser visual and functional acceptance | LOCAL_PASS | A14 (system Chrome/Edge after Owner external-browser authorization) |
 | Task 7 — cross-project trials and final gate | LOCAL_PASS | A12, A15, A16, P01–P06 |
 | Correction 2 — bounded scope, Truth shrink, pending summary, package subject, gate truth | LOCAL_PASS | F3–F5, F8; honest A14/P06 |
+| Correction 3 — release honesty, CONTINUE_ACTIVE, goal surface, Truth seed, AGENTS-safe init, denominator warn | LOCAL_PASS | honest public status; ACTIVE next; Goal/Truth/Git handoff |
+| Correction 4 — acceptance denominator hard gate (path+digest+revision; Task2 RED) | CHANGES_REQUIRED then REPAIR_PASS | structured basis + migrate; keywords retired |
 
 ## Task 1 local evidence
 
@@ -554,8 +559,9 @@ Owning checks: projectors, codex-hooks, resume-status-next, cockpit black boxes.
 
 There is exactly one. **Unique next:**
 
-> **Owner authorized npm publish (2026-07-31).** Prepare and publish
-> `oh-no-codex@0.1.0` to the public npm registry when credentials are available.
+> **Do not publish.** Package remains `0.1.7` local / unpublished until Owner
+> re-authorizes after Correction 4 independent review and LIVE performance
+> remeasure. Do not push/publish while Gate is red or review is open.
 > Do not reintroduce Gateway / multi-authority design.
 
 ## Shared implementation rules
@@ -877,6 +883,59 @@ release, or claim hostile-agent/full enforcement.
 **Stop:** clean worktree and either:
 
 - `V1_TRIAL_ACCEPTED` with every A/P row evidenced; or
-- `V1_CHANGES_REQUIRED` with exact failing rows and one next action.
+- `V1_CHANGES_REQUIRED` / `RELEASE_CHANGES_REQUIRED` with exact failing rows and one next action.
 
 No Task 8.
+
+## Correction 3 local evidence (2026-08-01)
+
+Branch `fix/release-honesty-0.1.7`. Codex review of first Correction 3 commit
+required a follow-up; do not treat the first commit alone as complete.
+
+- **Public labels:** `ANTI_DRIFT_CORE_WORKS` + `RELEASE_CHANGES_REQUIRED`.
+- **Owner goal:** `ohno init --goal` required again (A01/DESIGN); surfaces use
+  project goal only (no task-goal substitution).
+- **Truth seed:** present high-risk paths (not AGENTS-only).
+- **Denominator:** contract-internal WARN + optional plan
+  `acceptance_source` (Task2 external-plan fixture).
+- **Gitignore:** `cockpit.runtime.json` (real runtime filename).
+- **Trial evidence:** `measurement_binding=HISTORICAL` — digests **not**
+  rebased onto 0.1.7; `npm run test:performance` intentionally fails until
+  three-copy remeasure.
+- **Owning black box:** `node --test test/blackbox/release-honesty.test.mjs`.
+- Package **0.1.7** local; **do not publish** until Owner re-authorizes after
+  LIVE performance evidence.
+
+**Next:** remeasure performance for LIVE binding, or keep
+`RELEASE_CHANGES_REQUIRED`. No merge/publish while performance Gate is red
+unless Owner explicitly accepts HISTORICAL-only.
+
+## Correction 4 local evidence (2026-08-01)
+
+First landing `4f316d9` used keyword detectors and broke schema-2 read → marked
+`CHANGES_REQUIRED` (kept as failed checkpoint).
+
+**Repair + six-point follow-up + Correction 4 closure:**
+
+- Structured basis JSON exact-match; unknown FROZEN fields hard-refuse.
+- **Two-phase migrate:** zero-write preview → caller-returned `--diff`/`--head`
+  → under `state.cas.lock` atomic Truth then state CAS (Truth rolled back if
+  state write fails). Exact diff `ohno-acceptance-basis-migrate-v2` with
+  `apply_metadata` for wall-clock plan_review fields. `LOCAL_REVIEW_RECORDED`
+  only on successful apply (local review, not Owner identity).
+- Truth: only ENOENT may create; corrupt/invalid fail-closed (never overwrite).
+  Basis validated before any Truth write. Full inventory rebuild (+ projected
+  AGENTS) so `migrate → change begin` does not self-lock.
+- Pending: schema-2 pending **rebinds** only when current source still matches
+  basis (`assertFrozenTasksMatchBasis`); else clear to `PROPOSE_PLAN`. Accept
+  black-box green. Stale pending with accepted plan cleared as exact-diff
+  side-effect. Truth apply uses exact-byte CAS under lock (no silent overwrite).
+- MIGRATE is sole next even over FAIL receipts (`read-model` priority).
+- `change begin` unions `acceptance-basis` concern targets only (not all
+  black-box paths).
+- Parseable hooks/verify/pre-commit block while MIGRATE required; arbitrary
+  Bash remains honest cooperative limitation.
+- Owning black box: `test/blackbox/acceptance-denominator.test.mjs` (listed in
+  ACCEPTANCE public layout). Docs: DESIGN schema 3; unique next = no publish.
+- Full suite after this closure: `npm test`.
+- Still **not** a release. Stop for independent review; no push/publish.
