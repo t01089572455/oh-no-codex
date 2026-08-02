@@ -12,15 +12,15 @@
   <img
     src="./assets/brand/oh-no-codex-lockup.png"
     width="920"
-    alt="Oh No, Codex! —a mischievous blue coding plush stopped mid-run by a clear red cross"
+    alt="Oh No, Codex! — a mischievous blue coding plush stopped mid-run by a clear red cross"
   >
 </p>
 
 <p align="center">
   <strong>Codex can write great code and still make the project worse.</strong><br>
   Oh No is a local harness for vibe coding: freeze one task, prove it with a<br>
-  user-visible black box, recover state without chat archaeology —and close<br>
-  <em>that slice</em> cleanly (it does not shut down the Codex app).
+  user-visible black box, recover from project state instead of chat archaeology,<br>
+  and close <em>that slice</em> cleanly. It stops the slice, not the Codex app.
 </p>
 
 <p align="center">
@@ -40,7 +40,7 @@
   <a href="#eighteen-sins">18 sins</a> ·
   <a href="#what-it-does">What it does</a> ·
   <a href="#install">Install</a> ·
-  <a href="#use-it-like-skills">Skills</a> ·
+  <a href="#how-you-actually-use-it-autonomy-vs-manual">Use</a> ·
   <a href="#evidence">Evidence</a>
 </p>
 
@@ -72,7 +72,8 @@ live in the plan; free-form notes use **`ohno requirements note`**.
 
 ## Eighteen sins
 
-Enemy list from a long session audit —not eighteen features. Full text: [`docs/CODEX-SINS.md`](./docs/CODEX-SINS.md).
+This enemy list came from a long session audit; it is not a list of eighteen
+features. Full text: [`docs/CODEX-SINS.md`](./docs/CODEX-SINS.md).
 
 | # | Sin | One line |
 | ---: | --- | --- |
@@ -100,7 +101,7 @@ Enemy list from a long session audit —not eighteen features. Full text: [`docs
 ## What it does
 
 <p align="center">
-  <img src="./assets/brand/oh-no-loop.png" width="880" alt="Task →Prove →Close the slice">
+  <img src="./assets/brand/oh-no-loop.png" width="880" alt="Task → Prove → Close the slice">
 </p>
 
 | Job | Meaning |
@@ -108,9 +109,11 @@ Enemy list from a long session audit —not eighteen features. Full text: [`docs
 | **Freeze a task** | Behaviour, one black-box command, allowed files, budget, stop condition |
 | **Prove** | `ohno verify` runs that exact command |
 | **Close the slice** | Fresh PASS advances the plan cursor; `next` only **points** |
-| **Recover** | `ohno resume` / cockpit →`.ohno/state.json` (sole authority) |
+| **Recover** | `ohno resume` and Cockpit project the same `.ohno/state.json` authority |
 
-**Cooperative** hooks (SessionStart / PreToolUse / Stop + Git pre-commit) inject the capsule and scope writes. Not a hostile security sandbox.
+**Cooperative** hooks (`SessionStart`, `PostCompact`, `PreToolUse`, `Stop`, and
+Git pre-commit) inject the capsule and help keep writes in scope. They are not
+a hostile security sandbox.
 
 **Skill suite:** day-to-day CLI surfaces map to Codex skills under
 `~/.codex/skills/oh-no-*` (setup stays terminal-only: `ohno init` / `ohno install`).
@@ -139,8 +142,9 @@ Node.js **>= 22.20**. Package: [oh-no-codex](https://www.npmjs.com/package/oh-no
 ### Windows notes
 
 - Put npm's global bin on **PATH** (often `%AppData%\npm` or a custom global prefix) so Codex shells find `ohno`.
-- Use the `ohno` / `ohno.cmd` shim —**do not** double-click `node_modules\oh-no-codex\dist\cli.js` (Windows Script Host cannot run that ESM file).
+- Use the `ohno` / `ohno.cmd` shim. **Do not** double-click `node_modules\oh-no-codex\dist\cli.js`; Windows Script Host cannot run that ESM file.
 - Progress % in the cockpit is **plan cursor** (`cursor/task_count`), not "product finished."
+
 ---
 
 ## Cockpit (how to start)
@@ -188,12 +192,13 @@ Stop: Ctrl+C in this terminal, or from another shell: ohno cockpit stop
 ### Where cockpit data comes from
 
 ```text
-plan accept / task start / verify —        →write
-  .ohno/state.json          →sole authority
-        →readModel()
-  GET /api/state            →same as status --json
-        →browser poll
-  cockpit UI
+plan accept / task start / verify
+        │ atomic replace
+        ▼
+  .ohno/state.json            sole authority
+        │ readModel()
+        ├── status / resume / next
+        └── GET /api/state ── browser poll ── Cockpit UI
 ```
 
 | On screen | Source |
@@ -201,7 +206,7 @@ plan accept / task start / verify —        →write
 | How many tasks | `ordered_tasks.length` →`task_count` |
 | How far along | `cursor` + `active_task` |
 | Progress bar | **`cursor / task_count`** only (no fake trust %) |
-| Board phases | Derived from cursor / proof —not a second store |
+| Board phases | Derived from cursor / proof — not a second store |
 
 The cockpit **never** advances work. CLI/skills mutate state; the UI only reads.
 
@@ -209,16 +214,18 @@ The cockpit **never** advances work. CLI/skills mutate state; the UI only reads.
 
 ## How you actually use it (autonomy vs manual)
 
-**You usually do not pick skills by hand.**  
-After `init` + `install`, you talk in ordinary language. Codex is expected to
-load the matching `oh-no-*` skill and run the shell command.  
+**You usually do not pick skills by hand.**
+
+After `init` + `install`, talk in ordinary language. Codex is expected to load
+the matching `oh-no-*` skill and run the shell command.
+
 Oh No is **cooperative**, not fully autonomous: hooks help in the background;
 acceptance still requires a real `ohno verify`.
 
 | Who | What happens |
 | --- | --- |
-| **Automatic (hooks)** | Session start / compact →inject resume capsule; scoped writes may be denied |
-| **You speak →Codex uses skill** | "start / done / where are we / open cockpit" → model runs the matching `ohno` command |
+| **Automatic (hooks)** | Session start / compact → inject resume capsule; scoped writes may be denied |
+| **You speak → Codex uses skill** | "start / done / where are we / open cockpit" → model runs the matching `ohno` command |
 | **You run CLI yourself** | Setup once; or when the model forgets verify / you want certainty |
 
 ### Setup once (you, terminal)
@@ -233,7 +240,7 @@ ohno install
 
 ### Everyday examples (you →expected Codex behavior)
 
-**Example A —first slice**
+**Example A — first slice**
 
 | You say | Codex should |
 | --- | --- |
@@ -241,7 +248,7 @@ ohno install
 | "Start work." | **`oh-no-task`** →`ohno task start`, then edit only allowed files |
 | "Done, verify." | **`oh-no-verify`** →`ohno verify`; report PASS/FAIL honestly |
 
-**Example B —mid project**
+**Example B — mid project**
 
 | You say | Codex should |
 | --- | --- |
@@ -250,7 +257,7 @@ ohno install
 | "Requirements changed: export PDF first." | **`oh-no-change`** then a replacement plan |
 | "Open the board." | **`oh-no-cockpit`** →`ohno cockpit`, tell you the `http://127.0.0.1:…` URL |
 
-**Example C —when you should act yourself**
+**Example C — when you should act yourself**
 
 | Situation | You do |
 | --- | --- |
@@ -259,7 +266,7 @@ ohno install
 | Want a dashboard | Terminal or chat: `ohno cockpit` / "open cockpit" |
 | Skill missing after upgrade | `ohno skill install`, new Codex session |
 
-### Day-to-day skills (reference —not a checklist)
+### Day-to-day skills (reference — not a checklist)
 
 Setup (`ohno init` / `ohno install`) is **terminal-only**, not a skill.  
 Shell details live inside each skill file for Codex; users need not memorize them.
@@ -293,7 +300,7 @@ Shell details live inside each skill file for Codex; users need not memorize the
 | CLI | `init` · `plan` · `task` · `verify` · `change` · `migrate acceptance-basis` · `resume` · … |
 | 13 Codex skills | Day-to-day discoverable procedure (setup is CLI) |
 | Hooks + pre-commit | Capsule inject, scope guard |
-| Projectors | `PROGRESS.md`, REQUIREMENTS, short AGENTS capsule |
+| Projectors | `.ohno/PROGRESS.md`, `.ohno/REQUIREMENTS.md`, short AGENTS capsule |
 | Preferences | Optional craft defaults (research / OSS / UI adapt) |
 | Cockpit | Read-only board = `status --json` |
 
@@ -306,12 +313,12 @@ Shell details live inside each skill file for Codex; users need not memorize the
 | Claim | Label |
 | --- | --- |
 | Core harness | `ANTI_DRIFT_CORE_WORKS` |
-| Release / public status | Owner-authorized **`0.1.7`** release (not `V1_TRIAL_ACCEPTED`; trials are local) |
+| Release / public status | **`0.1.7` is published**; local trials remain `TRIAL_PASS`, not `V1_TRIAL_ACCEPTED` |
 | CLI / hooks / atomic state | `LOCAL_PASS` |
 | Cockpit = status JSON | `LOCAL_PASS` |
 | Correction 4 structured basis | `LOCAL_PASS` (merged on main) |
 | Disposable real-copy P01–P06 | **`TRIAL_PASS`** LIVE — p95 ms A/B/C: status 139.361 / 140.512 / 132.802; next 169.689 / 157.331 / 136.215; resume 168.616 / 195.458 / 193.012; task_start 136.947 / 156.410 / 159.346; P06 163 / 178 / 164; P04 resume 4006 B (not a universal speed claim; batch id in trial evidence JSON) |
-| npm | **`oh-no-codex@0.1.7`** (Owner-authorized; registry may lag mirrors) |
+| npm | **`oh-no-codex@0.1.7`** is on the public npm registry; mirrors may lag |
 | Schema 2 → 3 migrate | Two-phase: preview then `--diff`/`--head` apply (see DESIGN) |
 
 Contracts: [Product](./docs/PRODUCT-CONTRACT.md) · [Design](./docs/DESIGN.md) · [Acceptance](./docs/ACCEPTANCE.md) · [Publish](./docs/PUBLISH.md) · [Sins](./docs/CODEX-SINS.md)
