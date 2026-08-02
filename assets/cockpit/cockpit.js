@@ -117,10 +117,21 @@ function stateSignature(model) {
     model.status,
     model.cursor,
     model.task_count,
+    model.completed_count,
     model.current_task?.id ?? null,
+    model.current_task?.expected_behavior ?? null,
+    model.current_task?.test_command ?? null,
     model.proof_freshness,
     model.blocker,
     model.next_action,
+    model.goal,
+    model.plan_revision,
+    model.document_sync_status,
+    model.truth_target_count,
+    model.plan_board,
+    model.completed,
+    model.truth_targets,
+    model.handoff,
   ]);
 }
 
@@ -412,8 +423,18 @@ function setUnavailableGate(kind) {
     + "open the latest URL instead.";
 }
 
+let lastRenderedSignature = "";
+
 function render(model, meta = {}) {
   const available = model.availability === "AVAILABLE";
+  // Quiet polls: do not thrash the DOM (or scroll position) when nothing changed.
+  const signature = stateSignature(model)
+    + `|offline:${meta.offline === true ? 1 : 0}`;
+  if (signature === lastRenderedSignature) {
+    return;
+  }
+  lastRenderedSignature = signature;
+
   const task = model.current_task;
   const ratio = progressRatio(model);
   // 0.1.6: do not lead with a bare percent — that reads as product complete.
@@ -555,27 +576,36 @@ function render(model, meta = {}) {
   announceMeaningfulChange(model);
 }
 
-function setRefreshBusy(busy) {
+function setRefreshBusy(busy, { manual = false } = {}) {
   requestInFlight = busy;
-  elements.refresh.textContent = busy ? "READING" : "REFRESH";
-  elements.refresh.setAttribute("aria-disabled", String(busy));
-  elements.main.setAttribute("aria-busy", String(busy));
+  // Never flash the masthead button on background polls — only on user click.
+  if (manual) {
+    elements.refresh.textContent = busy ? "READING" : "REFRESH";
+    elements.refresh.setAttribute("aria-disabled", String(busy));
+    elements.main.setAttribute("aria-busy", String(busy));
+  } else if (!busy) {
+    elements.refresh.textContent = "REFRESH";
+    elements.refresh.setAttribute("aria-disabled", "false");
+    elements.main.setAttribute("aria-busy", "false");
+  }
+  document.body.dataset.live = busy && !manual ? "polling" : "idle";
 }
 
 function scheduleRefresh() {
   clearTimeout(refreshTimer);
   if (!document.hidden) {
     refreshTimer = setTimeout(() => {
-      void refreshState();
+      void refreshState({ manual: false });
     }, 120);
   }
 }
 
-async function refreshState() {
+async function refreshState(options = {}) {
+  const manual = options.manual === true;
   if (requestInFlight) {
     return;
   }
-  setRefreshBusy(true);
+  setRefreshBusy(true, { manual });
   try {
     const response = await fetch("/api/state", {
       cache: "no-store",
@@ -596,7 +626,7 @@ async function refreshState() {
     // fetch failed: process gone, wrong port, or tab left open after stop.
     render(unavailableProjection, { offline: true });
   } finally {
-    setRefreshBusy(false);
+    setRefreshBusy(false, { manual });
   }
 }
 
@@ -604,7 +634,7 @@ elements.refresh.addEventListener("click", () => {
   if (elements.refresh.getAttribute("aria-disabled") === "true") {
     return;
   }
-  void refreshState();
+  void refreshState({ manual: true });
 });
 
 document.addEventListener("visibilitychange", () => {
@@ -613,10 +643,10 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
-void refreshState();
-// COCKPIT-DESIGN-CONTRACT: 100-125 ms cadence
+void refreshState({ manual: false });
+// COCKPIT-DESIGN-CONTRACT: 100-125 ms cadence (silent; no masthead thrash).
 setInterval(() => {
   if (!document.hidden) {
-    void refreshState();
+    void refreshState({ manual: false });
   }
 }, 100);

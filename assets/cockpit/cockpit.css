@@ -28,7 +28,8 @@
 
 html,
 body {
-  min-height: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 
 body {
@@ -104,23 +105,28 @@ body[data-tone="unknown"] {
 }
 
 .app-shell {
-  width: min(1440px, calc(100% - 32px));
-  margin: 16px auto 28px;
+  width: min(1440px, calc(100% - 24px));
+  height: calc(100vh - 16px);
+  max-height: calc(100vh - 16px);
+  margin: 8px auto;
   display: grid;
-  gap: 16px;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  min-height: 0;
 }
 
 .top-nav {
   display: grid;
   grid-template-columns:
-    minmax(220px, 1.2fr)
-    minmax(220px, 1.3fr)
-    minmax(180px, 1fr)
+    minmax(200px, 1.1fr)
+    minmax(200px, 1.2fr)
+    minmax(160px, 0.95fr)
     auto;
-  gap: 16px;
+  gap: 12px;
   align-items: center;
-  padding: 14px 18px;
-  border-radius: 24px;
+  padding: 10px 14px;
+  border-radius: 20px;
+  flex: 0 0 auto;
 }
 
 .brand-cluster,
@@ -343,24 +349,103 @@ button:focus-visible,
   cursor: wait;
 }
 
+/* Subtle live pulse only on silent poll — never rewrite the button label. */
+body[data-live="polling"] #refresh-button {
+  box-shadow: 0 10px 24px rgba(79, 140, 255, 0.22);
+}
+
 .dashboard {
   display: grid;
-  grid-template-columns: minmax(240px, 0.9fr) minmax(320px, 1.3fr) minmax(240px, 0.9fr);
-  gap: 16px;
-  align-items: start;
+  grid-template-columns: minmax(240px, 0.95fr) minmax(300px, 1.15fr) minmax(280px, 1fr);
+  gap: 12px;
+  align-items: stretch;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .left-rail,
 .right-rail,
 .center-stage {
   display: grid;
-  gap: 14px;
+  gap: 10px;
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.left-rail {
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+}
+
+/* Right: board on top full-width; proof+drift side-by-side; summary full-width. */
+.right-rail {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: minmax(0, 1fr) auto auto;
+}
+
+.right-rail > .board-card {
+  grid-column: 1 / -1;
+}
+
+.right-rail > .proof-instrument {
+  grid-column: 1;
+}
+
+.right-rail > .drift-instrument {
+  grid-column: 2;
+}
+
+.right-rail > .summary-card {
+  grid-column: 1 / -1;
+}
+
+.center-stage {
+  grid-template-rows: minmax(0, 1fr);
 }
 
 .card,
 .mission-card {
-  border-radius: 22px;
-  padding: 16px;
+  border-radius: 18px;
+  padding: 12px 14px;
+  min-height: 0;
+}
+
+.board-card {
+  display: grid;
+  /* Plan board keeps nearly all of the card; truth is a short strip. */
+  grid-template-rows: auto minmax(0, 1fr) auto minmax(0, 72px) auto;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.proof-instrument,
+.summary-card,
+.guardrail-card {
+  padding: 8px 10px;
+}
+
+.instrument-card .signal-value,
+.instrument-card .eyebrow {
+  font-size: 0.8rem;
+}
+
+.summary-grid {
+  gap: 4px;
+}
+
+.summary-cell {
+  padding: 4px 6px;
+}
+
+.summary-number {
+  font-size: 1rem;
+}
+
+.ledger-card {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  min-height: 0;
 }
 
 .action-card {
@@ -439,15 +524,17 @@ button:focus-visible,
   white-space: nowrap;
 }
 
-/* Bounded ledgers: many tasks must not stretch the page forever. */
+/* Lists fill their grid track; they scroll inside the card, not the page. */
 .scroll-panel {
-  margin-top: 10px;
-  max-height: min(280px, 38vh);
+  margin-top: 8px;
+  min-height: 0;
+  max-height: none;
+  height: 100%;
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 2px 4px 2px 0;
-  border-radius: 14px;
+  border-radius: 12px;
   border: 1px solid rgba(26, 22, 48, 0.06);
   background: rgba(255, 255, 255, 0.28);
   scrollbar-gutter: stable;
@@ -459,11 +546,12 @@ button:focus-visible,
 }
 
 .scroll-panel-board {
-  max-height: min(320px, 42vh);
+  max-height: none;
 }
 
 .scroll-panel-truth {
-  max-height: min(140px, 18vh);
+  max-height: none;
+  min-height: 48px;
 }
 
 .board-card .truth-meta-line {
@@ -592,25 +680,12 @@ button:focus-visible,
   font-size: 0.74rem;
 }
 
-@media (max-width: 900px) {
-  .scroll-panel {
-    max-height: min(240px, 34vh);
-  }
-
-  .scroll-panel-board {
-    max-height: min(260px, 36vh);
-  }
-
-  .scroll-panel-truth {
-    max-height: min(120px, 16vh);
-  }
-}
-
 .mission-card {
-  min-height: 520px;
+  min-height: 0;
+  height: 100%;
   display: grid;
-  grid-template-rows: auto 1fr auto;
-  gap: 12px;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 8px;
   background:
     radial-gradient(circle at 50% 42%, rgba(167, 139, 250, 0.18), transparent 42%),
     var(--glass-strong);
@@ -629,7 +704,9 @@ button:focus-visible,
 
 .ring-wrap {
   position: relative;
-  width: min(100%, 420px);
+  width: min(100%, 360px, 40vh);
+  max-height: 100%;
+  min-height: 0;
   margin: 0 auto;
   aspect-ratio: 1;
 }
@@ -814,10 +891,12 @@ button:focus-visible,
 }
 
 .bottom-rail {
-  border-radius: 22px;
-  padding: 16px 18px;
+  border-radius: 18px;
+  padding: 10px 14px;
   display: grid;
-  gap: 12px;
+  gap: 8px;
+  flex: 0 0 auto;
+  min-height: 0;
 }
 
 .completion-header {
@@ -897,6 +976,17 @@ button:focus-visible,
 }
 
 @media (max-width: 1099px) {
+  html,
+  body {
+    height: auto;
+    overflow: auto;
+  }
+
+  .app-shell {
+    height: auto;
+    max-height: none;
+  }
+
   .top-nav {
     grid-template-columns: 1fr 1fr;
   }
@@ -908,6 +998,24 @@ button:focus-visible,
 
   .dashboard {
     grid-template-columns: 1fr 1fr;
+    overflow: visible;
+  }
+
+  .left-rail,
+  .right-rail,
+  .center-stage,
+  .board-card,
+  .ledger-card {
+    overflow: visible;
+    max-height: none;
+    grid-template-rows: auto;
+  }
+
+  .scroll-panel,
+  .scroll-panel-board,
+  .scroll-panel-truth {
+    max-height: min(280px, 36vh);
+    height: auto;
   }
 
   .center-stage {

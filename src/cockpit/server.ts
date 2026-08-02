@@ -229,7 +229,12 @@ async function handleRequest(
     200,
     asset.contentType,
     asset.bytes,
-    requestUrl.pathname === "/" ? "no-store" : "public, max-age=3600",
+    // HTML/CSS/JS are always revalidated for local Cockpit (no stale UI thrash).
+    requestUrl.pathname === "/"
+      || requestUrl.pathname.endsWith(".css")
+      || requestUrl.pathname.endsWith(".js")
+      ? "no-store"
+      : "public, max-age=3600",
   );
 }
 
