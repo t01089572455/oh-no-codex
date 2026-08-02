@@ -6,10 +6,13 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import {
   mkdir,
+  open,
   readFile,
+  rm,
   writeFile,
 } from "node:fs/promises";
 import { resolve } from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
 import test from "node:test";
 
 import {
@@ -17,6 +20,7 @@ import {
   frozenPlanTask,
   runCli,
   runInit,
+  spawnCli,
   writeStructuredAcceptanceBasis,
 } from "../helpers/blackbox.mjs";
 
@@ -541,11 +545,14 @@ test("pending source shrink after pending clears to PROPOSE_PLAN not REVIEW_PLAN
   assert.equal(next.stdout.trim(), "PROPOSE_PLAN");
 });
 
-test("Truth concurrent edit since preview refuses apply without overwrite", async (t) => {
+test("Truth concurrent edit under state.cas.lock refuses apply without overwrite", async (t) => {
+  // Locks the lock-held race: apply starts and waits on state.cas.lock, Truth
+  // is edited while waiting, then lock is released. That is the only window
+  // that forces the under-lock exact-byte CAS (pre-apply Truth edits alone
+  // can also fail earlier via DIFF_DIGEST recompute and do not pin the fix).
   const projectPath = await createProject(t);
   await writeSchema2ActiveFixture(projectPath);
   writeStructuredAcceptanceBasis(projectPath, [basisUnit], basisPath);
-  // Existing Truth so migrate plans an update (not create).
   await mkdir(resolve(projectPath, ".ohno"), { recursive: true });
   await mkdir(resolve(projectPath, "docs"), { recursive: true });
   await writeFile(
@@ -567,8 +574,41 @@ test("Truth concurrent edit since preview refuses apply without overwrite", asyn
   const preview = runMigratePreview(projectPath);
   assert.equal(preview.status, 0, preview.stderr);
   assert.match(preview.stdout, /"action": "update"/);
+  const diff = /^DIFF_DIGEST: ([a-f0-9]{64})$/m.exec(preview.stdout)?.[1];
+  const head = /^HEAD: (.+)$/m.exec(preview.stdout)?.[1];
+  assert.ok(diff && head);
 
-  // Owner/other process edits Truth after preview.
+  const lockPath = resolve(projectPath, ".ohno", "state.cas.lock");
+  const lockHandle = await open(lockPath, "wx", 0o600);
+
+  const child = spawnCli(projectPath, [
+    "migrate",
+    "acceptance-basis",
+    "--file",
+    basisPath,
+    "--diff",
+    diff,
+    "--head",
+    head,
+  ]);
+  const childDone = new Promise((resolvePromise, reject) => {
+    let stdout = "";
+    let stderr = "";
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk;
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk;
+    });
+    child.on("error", reject);
+    child.on("close", (code) => {
+      resolvePromise({ status: code ?? 1, stdout, stderr });
+    });
+  });
+
+  // Let apply finish zero-write revalidation and enter lock wait (2s budget).
+  await delay(400);
+
   await writeFile(
     resolve(projectPath, "docs", "CONCURRENT.md"),
     "owner concurrent note\n",
@@ -586,9 +626,15 @@ test("Truth concurrent edit since preview refuses apply without overwrite", asyn
     "utf8",
   );
 
-  const applied = runMigrateApply(projectPath, preview.stdout);
-  assert.notEqual(applied.status, 0);
-  assert.match(applied.stderr, /Truth content changed|exact-byte CAS|re-preview/i);
+  await lockHandle.close();
+  await rm(lockPath, { force: true });
+
+  const applied = await childDone;
+  assert.notEqual(applied.status, 0, applied.stderr);
+  assert.match(
+    applied.stderr,
+    /Truth content changed|exact-byte CAS|re-preview/i,
+  );
 
   const truth = JSON.parse(
     await readFile(resolve(projectPath, ".ohno", "truth.json"), "utf8"),
