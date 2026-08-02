@@ -99,6 +99,10 @@ Expected:
   assets, README, license, and package metadata;
 - no network or publication side effect occurs.
 
+Owner-authorized `git push` / `npm publish` steps (registry choice, post-publish
+README honesty, install upgrade) live in `docs/PUBLISH.md`. They are outside
+this gate and must not run during Gate.
+
 ## Real-project trial rules
 
 - Use three copied projects with different stacks; never mutate originals.

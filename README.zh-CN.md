@@ -56,6 +56,7 @@ Node.js **≥ 22.20**。包名 [oh-no-codex](https://www.npmjs.com/package/oh-no
 
 ```bash
 npm install -g oh-no-codex   # 发布后
+# 镜像延迟时：npm install -g oh-no-codex@0.1.7 --registry https://registry.npmjs.org
 cd your-git-repo
 ohno init --goal "你的产品目标"
 ohno install
@@ -74,7 +75,7 @@ ohno install
 | 可丢弃真实副本性能 P01–P06 | **`TRIAL_PASS`** LIVE — p95 ms A/B/C：status 139.361 / 140.512 / 132.802；next 169.689 / 157.331 / 136.215；resume 168.616 / 195.458 / 193.012；task_start 136.947 / 156.410 / 159.346；P06 163 / 178 / 164；P04 resume 4006 B（非全球性能保证；batch id 见 trial evidence JSON） |
 | npm | **`oh-no-codex@0.1.7`**（Owner 已授权；镜像可能延迟） |
 
-契约：[Product](./docs/PRODUCT-CONTRACT.md) · [Design](./docs/DESIGN.md) · [Acceptance](./docs/ACCEPTANCE.md)
+契约：[Product](./docs/PRODUCT-CONTRACT.md) · [Design](./docs/DESIGN.md) · [Acceptance](./docs/ACCEPTANCE.md) · [Publish](./docs/PUBLISH.md)
 
 ---
 

@@ -121,6 +121,8 @@ Enemy list from a long session audit —not eighteen features. Full text: [`docs
 
 ```bash
 npm install -g oh-no-codex
+# if a mirror lags a fresh release:
+# npm install -g oh-no-codex@0.1.7 --registry https://registry.npmjs.org
 cd your-git-repo
 ohno init --goal "Owner project goal"
 ohno install              # hooks + day-to-day oh-no-* skills
@@ -312,7 +314,7 @@ Shell details live inside each skill file for Codex; users need not memorize the
 | npm | **`oh-no-codex@0.1.7`** (Owner-authorized; registry may lag mirrors) |
 | Schema 2 → 3 migrate | Two-phase: preview then `--diff`/`--head` apply (see DESIGN) |
 
-Contracts: [Product](./docs/PRODUCT-CONTRACT.md) · [Design](./docs/DESIGN.md) · [Acceptance](./docs/ACCEPTANCE.md) · [Sins](./docs/CODEX-SINS.md)
+Contracts: [Product](./docs/PRODUCT-CONTRACT.md) · [Design](./docs/DESIGN.md) · [Acceptance](./docs/ACCEPTANCE.md) · [Publish](./docs/PUBLISH.md) · [Sins](./docs/CODEX-SINS.md)
 
 ---
 
