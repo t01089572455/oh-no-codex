@@ -34,20 +34,18 @@ function toPosix(repositoryRoot, absolutePath) {
 }
 
 /**
- * Deterministic hash of the package runtime subject that ships to consumers:
- * package.json identity fields plus every packed path listed in `files`.
+ * Public projections that document measured trial numbers. Including them in
+ * the *sample-binding* digest creates a remeasure loop (write p95 → digest
+ * changes → samples look rebound). Full package subject still hashes them.
  */
-export async function computePackageSubjectSha256(repositoryRoot) {
+const SAMPLE_BINDING_EXCLUDES = new Set([
+  "README.md",
+  "README.zh-CN.md",
+]);
+
+async function collectPackedFiles(repositoryRoot, { excludeReadmes }) {
   const packageJsonPath = resolve(repositoryRoot, "package.json");
   const packageJson = JSON.parse(await readFile(packageJsonPath, "utf8"));
-  const hash = createHash("sha256");
-  addFramed(hash, "format", "ohno-package-subject-v1");
-  addFramed(hash, "name", String(packageJson.name ?? ""));
-  addFramed(hash, "version", String(packageJson.version ?? ""));
-  addFramed(hash, "bin", JSON.stringify(packageJson.bin ?? null));
-  addFramed(hash, "type", String(packageJson.type ?? ""));
-  addFramed(hash, "files", JSON.stringify(packageJson.files ?? []));
-
   const packedRoots = Array.isArray(packageJson.files)
     ? packageJson.files
     : [];
@@ -77,6 +75,38 @@ export async function computePackageSubjectSha256(repositoryRoot) {
     return leftPath < rightPath ? -1 : leftPath > rightPath ? 1 : 0;
   });
 
+  if (!excludeReadmes) {
+    return { packageJson, packageJsonPath, sorted };
+  }
+  return {
+    packageJson,
+    packageJsonPath,
+    sorted: sorted.filter((absolute) => {
+      const relativePath = toPosix(repositoryRoot, absolute);
+      return !SAMPLE_BINDING_EXCLUDES.has(relativePath);
+    }),
+  };
+}
+
+async function hashPacked(
+  repositoryRoot,
+  formatLabel,
+  { excludeReadmes },
+) {
+  const { packageJson, sorted } = await collectPackedFiles(repositoryRoot, {
+    excludeReadmes,
+  });
+  const hash = createHash("sha256");
+  addFramed(hash, "format", formatLabel);
+  addFramed(hash, "name", String(packageJson.name ?? ""));
+  addFramed(hash, "version", String(packageJson.version ?? ""));
+  addFramed(hash, "bin", JSON.stringify(packageJson.bin ?? null));
+  addFramed(hash, "type", String(packageJson.type ?? ""));
+  addFramed(hash, "files", JSON.stringify(packageJson.files ?? []));
+  if (excludeReadmes) {
+    addFramed(hash, "exclude", JSON.stringify([...SAMPLE_BINDING_EXCLUDES]));
+  }
+
   for (const absolute of sorted) {
     const relativePath = toPosix(repositoryRoot, absolute);
     addFramed(hash, "path", relativePath);
@@ -84,4 +114,25 @@ export async function computePackageSubjectSha256(repositoryRoot) {
   }
 
   return hash.digest("hex");
+}
+
+/**
+ * Full packed package subject (includes README). Use for ship/tarball truth
+ * after public surfaces have been filled.
+ */
+export async function computePackageSubjectSha256(repositoryRoot) {
+  return hashPacked(repositoryRoot, "ohno-package-subject-v1", {
+    excludeReadmes: false,
+  });
+}
+
+/**
+ * Runtime sample-binding subject: packed package minus README projections.
+ * Trial samples bind to this so post-measure p95 documentation in README
+ * does not force sample rebinding.
+ */
+export async function computeRuntimeSubjectSha256(repositoryRoot) {
+  return hashPacked(repositoryRoot, "ohno-runtime-subject-v1", {
+    excludeReadmes: true,
+  });
 }

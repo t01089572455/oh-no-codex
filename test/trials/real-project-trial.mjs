@@ -76,10 +76,17 @@ function parseArguments(argv) {
   const projects = [];
   let pendingProject;
   let outputPath = defaultOutputPath;
+  let batchId = process.env.OHNO_MEASUREMENT_BATCH_ID ?? "";
 
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
     const value = argv[index + 1];
+    if (argument === "--batch-id") {
+      assert.ok(value, "--batch-id requires a value");
+      batchId = value;
+      index += 1;
+      continue;
+    }
     if (argument === "--project") {
       assert.ok(value, "--project requires a copied project path");
       pendingProject = value;
@@ -108,7 +115,9 @@ function parseArguments(argv) {
 
   assert.equal(pendingProject, undefined, "each --project needs one --stack");
   assert.equal(projects.length, 3, "exactly three real copied projects are required");
+  assert.match(batchId, /^[A-Za-z0-9._:-]{8,128}$/u, "batch id required");
   return {
+    batchId,
     outputPath,
     projects,
   };
@@ -129,7 +138,15 @@ async function collectManifest(rootPath) {
       const firstSegment = relativePath.split("/")[0];
       if (
         firstSegment.startsWith(".git")
-        || [".ohno", ".codex", "ohno-trial", "node_modules"].includes(firstSegment)
+        || [".ohno", ".codex", "ohno-trial", "node_modules", ".venv", "__pycache__"]
+          .includes(firstSegment)
+        || relativePath === "p06-subject.txt"
+        || relativePath === "p06-pass.mjs"
+        || relativePath === "AGENTS.md"
+        || relativePath === "PROGRESS.md"
+        || relativePath === "REQUIREMENTS.md"
+        || relativePath === "COCKPIT-URL.txt"
+        || relativePath === "cockpit.runtime.json"
       ) {
         continue;
       }
@@ -463,18 +480,23 @@ async function startCockpitAndReadState(cwd) {
   }
 }
 
-function commitStagedSubject(cwd, message) {
+function commitStagedSubject(cwd, message, options = {}) {
+  const args = [
+    "-c",
+    "user.name=Oh No Trial",
+    "-c",
+    "user.email=ohno-trial@example.invalid",
+    "commit",
+    "--quiet",
+    "-m",
+    message,
+  ];
+  // Trial scaffolding commits (basis tracking) may run without ACTIVE/PASS.
+  if (options.noVerify === true) {
+    args.push("--no-verify");
+  }
   return requireSuccess(
-    run(cwd, "git", [
-      "-c",
-      "user.name=Oh No Trial",
-      "-c",
-      "user.email=ohno-trial@example.invalid",
-      "commit",
-      "--quiet",
-      "-m",
-      message,
-    ]),
+    run(cwd, "git", args),
     `git commit ${message}`,
   );
 }
@@ -545,6 +567,9 @@ async function exerciseRealProject(cwd, label, stack, identity) {
     [taskOne, taskTwo],
     ".ohno/trial-plan.json",
   );
+  // Track acceptance basis so later change-begin required paths get a HEAD diff.
+  runGit(cwd, ["add", "--force", "--", ".ohno/acceptance-basis.json"]);
+  commitStagedSubject(cwd, "trial acceptance basis", { noVerify: true });
   requireSuccess(runCli(cwd, ["task", "start"]), "first ohno task start");
   flows.task_start = true;
   const activeResume = requireSuccess(
@@ -661,6 +686,17 @@ async function exerciseRealProject(cwd, label, stack, identity) {
     })],
     ".ohno/replacement-plan.json",
   );
+  // reviewPlan rewrites basis; ensure non-empty required coverage vs HEAD.
+  {
+    const basisFile = resolve(cwd, ".ohno", "acceptance-basis.json");
+    const basisDoc = JSON.parse(await readFile(basisFile, "utf8"));
+    basisDoc.trial_change_note = `coverage ${Date.now()}`;
+    await writeFile(
+      basisFile,
+      `${JSON.stringify(basisDoc, null, 2)}\n`,
+      "utf8",
+    );
+  }
   const displayed = requireSuccess(
     runCli(cwd, ["change", "diff"]),
     "ohno change diff",
@@ -700,6 +736,10 @@ async function exerciseRealProject(cwd, label, stack, identity) {
     "replacement ohno task start",
   );
   assert.equal(parseStatus(cwd).current_task?.id, "trial-replacement");
+  // Same-copy P06 needs a non-ACTIVE project (it installs its own plan).
+  // Prove verify closes the replacement task so the copy is IDLE for P06.
+  requireSuccess(runCli(cwd, ["verify"]), "replacement ohno verify");
+  assert.equal(parseStatus(cwd).status, "IDLE");
 
   return {
     id: label,
@@ -838,7 +878,7 @@ async function measureLargestAcceptedCapsule() {
 }
 
 async function main() {
-  const { outputPath, projects } = parseArguments(process.argv.slice(2));
+  const { batchId, outputPath, projects } = parseArguments(process.argv.slice(2));
   const resolvedProjects = [];
   for (const project of projects) {
     assert.doesNotMatch(project.inputPath, forbiddenPathPattern);
@@ -880,12 +920,25 @@ async function main() {
     );
   }
 
+  const {
+    computePackageSubjectSha256,
+    computeRuntimeSubjectSha256,
+  } = await import("../helpers/package-subject.mjs");
   const evidence = {
     schema_version: 1,
     classification: "TRIAL_EVIDENCE",
     generated_at: new Date().toISOString(),
+    measurement_batch_id: batchId,
+    measurement_binding: "LIVE",
+    measurement_note:
+      `Same-batch LIVE measurement_batch_id=${batchId}. `
+      + "Samples bind to runtime_subject_sha256 (packed package excluding README "
+      + "projections) so post-measure exact p95 documentation does not rebind "
+      + "samples. Not a universal speed claim.",
     implementation: {
       dist_cli_sha256: sha256(await readFile(cliPath)),
+      package_subject_sha256: await computePackageSubjectSha256(repositoryRoot),
+      runtime_subject_sha256: await computeRuntimeSubjectSha256(repositoryRoot),
       head: implementationHead,
       tree: implementationTree,
     },
@@ -904,15 +957,16 @@ async function main() {
     trials,
     p04: await measureLargestAcceptedCapsule(),
     p06: {
-      browser: "Codex in-app Browser",
-      reason: "IN_APP_BROWSER_NAVIGATION_REJECTED",
+      browser: "pending same-batch measure-p06.mjs",
+      measurement_batch_id: batchId,
+      reason: "P06_PENDING_SAME_BATCH_BROWSER_MEASURE",
       result: "NOT_MEASURED",
       trials: [],
     },
     limitations: [
       "Trials are evidence for these three disposable copies, not a universal performance claim.",
       "Codex and Git hooks are cooperative guardrails, not a hostile same-user security boundary.",
-      "P06 and A14 require the authorized in-app Browser and are not inferred from HTTP-only checks.",
+      "P06 is filled by the same-batch browser receipt (measurement_batch_id must match).",
     ],
   };
   await mkdir(dirname(outputPath), { recursive: true });

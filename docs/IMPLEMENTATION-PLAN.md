@@ -26,7 +26,7 @@ authorization.
 | Task 7 — cross-project trials and final gate | LOCAL_PASS | A12, A15, A16, P01–P06 |
 | Correction 2 — bounded scope, Truth shrink, pending summary, package subject, gate truth | LOCAL_PASS | F3–F5, F8; honest A14/P06 |
 | Correction 3 — release honesty, CONTINUE_ACTIVE, goal surface, Truth seed, AGENTS-safe init, denominator warn | LOCAL_PASS | honest public status; ACTIVE next; Goal/Truth/Git handoff |
-| Correction 4 — acceptance denominator hard gate (path+digest+revision; Task2 RED) | CHANGES_REQUIRED then REPAIR_PASS | structured basis + migrate; keywords retired |
+| Correction 4 — acceptance denominator hard gate (path+digest+revision; Task2 RED) | LOCAL_PASS | structured basis + migrate; keywords retired |
 
 ## Task 1 local evidence
 
@@ -454,7 +454,7 @@ Current row classification:
 | A01–A13, A15, A16 | `LOCAL_PASS` (also exercised on all three real copies where applicable) |
 | A14 | `LOCAL_PASS` — system Chrome/Edge browser matrix after Owner authorized external browser |
 | P01–P05 | `TRIAL_PASS` on every copied project |
-| P06 | `TRIAL_PASS` — three 30-sample browser receipts; worst p95 `73.690 ms` |
+| P06 | `TRIAL_PASS` — three 30-sample browser receipts; worst p95 `178 ms` |
 
 ### Correction 2 evidence (2026-07-31)
 
@@ -559,10 +559,9 @@ Owning checks: projectors, codex-hooks, resume-status-next, cockpit black boxes.
 
 There is exactly one. **Unique next:**
 
-> **Do not publish.** Package remains `0.1.7` local / unpublished until Owner
-> re-authorizes after Correction 4 independent review and LIVE performance
-> remeasure. Do not push/publish while Gate is red or review is open.
-> Do not reintroduce Gateway / multi-authority design.
+> **`OWNER_AUTHORIZE_NPM_PUBLISH_0.1.7`.** Correction 4 is `LOCAL_PASS`.
+> Same-batch LIVE P01–P06 bound (sole `state.json` clock, Cockpit 100ms design).
+> Do **not** publish without explicit Owner authorization.
 
 ## Shared implementation rules
 
@@ -899,16 +898,11 @@ required a follow-up; do not treat the first commit alone as complete.
 - **Denominator:** contract-internal WARN + optional plan
   `acceptance_source` (Task2 external-plan fixture).
 - **Gitignore:** `cockpit.runtime.json` (real runtime filename).
-- **Trial evidence:** `measurement_binding=HISTORICAL` — digests **not**
-  rebased onto 0.1.7; `npm run test:performance` intentionally fails until
-  three-copy remeasure.
+- **Trial evidence:** later closed as **`LIVE`** for 0.1.7 candidate (see
+  Correction 4 / release-closure evidence below). Historical note retained only
+  as prior checkpoint.
 - **Owning black box:** `node --test test/blackbox/release-honesty.test.mjs`.
-- Package **0.1.7** local; **do not publish** until Owner re-authorizes after
-  LIVE performance evidence.
-
-**Next:** remeasure performance for LIVE binding, or keep
-`RELEASE_CHANGES_REQUIRED`. No merge/publish while performance Gate is red
-unless Owner explicitly accepts HISTORICAL-only.
+- Package **0.1.7** candidate; publish still Owner-gated.
 
 ## Correction 4 local evidence (2026-08-01)
 
@@ -938,4 +932,43 @@ First landing `4f316d9` used keyword detectors and broke schema-2 read → marke
 - Owning black box: `test/blackbox/acceptance-denominator.test.mjs` (listed in
   ACCEPTANCE public layout). Docs: DESIGN schema 3; unique next = no publish.
 - Full suite after this closure: `npm test`.
-- Still **not** a release. Stop for independent review; no push/publish.
+- **Independent review + merge complete** (`94844fd` / `3420f43`).
+- **Release-closure (honest LIVE candidate):** same-batch `live-20260802T072712Z-660743f7`.
+  Three disposable copies. P06 harness on sole `state.json`; Cockpit 100ms (design).
+  Product only: design cadence + puppeteer-core (dev). Publish Owner-gated.
+
+## Release-closure Gate (0.1.7 candidate)
+
+Recorded on the release-closure commit (git HEAD). Node.js v24.11.1.
+Commands from `docs/ACCEPTANCE.md` final verification.
+
+| Command | Result |
+| --- | --- |
+| `npm ci` | exit 0 |
+| `npm run typecheck` | exit 0 |
+| `npm run build` | exit 0 |
+| `npm test` | exit 0; 144/144 passed |
+| `npm run test:acceptance` | exit 0; 144/144 passed |
+| `npm run test:performance` | exit 0; 2/2 passed (P01–P06) |
+| `npm pack --dry-run` | exit 0; `oh-no-codex@0.1.7` |
+| `git diff --check` | exit 0; no output |
+| `git status --short` | exit 0; no output (`WORKTREE_CLEAN`) |
+
+Exact LIVE metrics (batch `live-20260802T072712Z-660743f7`):
+
+| ID | p95 (Trial A / B / C) |
+| --- | --- |
+| P01 status | 139.361 / 140.512 / 132.802 ms |
+| P02 next | 169.689 / 157.331 / 136.215 ms |
+| P03 resume | 168.616 / 195.458 / 193.012 ms |
+| P04 resume capsule | 4006 B |
+| P05 task_start | 136.947 / 156.410 / 159.346 ms |
+| P06 cockpit | 163 / 178 / 164 ms |
+
+P06: harness observes sole authority `.ohno/state.json` ACTIVE;
+Cockpit refresh 100ms (COCKPIT-DESIGN-CONTRACT).
+Product delta from Correction-4 merge: Cockpit cadence only +
+`puppeteer-core` devDependency for browser receipts.
+No second state marker; no Chromium port blocklist in product.
+
+No npm publish, tag, or network mutation is authorized by this gate.

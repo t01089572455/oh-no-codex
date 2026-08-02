@@ -6,7 +6,10 @@ import { dirname, resolve } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { computePackageSubjectSha256 } from "../helpers/package-subject.mjs";
+import {
+  computePackageSubjectSha256,
+  computeRuntimeSubjectSha256,
+} from "../helpers/package-subject.mjs";
 
 const repositoryRoot = resolve(
   dirname(fileURLToPath(import.meta.url)),
@@ -78,6 +81,21 @@ test("three anonymous real-project receipts prove P01-P05 and the maximum P04 fi
     await computePackageSubjectSha256(repositoryRoot),
     "package subject digest must recompute from current package runtime files",
   );
+  assert.match(
+    evidence.implementation.runtime_subject_sha256 ?? "",
+    /^[a-f0-9]{64}$/u,
+    "trial samples must bind a runtime subject (README-excluded)",
+  );
+  assert.equal(
+    evidence.implementation.runtime_subject_sha256,
+    await computeRuntimeSubjectSha256(repositoryRoot),
+    "runtime subject digest must recompute from current non-README package files",
+  );
+  assert.match(
+    evidence.measurement_batch_id ?? "",
+    /^[A-Za-z0-9._:-]{8,128}$/u,
+    "LIVE evidence must carry measurement_batch_id",
+  );
   const ancestor = spawnSync(
     "git",
     ["merge-base", "--is-ancestor", evidence.implementation.head, "HEAD"],
@@ -99,6 +117,67 @@ test("three anonymous real-project receipts prove P01-P05 and the maximum P04 fi
     3,
     "the trial copies must represent three different stacks",
   );
+  // Semantic diversity: first token of each stack label must differ
+  // (rejects "WeChat A" / "WeChat B" style duplicates).
+  assert.equal(
+    new Set(
+      evidence.trials.map((trial) => String(trial.stack).split(/\s+/u)[0]),
+    ).size,
+    3,
+    "three stacks must be distinct technology families, not label suffixes",
+  );
+  if (evidence.p06?.trials?.length === 3) {
+    assert.equal(
+      evidence.p06.measurement_batch_id,
+      evidence.measurement_batch_id,
+      "P06 must share measurement_batch_id with P01–P05",
+    );
+    assert.equal(
+      evidence.p06.implementation?.runtime_subject_sha256,
+      evidence.implementation.runtime_subject_sha256,
+      "P06 must bind the same runtime subject as P01–P05",
+    );
+    assert.equal(
+      evidence.p06.implementation?.dist_cli_sha256,
+      evidence.implementation.dist_cli_sha256,
+    );
+    assert.equal(
+      evidence.p06.implementation?.head,
+      evidence.implementation.head,
+    );
+    assert.match(
+      evidence.p06.generated_at ?? "",
+      /^\d{4}-\d{2}-\d{2}T/u,
+    );
+    assert.match(
+      evidence.p06.sample_method?.start ?? "",
+      /state\.json|sole authority|atomic rename|ACTIVE/iu,
+      "P06 must document harness start on sole authority state.json",
+    );
+    assert.equal(
+      new Set(evidence.p06.trials.map((trial) => trial.stack)).size,
+      3,
+      "P06 trials must carry the same three distinct stack labels",
+    );
+    for (let index = 0; index < 3; index += 1) {
+      const p01 = evidence.trials[index];
+      const p06 = evidence.p06.trials[index];
+      assert.equal(
+        p01.stack,
+        p06.stack,
+        `P01/P06 stack label mismatch at Trial index ${index}`,
+      );
+      assert.equal(
+        p01.copy_identity.identity_sha256,
+        p06.copy_identity.identity_sha256,
+        `P01/P06 must share the same disposable copy identity at ${p01.id}`,
+      );
+      assert.equal(
+        p01.copy_identity.file_count,
+        p06.copy_identity.file_count,
+      );
+    }
+  }
   assert.equal(
     new Set(
       evidence.trials.map((trial) => trial.copy_identity.identity_sha256),

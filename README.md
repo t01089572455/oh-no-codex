@@ -1,8 +1,8 @@
-﻿<a id="readme-top"></a>
+<a id="readme-top"></a>
 
 <div align="center">
 
-[**English**](./README.md) 路 [绠€浣撲腑鏂嘳(./README.zh-CN.md)
+[**English**](./README.md) · [简体中文](./README.zh-CN.md)
 
 </div>
 
@@ -12,19 +12,19 @@
   <img
     src="./assets/brand/oh-no-codex-lockup.png"
     width="920"
-    alt="Oh No, Codex! 鈥?a mischievous blue coding plush stopped mid-run by a clear red cross"
+    alt="Oh No, Codex! —a mischievous blue coding plush stopped mid-run by a clear red cross"
   >
 </p>
 
 <p align="center">
   <strong>Codex can write great code and still make the project worse.</strong><br>
   Oh No is a local harness for vibe coding: freeze one task, prove it with a<br>
-  user-visible black box, recover state without chat archaeology 鈥?and close<br>
+  user-visible black box, recover state without chat archaeology —and close<br>
   <em>that slice</em> cleanly (it does not shut down the Codex app).
 </p>
 
 <p align="center">
-  <code>bound</code>&nbsp;&nbsp;路&nbsp;&nbsp;<code>prove</code>&nbsp;&nbsp;路&nbsp;&nbsp;<code>recover</code>&nbsp;&nbsp;路&nbsp;&nbsp;<code>stop the slice</code>
+  <code>bound</code>&nbsp;&nbsp;·&nbsp;&nbsp;<code>prove</code>&nbsp;&nbsp;·&nbsp;&nbsp;<code>recover</code>&nbsp;&nbsp;·&nbsp;&nbsp;<code>stop the slice</code>
 </p>
 
 <p align="center">
@@ -36,11 +36,11 @@
 </p>
 
 <p align="center">
-  <a href="#the-problem">Problem</a> 路
-  <a href="#eighteen-sins">18 sins</a> 路
-  <a href="#what-it-does">What it does</a> 路
-  <a href="#install">Install</a> 路
-  <a href="#use-it-like-skills">Skills</a> 路
+  <a href="#the-problem">Problem</a> ·
+  <a href="#eighteen-sins">18 sins</a> ·
+  <a href="#what-it-does">What it does</a> ·
+  <a href="#install">Install</a> ·
+  <a href="#use-it-like-skills">Skills</a> ·
   <a href="#evidence">Evidence</a>
 </p>
 
@@ -48,14 +48,14 @@
 
 ## The problem
 
-Codex stays 鈥渂usy鈥?while the repo drifts:
+Codex stays "busy" while the repo drifts:
 
 | # | Failure | Example |
 | ---: | --- | --- |
-| 1 | **Scope & meaning** | 鈥淔oreign-trade system鈥?quietly becomes a platform rewrite |
+| 1 | **Scope & meaning** | "Foreign-trade system" quietly becomes a platform rewrite |
 | 2 | **Fake done** | Mocks are green; the user-visible path still breaks |
 | 3 | **Lost truth** | Chat / old plans beat project state next session |
-| 4 | **Slice won鈥檛 close** | After a real pass, 鈥渘ext鈥?is treated as a blank cheque |
+| 4 | **Slice won't close** | After a real pass, "next" is treated as a blank cheque |
 
 Oh No optimises for answers from **project files**, not memory:
 
@@ -65,23 +65,24 @@ Oh No optimises for answers from **project files**, not memory:
 4. What is blocking?  
 5. What is the **one** next action (**locator**, not new permission)?
 
-There is **no project-level goal flag**. Product intent lives in **plan tasks** and **`ohno requirements note`**.
+Project goal is required at init: **`ohno init --goal "…"`**. Task-level goals
+live in the plan; free-form notes use **`ohno requirements note`**.
 
 ---
 
 ## Eighteen sins
 
-Enemy list from a long session audit 鈥?not eighteen features. Full text: [`docs/CODEX-SINS.md`](./docs/CODEX-SINS.md).
+Enemy list from a long session audit —not eighteen features. Full text: [`docs/CODEX-SINS.md`](./docs/CODEX-SINS.md).
 
 | # | Sin | One line |
 | ---: | --- | --- |
 | 1 | Semantic usurpation | You asked for a door; it built a castle. |
-| 2 | Maximum interpretation | 鈥淐ontrol鈥?becomes a platform. |
+| 2 | Maximum interpretation | "Control" becomes a platform. |
 | 3 | Never stopping | Slice accepted; sprawl continues anyway. |
-| 4 | Review as edit rights | 鈥淚nspect鈥?becomes silent rewrite. |
+| 4 | Review as edit rights | "Inspect" becomes silent rewrite. |
 | 5 | Zombie authority | Old plan beats your latest decision. |
 | 6 | Summary as truth | Compaction hardens into false history. |
-| 7 | Local green = complete | One mock ships as 鈥渄one.鈥?|
+| 7 | Local green = complete | One mock ships as "done." |
 | 8 | Self-certified closure | Same agent writes claim and applause. |
 | 9 | Test theatre | Internal green; user path broken. |
 | 10 | Proxy goals | Coverage beats your outcome. |
@@ -99,7 +100,7 @@ Enemy list from a long session audit 鈥?not eighteen features. Full text: [`doc
 ## What it does
 
 <p align="center">
-  <img src="./assets/brand/oh-no-loop.png" width="880" alt="Task 鈫?Prove 鈫?Close the slice">
+  <img src="./assets/brand/oh-no-loop.png" width="880" alt="Task →Prove →Close the slice">
 </p>
 
 | Job | Meaning |
@@ -107,7 +108,7 @@ Enemy list from a long session audit 鈥?not eighteen features. Full text: [`doc
 | **Freeze a task** | Behaviour, one black-box command, allowed files, budget, stop condition |
 | **Prove** | `ohno verify` runs that exact command |
 | **Close the slice** | Fresh PASS advances the plan cursor; `next` only **points** |
-| **Recover** | `ohno resume` / cockpit 鈫?`.ohno/state.json` (sole authority) |
+| **Recover** | `ohno resume` / cockpit →`.ohno/state.json` (sole authority) |
 
 **Cooperative** hooks (SessionStart / PreToolUse / Stop + Git pre-commit) inject the capsule and scope writes. Not a hostile security sandbox.
 
@@ -131,13 +132,13 @@ ohno skill status
 # open a new Codex session so discovery picks them up
 ```
 
-Node.js **鈮?22.20**. Package: [oh-no-codex](https://www.npmjs.com/package/oh-no-codex) (`0.1.7` local).
+Node.js **>= 22.20**. Package: [oh-no-codex](https://www.npmjs.com/package/oh-no-codex) (`0.1.7` local).
 
 ### Windows notes
 
-- Put npm鈥檚 global bin on **PATH** (often `鈥nodejs\node_global`) so Codex shells find `ohno`.
-- Use the `ohno` / `ohno.cmd` shim 鈥?**do not** double-click `node_modules\oh-no-codex\dist\cli.js` (Windows Script Host cannot run that ESM file).
-- Progress % in the cockpit is **plan cursor** (`cursor/task_count`), not 鈥減roduct finished.鈥?
+- Put npm's global bin on **PATH** (often `%AppData%\npm` or a custom global prefix) so Codex shells find `ohno`.
+- Use the `ohno` / `ohno.cmd` shim —**do not** double-click `node_modules\oh-no-codex\dist\cli.js` (Windows Script Host cannot run that ESM file).
+- Progress % in the cockpit is **plan cursor** (`cursor/task_count`), not "product finished."
 ---
 
 ## Cockpit (how to start)
@@ -165,7 +166,8 @@ Stop: Ctrl+C in this terminal, or from another shell: ohno cockpit stop
 ```
 
 1. Open that URL in a browser on the same machine.  
-2. The page polls `/api/state` about every 2.5s.  
+2. The page polls `/api/state` about every 100ms while the tab is visible
+   (design target 100–125ms).
 3. **Stop** with Ctrl+C, or `ohno cockpit stop` (releases the port). Not a daemon.  
 4. Or ask Codex via skill **`oh-no-cockpit`**.
 
@@ -184,20 +186,20 @@ Stop: Ctrl+C in this terminal, or from another shell: ohno cockpit stop
 ### Where cockpit data comes from
 
 ```text
-plan accept / task start / verify 鈥?        鈫?write
-  .ohno/state.json          鈫?sole authority
-        鈫?readModel()
-  GET /api/state            鈫?same as status --json
-        鈫?browser poll
+plan accept / task start / verify —        →write
+  .ohno/state.json          →sole authority
+        →readModel()
+  GET /api/state            →same as status --json
+        →browser poll
   cockpit UI
 ```
 
 | On screen | Source |
 | --- | --- |
-| How many tasks | `ordered_tasks.length` 鈫?`task_count` |
+| How many tasks | `ordered_tasks.length` →`task_count` |
 | How far along | `cursor` + `active_task` |
 | Progress bar | **`cursor / task_count`** only (no fake trust %) |
-| Board phases | Derived from cursor / proof 鈥?not a second store |
+| Board phases | Derived from cursor / proof —not a second store |
 
 The cockpit **never** advances work. CLI/skills mutate state; the UI only reads.
 
@@ -213,8 +215,8 @@ acceptance still requires a real `ohno verify`.
 
 | Who | What happens |
 | --- | --- |
-| **Automatic (hooks)** | Session start / compact 鈫?inject resume capsule; scoped writes may be denied |
-| **You speak 鈫?Codex uses skill** | 鈥渟tart / done / where are we / open cockpit鈥︹€?鈫?model runs `ohno 鈥 |
+| **Automatic (hooks)** | Session start / compact →inject resume capsule; scoped writes may be denied |
+| **You speak →Codex uses skill** | "start / done / where are we / open cockpit" → model runs the matching `ohno` command |
 | **You run CLI yourself** | Setup once; or when the model forgets verify / you want certainty |
 
 ### Setup once (you, terminal)
@@ -222,40 +224,40 @@ acceptance still requires a real `ohno verify`.
 ```bash
 npm install -g oh-no-codex
 cd your-git-repo
-ohno init
+ohno init --goal "Your product goal"
 ohno install
 # new Codex session
 ```
 
-### Everyday examples (you 鈫?expected Codex behavior)
+### Everyday examples (you →expected Codex behavior)
 
-**Example A 鈥?first slice**
-
-| You say | Codex should |
-| --- | --- |
-| 鈥淭his is a foreign-trade app. Draft a linear plan; first slice = customer CRUD.鈥?| Use **`oh-no-plan`**: write plan JSON, `ohno plan propose`, wait for your review, then `accept` |
-| 鈥淪tart work.鈥?| **`oh-no-task`** 鈫?`ohno task start`, then edit only allowed files |
-| 鈥淒one, verify.鈥?| **`oh-no-verify`** 鈫?`ohno verify`; report PASS/FAIL honestly |
-
-**Example B 鈥?mid project**
+**Example A —first slice**
 
 | You say | Codex should |
 | --- | --- |
-| 鈥淲here are we?鈥?| **`oh-no-resume`** (or status) |
-| 鈥淩emember: no multi-tenant yet.鈥?| **`oh-no-requirements`** 鈫?`ohno requirements note --text "鈥?` |
-| 鈥淩equirements changed: export PDF first.鈥?| **`oh-no-change`** then a replacement plan |
-| 鈥淥pen the board.鈥?| **`oh-no-cockpit`** 鈫?`ohno cockpit`, tell you the `http://127.0.0.1:鈥?` URL |
+| "This is a foreign-trade app. Draft a linear plan; first slice = customer CRUD." | Use **`oh-no-plan`**: write plan JSON, `ohno plan propose`, wait for your review, then `accept` |
+| "Start work." | **`oh-no-task`** →`ohno task start`, then edit only allowed files |
+| "Done, verify." | **`oh-no-verify`** →`ohno verify`; report PASS/FAIL honestly |
 
-**Example C 鈥?when you should act yourself**
+**Example B —mid project**
+
+| You say | Codex should |
+| --- | --- |
+| "Where are we?" | **`oh-no-resume`** (or status) |
+| "Remember: no multi-tenant yet." | **`oh-no-requirements`** →`ohno requirements note --text "…"` |
+| "Requirements changed: export PDF first." | **`oh-no-change`** then a replacement plan |
+| "Open the board." | **`oh-no-cockpit`** →`ohno cockpit`, tell you the `http://127.0.0.1:…` URL |
+
+**Example C —when you should act yourself**
 
 | Situation | You do |
 | --- | --- |
 | First time in a repo | Terminal: `ohno init` + `ohno install` |
-| Model says 鈥渄one鈥?without running verify | Say 鈥渞un ohno verify鈥?**or** run `ohno verify` in the terminal |
-| Want a dashboard | Terminal or chat: `ohno cockpit` / 鈥渙pen cockpit鈥?|
+| Model says "done" without running verify | Say "run ohno verify" **or** run `ohno verify` in the terminal |
+| Want a dashboard | Terminal or chat: `ohno cockpit` / "open cockpit" |
 | Skill missing after upgrade | `ohno skill install`, new Codex session |
 
-### Day-to-day skills (reference 鈥?not a checklist)
+### Day-to-day skills (reference —not a checklist)
 
 Setup (`ohno init` / `ohno install`) is **terminal-only**, not a skill.  
 Shell details live inside each skill file for Codex; users need not memorize them.
@@ -302,23 +304,24 @@ Shell details live inside each skill file for Codex; users need not memorize the
 | Claim | Label |
 | --- | --- |
 | Core harness | `ANTI_DRIFT_CORE_WORKS` |
-| Release / public status | `RELEASE_CHANGES_REQUIRED` |
+| Release / public status | `RELEASE_CHANGES_REQUIRED` (await Owner npm publish) |
 | CLI / hooks / atomic state | `LOCAL_PASS` |
 | Cockpit = status JSON | `LOCAL_PASS` |
-| Disposable real copies | `HISTORICAL` (P01-P05 on 2026-07-31; not re-run for 0.1.7) |
-| npm | **`0.1.7` local / unpublished** (not public until Owner publishes) |
+| Correction 4 structured basis | `LOCAL_PASS` (merged on main) |
+| Disposable real-copy P01–P06 | **`TRIAL_PASS`** LIVE — p95 ms A/B/C: status 139.361 / 140.512 / 132.802; next 169.689 / 157.331 / 136.215; resume 168.616 / 195.458 / 193.012; task_start 136.947 / 156.410 / 159.346; P06 163 / 178 / 164; P04 resume 4006 B (not a universal speed claim; batch id in trial evidence JSON) |
+| npm | **`0.1.7` local candidate / unpublished** until Owner authorizes publish |
 | Schema 2 → 3 migrate | Two-phase: preview then `--diff`/`--head` apply (see DESIGN) |
 
-Contracts: [Product](./docs/PRODUCT-CONTRACT.md) 路 [Design](./docs/DESIGN.md) 路 [Acceptance](./docs/ACCEPTANCE.md) 路 [Sins](./docs/CODEX-SINS.md)
+Contracts: [Product](./docs/PRODUCT-CONTRACT.md) · [Design](./docs/DESIGN.md) · [Acceptance](./docs/ACCEPTANCE.md) · [Sins](./docs/CODEX-SINS.md)
 
 ---
 
 <p align="center">
-  <sub>MIT 路 Independent community project 路 Not affiliated with OpenAI</sub>
+  <sub>MIT · Independent community project · Not affiliated with OpenAI</sub>
 </p>
 
 <p align="center">
   <strong>Bound the slice. Prove it. Recover without archaeology.</strong>
 </p>
 
-<p align="center"><a href="#readme-top">鈫?top</a></p>
+<p align="center"><a href="#readme-top">→top</a></p>

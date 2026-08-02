@@ -562,8 +562,9 @@ document.addEventListener("visibilitychange", () => {
 });
 
 void refreshState();
+// COCKPIT-DESIGN-CONTRACT: 100-125 ms cadence
 setInterval(() => {
   if (!document.hidden) {
     void refreshState();
   }
-}, 2500);
+}, 100);
