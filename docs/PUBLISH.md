@@ -1,4 +1,4 @@
-# Publish process (Owner-gated)
+﻿# Publish process (Owner-gated)
 
 This is the **smallest honest path** used for `oh-no-codex@0.1.7`. It is not
 permission to automate releases, invent a second current-state file, or expand
@@ -125,3 +125,11 @@ In the same release line (or the immediate follow-up docs commit):
 | `git push origin main` | Owner-authorized |
 | `npm publish` → npmjs.org | `oh-no-codex@0.1.7` (`latest`) |
 | Ledger next after | `STOP` |
+
+## 0.1.8 record
+
+| Step | Result |
+| --- | --- |
+| Cockpit UX | scroll panels, silent refresh, EN/ZH, wider MISSION, no right profile chip |
+| 
+pm publish | oh-no-codex@0.1.8 |

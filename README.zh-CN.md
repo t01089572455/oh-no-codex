@@ -1,4 +1,4 @@
-<a id="readme-top"></a>
+﻿<a id="readme-top"></a>
 
 <div align="center">
 
@@ -92,8 +92,8 @@ Codex hooks 与 Git pre-commit 是**协作式护栏**。它们帮助注入恢复
 
 ```bash
 npm install -g oh-no-codex
-# 镜像尚未同步 0.1.7 时：
-# npm install -g oh-no-codex@0.1.7 --registry https://registry.npmjs.org
+# 镜像尚未同步 0.1.8 时：
+# npm install -g oh-no-codex@0.1.8 --registry https://registry.npmjs.org
 cd your-git-repo
 ohno init --goal "你的产品目标"
 ohno install              # hooks + 日常 oh-no-* skills
@@ -107,7 +107,7 @@ ohno skill status
 # 然后新开一个 Codex 会话，让 skill discovery 重新加载
 ```
 
-包已发布为 [`oh-no-codex@0.1.7`](https://www.npmjs.com/package/oh-no-codex)。
+包已发布为 [`oh-no-codex@0.1.8`](https://www.npmjs.com/package/oh-no-codex)。
 
 ### Windows 提示
 
@@ -226,12 +226,12 @@ V1 不包含数据库、后台 daemon、托管服务、multi-agent OS、skill �
 | 声明 | 标签 |
 | --- | --- |
 | 核心防漂移 | `ANTI_DRIFT_CORE_WORKS` |
-| 公开发布 | **`0.1.7` 已发布**；本地试验仍是 `TRIAL_PASS`，不是 `V1_TRIAL_ACCEPTED` |
+| 公开发布 | **`0.1.8` 已发布**（Cockpit 体验）；本地试验仍是 `TRIAL_PASS`，不是 `V1_TRIAL_ACCEPTED` |
 | CLI / hooks / 原子状态 | `LOCAL_PASS` |
 | Cockpit = status JSON | `LOCAL_PASS` |
 | Correction 4 结构化验收分母 | `LOCAL_PASS`（已合入 main） |
 | 可丢弃真实副本性能 P01–P06 | **`TRIAL_PASS`** LIVE — p95 ms A/B/C：status 139.361 / 140.512 / 132.802；next 169.689 / 157.331 / 136.215；resume 168.616 / 195.458 / 193.012；task_start 136.947 / 156.410 / 159.346；P06 163 / 178 / 164；P04 resume 4006 B（非全球性能保证；batch id 见 trial evidence JSON） |
-| npm | **`oh-no-codex@0.1.7`** 已在公共 npm registry 发布；镜像可能延迟 |
+| npm | **`oh-no-codex@0.1.8`** 已在公共 npm registry 发布；镜像可能延迟 |
 | schema 2 → 3 迁移 | 两阶段：先 preview，再用 `--diff` / `--head` apply |
 
 契约：[Product](./docs/PRODUCT-CONTRACT.md) · [Design](./docs/DESIGN.md) · [Acceptance](./docs/ACCEPTANCE.md) · [Publish](./docs/PUBLISH.md) · [Sins](./docs/CODEX-SINS.md)

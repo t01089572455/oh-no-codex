@@ -559,10 +559,10 @@ Owning checks: projectors, codex-hooks, resume-status-next, cockpit black boxes.
 
 There is exactly one. **Unique next:**
 
-> **`STOP`.** Owner authorized `0.1.7` push + npm publish. Correction 4 is
-> `LOCAL_PASS`. Same-batch LIVE P01–P06 bound. Do **not** republish, retag, or
-> open a new release without fresh Owner authorization. Publish procedure:
-> `docs/PUBLISH.md`.
+> **`STOP`.** Owner authorized `0.1.7`/`0.1.8` push + npm publish. Correction 4
+> is `LOCAL_PASS`. Same-batch LIVE P01–P06 bound. Cockpit UX landed in `0.1.8`.
+> Do **not** republish, retag, or open a new release without fresh Owner
+> authorization. Publish procedure: `docs/PUBLISH.md`.
 
 ## Shared implementation rules
 

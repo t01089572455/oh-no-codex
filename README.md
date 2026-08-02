@@ -1,4 +1,4 @@
-<a id="readme-top"></a>
+﻿<a id="readme-top"></a>
 
 <div align="center">
 
@@ -125,7 +125,7 @@ a hostile security sandbox.
 ```bash
 npm install -g oh-no-codex
 # if a mirror lags a fresh release:
-# npm install -g oh-no-codex@0.1.7 --registry https://registry.npmjs.org
+# npm install -g oh-no-codex@0.1.8 --registry https://registry.npmjs.org
 cd your-git-repo
 ohno init --goal "Owner project goal"
 ohno install              # hooks + day-to-day oh-no-* skills
@@ -137,7 +137,7 @@ ohno skill status
 # open a new Codex session so discovery picks them up
 ```
 
-Node.js **>= 22.20**. Package: [oh-no-codex](https://www.npmjs.com/package/oh-no-codex) (`0.1.7`).
+Node.js **>= 22.20**. Package: [oh-no-codex](https://www.npmjs.com/package/oh-no-codex) (`0.1.8`).
 
 ### Windows notes
 
@@ -313,12 +313,12 @@ Shell details live inside each skill file for Codex; users need not memorize the
 | Claim | Label |
 | --- | --- |
 | Core harness | `ANTI_DRIFT_CORE_WORKS` |
-| Release / public status | **`0.1.7` is published**; local trials remain `TRIAL_PASS`, not `V1_TRIAL_ACCEPTED` |
+| Release / public status | **`0.1.8` is published** (cockpit UX); local trials remain `TRIAL_PASS`, not `V1_TRIAL_ACCEPTED` |
 | CLI / hooks / atomic state | `LOCAL_PASS` |
 | Cockpit = status JSON | `LOCAL_PASS` |
 | Correction 4 structured basis | `LOCAL_PASS` (merged on main) |
 | Disposable real-copy P01–P06 | **`TRIAL_PASS`** LIVE — p95 ms A/B/C: status 139.361 / 140.512 / 132.802; next 169.689 / 157.331 / 136.215; resume 168.616 / 195.458 / 193.012; task_start 136.947 / 156.410 / 159.346; P06 163 / 178 / 164; P04 resume 4006 B (not a universal speed claim; batch id in trial evidence JSON) |
-| npm | **`oh-no-codex@0.1.7`** is on the public npm registry; mirrors may lag |
+| npm | **`oh-no-codex@0.1.8`** is on the public npm registry; mirrors may lag |
 | Schema 2 → 3 migrate | Two-phase: preview then `--diff`/`--head` apply (see DESIGN) |
 
 Contracts: [Product](./docs/PRODUCT-CONTRACT.md) · [Design](./docs/DESIGN.md) · [Acceptance](./docs/ACCEPTANCE.md) · [Publish](./docs/PUBLISH.md) · [Sins](./docs/CODEX-SINS.md)
