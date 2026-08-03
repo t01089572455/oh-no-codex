@@ -275,7 +275,7 @@ Cockpit 和聊天 **不会**靠读模型长文来「感应漂移」。控制是�
 </p>
 
 <p align="center">
-  <sub>真实本机项目在 harness 管控下的实拍（非 mock）。画面数值是 <code>.ohno/state.json</code> 的投影。</sub>
+  <sub>驾驶舱布局演示用的可丢弃 scroll-smoke 项目实拍（14 步计划、cursor 3/14、ACTIVE 中盘 — 不是产品完成度 %）。数值是 <code>.ohno/state.json</code> 的投影。</sub>
 </p>
 
 ```bash

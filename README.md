@@ -279,7 +279,7 @@ Read-only local board. Same payload as `ohno status --json`. Never mutates plan/
 </p>
 
 <p align="center">
-  <sub>Live capture from a real local project under harness control (not a mock). Values are projections of <code>.ohno/state.json</code>.</sub>
+  <sub>Layout demo from the disposable scroll-smoke project (14-step plan, cursor 3/14, ACTIVE mid-board — not product completion %). Values are projections of <code>.ohno/state.json</code>.</sub>
 </p>
 
 ```bash
