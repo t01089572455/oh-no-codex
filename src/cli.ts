@@ -220,10 +220,12 @@ async function initialize(projectPath: string, args: string[]): Promise<void> {
         : "kept existing .ohno/truth.json"
     }\n`
     + "RUNTIME_GITIGNORE: .ohno/.gitignore (locks/cockpit.runtime.json)\n"
-    + "TIP: commit canonical harness only:\n"
-    + "  git add AGENTS.md .ohno/state.json .ohno/truth.json "
-    + ".ohno/acceptance-basis.json .ohno/REQUIREMENTS.md "
-    + ".ohno/preferences.json .ohno/PROGRESS.md .ohno/.gitignore\n"
+    + "TIP: after a fresh PASS, pre-commit allows (1) in-scope product files "
+    + "covered by that PASS and/or (2) harness projections only:\n"
+    + "  git add .ohno/state.json .ohno/PROGRESS.md .ohno/.gitignore\n"
+    + "  Owner-governed files (AGENTS.md, truth, basis, REQUIREMENTS, "
+    + "preferences) must be in the task allowed_files or committed under an "
+    + "active in-scope task — they do not free-ride on an unrelated PASS.\n"
     + "  (do not commit verify.lock / cockpit.runtime.json)\n"
     + "Next: ohno install  (hooks + skills), then ohno cockpit when you want the board\n",
   );
