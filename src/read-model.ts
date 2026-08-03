@@ -3,6 +3,7 @@ import { realpath } from "node:fs/promises";
 import { promisify } from "node:util";
 
 import { nextActionFromPlan } from "./plan-next.js";
+import { receiptMatchesFrozenTask } from "./plan-proof.js";
 import { digestAllowedFiles } from "./subject-digest.js";
 import { readState } from "./state.js";
 import type {
@@ -259,8 +260,8 @@ function planBoardFor(
   state: ProjectState,
   freshness: ProofFreshness,
 ): PlanBoardEntry[] {
-  // DONE only from PASS receipts — never paint DONE from a bare cursor jump.
-  const completedIds = new Set(state.completed.map((entry) => entry.id));
+  // DONE only from PASS receipts bound to *this* plan revision + contract.
+  const planRevision = state.plan_revision;
   return state.ordered_tasks.map((task, index) => {
     const kind = task.status === "OUTLINE" ? "OUTLINE" : "FROZEN";
     let phase: PlanBoardPhase;
@@ -271,7 +272,12 @@ function planBoardFor(
           || freshness === "STALE"
         ? "HALF"
         : "ACTIVE";
-    } else if (completedIds.has(task.id)) {
+    } else if (
+      planRevision !== null
+      && state.completed.some((receipt) =>
+        receiptMatchesFrozenTask(receipt, task, planRevision)
+      )
+    ) {
       phase = "DONE";
     } else if (index > state.cursor) {
       phase = task.status === "OUTLINE" ? "OUTLINE" : "QUEUED";

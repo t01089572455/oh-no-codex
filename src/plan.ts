@@ -13,6 +13,7 @@ import {
 } from "./discipline.js";
 import { assertSafeProjectRelativePath } from "./paths.js";
 import { readGitHead } from "./subject-digest.js";
+import { provenPrefixForPlan } from "./plan-proof.js";
 import {
   compareAndSwapStateAtomic,
   isPlanTask,
@@ -196,26 +197,25 @@ export function parsePlan(bytes: string): PlanProposalFile {
 }
 
 /**
- * Cursor is only advanced by fresh PASS (verify). Plan propose/accept may
- * restate any cursor in `0..ordered_tasks.length`, except it must never jump
- * *ahead* of proven work (`cursor > completed.length`) — that forges board DONE
- * / PROJECT_COMPLETE without PASS. Rewinding below completed.length is allowed
- * (historical receipts remain; board DONE is receipt-based, not bare cursor).
+ * Cursor is only advanced by fresh PASS (verify) on *this* plan revision.
+ * Plan propose/accept may restate cursor up to the proven prefix of the
+ * proposal's own plan_revision — never reuse unrelated historical completions
+ * (different revision / contract) to forge PROJECT_COMPLETE.
  */
 export function assertPlanCursorHonest(
   cursor: number,
-  completedCount: number,
+  provenPrefix: number,
   orderedTaskCount: number,
 ): void {
   if (cursor > orderedTaskCount) {
     throw new Error("plan cursor cannot exceed ordered_tasks length");
   }
-  if (cursor > completedCount) {
+  if (cursor > provenPrefix) {
     throw new Error(
-      "plan cursor cannot exceed completed task count "
-        + `(cursor=${cursor}, completed=${completedCount}); `
-        + "only ohno verify may advance past proven work — "
-        + "accepting a higher cursor would forge DONE without PASS",
+      "plan cursor cannot exceed proven prefix of this plan revision "
+        + `(cursor=${cursor}, proven_prefix=${provenPrefix}); `
+        + "only ohno verify may advance past PASS receipts bound to this plan — "
+        + "historical completions from other plans do not count",
     );
   }
 }
@@ -303,12 +303,6 @@ export async function proposePlan(
     );
   }
 
-  assertPlanCursorHonest(
-    source.proposal.cursor,
-    state.completed.length,
-    source.proposal.ordered_tasks.length,
-  );
-
   const loaded = await loadStructuredAcceptanceBasis(
     projectPath,
     source.proposal.acceptance_source,
@@ -320,6 +314,15 @@ export async function proposePlan(
     digest: loaded.digest,
   };
   const planRevision = planRevisionFor(source.proposal.ordered_tasks, basis);
+  assertPlanCursorHonest(
+    source.proposal.cursor,
+    provenPrefixForPlan(
+      state.completed,
+      source.proposal.ordered_tasks,
+      planRevision,
+    ),
+    source.proposal.ordered_tasks.length,
+  );
   const exactDiff = exactPlanDiff(
     state,
     source.proposal,
@@ -396,7 +399,11 @@ export async function acceptPlan(
   }
   assertPlanCursorHonest(
     pending.cursor,
-    state.completed.length,
+    provenPrefixForPlan(
+      state.completed,
+      pending.ordered_tasks,
+      pending.plan_revision,
+    ),
     pending.ordered_tasks.length,
   );
   const currentHead = readGitHead(projectPath);

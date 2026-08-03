@@ -1,3 +1,4 @@
+import { provenPrefixForPlan } from "./plan-proof.js";
 import {
   needsAcceptanceBasisMigration,
   type ProjectState,
@@ -20,9 +21,16 @@ export function nextActionFromPlan(state: ProjectState): string {
       ? "PROPOSE_PLAN"
       : `REVIEW_PLAN:${state.pending_plan.plan_revision}`;
   }
-  // Cursor past proven work is not completion — repair toward completed frontier.
-  if (state.cursor > state.completed.length) {
-    const repair = state.ordered_tasks[state.completed.length];
+
+  const proven = provenPrefixForPlan(
+    state.completed,
+    state.ordered_tasks,
+    state.plan_revision,
+  );
+
+  // Cursor past this plan's proven prefix is not completion — repair.
+  if (state.cursor > proven) {
+    const repair = state.ordered_tasks[proven];
     if (repair === undefined) {
       return "PROPOSE_PLAN";
     }
@@ -30,10 +38,14 @@ export function nextActionFromPlan(state: ProjectState): string {
       ? `FREEZE_TASK:${repair.id}`
       : `START_TASK:${repair.id}`;
   }
+
   const current = state.ordered_tasks[state.cursor];
   if (current === undefined) {
-    // PROJECT_COMPLETE only when every ordered task has a PASS receipt.
-    if (state.completed.length >= state.ordered_tasks.length) {
+    // PROJECT_COMPLETE only when every ordered task has a same-revision PASS.
+    if (
+      state.ordered_tasks.length > 0
+      && proven >= state.ordered_tasks.length
+    ) {
       return "PROJECT_COMPLETE";
     }
     return "PROPOSE_PLAN";

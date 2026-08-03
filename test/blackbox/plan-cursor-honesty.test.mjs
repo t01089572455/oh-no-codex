@@ -111,6 +111,72 @@ test("plan propose refuses cursor past completed count (no forged PROJECT_COMPLE
   assert.notEqual(status.next_action, "PROJECT_COMPLETE");
 });
 
+test("old plan PASS cannot authorize PROJECT_COMPLETE on a different plan", async (t) => {
+  const projectPath = await createProject(t);
+  runInit(projectPath, "cross-plan pass reuse");
+  await writeFile(resolve(projectPath, "pass.mjs"), "process.exit(0);\n", "utf8");
+
+  const oldTask = frozenPlanTask({
+    id: "old-task",
+    title: "old",
+    test_command: "node pass.mjs",
+    allowed_files: ["pass.mjs"],
+    expected_behavior: "old behavior",
+    stop_condition: "old stop",
+  });
+  let proposed = await proposePlan(projectPath, [oldTask], 0);
+  assert.equal(proposed.status, 0, proposed.stderr);
+  let rev = /^PLAN_REVISION: ([a-f0-9]{64})$/m.exec(proposed.stdout)[1];
+  let dig = /^DIFF_DIGEST: ([a-f0-9]{64})$/m.exec(proposed.stdout)[1];
+  assert.equal(
+    runCli(projectPath, [
+      "plan", "accept", "--revision", rev, "--diff", dig, "--allow-weak-plan",
+    ]).status,
+    0,
+  );
+  assert.equal(runCli(projectPath, ["task", "start"]).status, 0);
+  assert.equal(runCli(projectPath, ["verify"]).status, 0);
+  assert.equal(runCli(projectPath, ["next"]).stdout.trim(), "PROJECT_COMPLETE");
+
+  const newTask = frozenPlanTask({
+    id: "new-task",
+    title: "new",
+    test_command: "node pass.mjs",
+    allowed_files: ["pass.mjs"],
+    expected_behavior: "new behavior",
+    stop_condition: "new stop",
+  });
+
+  // Forge attempt: reuse completed.length=1 to set cursor=1 on unrelated plan.
+  const forged = await proposePlan(projectPath, [newTask], 1);
+  assert.notEqual(forged.status, 0, forged.stdout + forged.stderr);
+  assert.match(
+    `${forged.stderr}${forged.stdout}`,
+    /proven_prefix|this plan|historical|cursor/i,
+  );
+
+  // Honest replacement: cursor=0 only.
+  proposed = await proposePlan(projectPath, [newTask], 0);
+  assert.equal(proposed.status, 0, proposed.stderr);
+  rev = /^PLAN_REVISION: ([a-f0-9]{64})$/m.exec(proposed.stdout)[1];
+  dig = /^DIFF_DIGEST: ([a-f0-9]{64})$/m.exec(proposed.stdout)[1];
+  assert.equal(
+    runCli(projectPath, [
+      "plan", "accept", "--revision", rev, "--diff", dig, "--allow-weak-plan",
+    ]).status,
+    0,
+  );
+
+  const status = JSON.parse(runCli(projectPath, ["status", "--json"]).stdout);
+  assert.equal(status.cursor, 0);
+  assert.equal(status.next_action, "START_TASK:new-task");
+  assert.notEqual(status.next_action, "PROJECT_COMPLETE");
+  assert.equal(status.plan_board[0].phase, "READY");
+  assert.equal(status.proof_freshness, "NONE");
+  // Historical receipt may remain in completed_count but does not finish new plan.
+  assert.ok(status.completed_count >= 1);
+});
+
 test("board DONE tracks completed receipts, not bare cursor ahead of proof", async (t) => {
   const projectPath = await createProject(t);
   runInit(projectPath, "board honesty");
