@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  <strong>面向 Codex CLI 的本机防漂移护栏。</strong><br>
+  <strong>面向 Codex 的本机防漂移护栏。</strong><br>
   一个有界任务 · 一条用户可见黑盒命令 · 一份原子
   <code>.ohno/state.json</code> · 新鲜 PASS 证据 · 一个 next 定位器。
 </p>
@@ -26,7 +26,7 @@
   <a href="https://www.npmjs.com/package/oh-no-codex"><img alt="npm" src="https://img.shields.io/npm/v/oh-no-codex?style=flat-square&color=74D6B1&labelColor=202624&label=npm"></a>
   <img alt="status" src="https://img.shields.io/badge/status-ANTI_DRIFT_CORE_WORKS-3DDC97?style=flat-square&labelColor=202624">
   <img alt="node" src="https://img.shields.io/badge/node-%3E%3D22.20-74D6B1?style=flat-square&labelColor=202624">
-  <img alt="codex" src="https://img.shields.io/badge/for-Codex_CLI-FF4B35?style=flat-square&labelColor=202624">
+  <img alt="codex" src="https://img.shields.io/badge/for-Codex-FF4B35?style=flat-square&labelColor=202624">
   <a href="./LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-FFF1CE?style=flat-square&labelColor=202624"></a>
 </p>
 

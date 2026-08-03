@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  <strong>Local anti-drift harness for Codex CLI.</strong><br>
+  <strong>Local anti-drift harness for Codex.</strong><br>
   One bounded task. One user-visible black-box command. One atomic
   <code>.ohno/state.json</code>. Fresh PASS evidence. One next locator.
 </p>
@@ -26,7 +26,7 @@
   <a href="https://www.npmjs.com/package/oh-no-codex"><img alt="npm" src="https://img.shields.io/npm/v/oh-no-codex?style=flat-square&color=74D6B1&labelColor=202624&label=npm"></a>
   <img alt="status" src="https://img.shields.io/badge/status-ANTI_DRIFT_CORE_WORKS-3DDC97?style=flat-square&labelColor=202624">
   <img alt="node" src="https://img.shields.io/badge/node-%3E%3D22.20-74D6B1?style=flat-square&labelColor=202624">
-  <img alt="codex" src="https://img.shields.io/badge/for-Codex_CLI-FF4B35?style=flat-square&labelColor=202624">
+  <img alt="codex" src="https://img.shields.io/badge/for-Codex-FF4B35?style=flat-square&labelColor=202624">
   <a href="./LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-FFF1CE?style=flat-square&labelColor=202624"></a>
 </p>
 
