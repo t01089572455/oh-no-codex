@@ -1,4 +1,4 @@
-﻿<a id="readme-top"></a>
+<a id="readme-top"></a>
 
 <div align="center">
 
@@ -29,63 +29,104 @@
 </p>
 
 <p align="center">
-  <a href="#契约">契约</a> ·
-  <a href="#权威">权威</a> ·
+  <a href="#why-oh-no">为什么需要它</a> ·
+  <a href="#how-control-works">怎样控制 Codex</a> ·
+  <a href="#cockpit">驾驶舱</a> ·
   <a href="#eighteen-sins">十八宗罪</a> ·
-  <a href="#安装">安装</a> ·
-  <a href="#操作">操作</a> ·
-  <a href="#cockpit">Cockpit</a> ·
-  <a href="#证据">证据</a>
+  <a href="#install">安装</a> ·
+  <a href="#daily-use">使用</a> ·
+  <a href="#limits-evidence">边界与证据</a>
 </p>
 
 ---
 
-## 契约
+<a id="why-oh-no"></a>
 
-Codex 可以写出漂亮的代码，却仍把项目带向错误方向。Oh No, Codex! 让一份
-Owner 目标、一个有边界的任务、一条用户可见黑盒测试和唯一下一步跨会话可读。
+## 为什么需要 Oh No？
 
-它因 [**Codex 的十八宗罪**](./docs/CODEX-SINS.md) 而生：18 种 Agent
-看似勤奋工作、实际让项目漂移的反复失败模式。
+Codex 可以写出不错的代码，却仍把项目带向错误方向：扩大原需求、验收通过后
+继续乱做、复活过期计划，或者让下一会话重新从聊天里考古项目现场。
 
-包：[`oh-no-codex`](https://www.npmjs.com/package/oh-no-codex) · 可执行文件：`ohno` · 当前：**`0.1.10`**。
+Oh No, Codex! 在现有开发流程外加一层很小的本机护栏。它让 Owner 原话、
+一个有边界的任务、一条精确黑盒测试、新鲜证据和唯一下一步跨会话可读。
 
-| 规则 | 含义 |
-| --- | --- |
-| 冻结 | cursor 任务固定期望行为、**一条**精确测试命令、允许 glob、预算、停止条件 |
-| 记录 | Owner 指令以**原文**写入 `.ohno/REQUIREMENTS.md`（`ohno requirements note`），不是聊天里的转述 |
-| 验收 | `ohno verify` 只跑那条命令；PASS 是收据（任务 + 计划修订 + HEAD + 作用域 digest） |
-| 推进 | 新鲜 PASS 关闭任务一次并推进 `cursor`；FAIL / UNKNOWN 任务保持 active |
-| 定位 | `next` 是**定位器**，不是开工授权 |
-| 恢复 | `status` / `resume` / hooks / Cockpit 读同一份原子状态 |
-| 变更 | 实质改范围：`ohno change` 找出适用权威文档并核验审阅后的完整 diff，再恢复编码 |
+> **Owner 目标 → 冻结任务 → 有边界地工作 → 精确测试 → PASS 或停住 → 唯一下一步**
 
-**不宣称：** 自主 multi-agent OS、对抗同用户的安全边界、数据库、daemon、托管控制面。
+这个产品来自一份公开事故审计：[**Codex 的十八宗罪**](./docs/CODEX-SINS.md)。
+它们描述的是 Agent 看似一直在干活、项目却持续漂移的反复失败模式。
+
+包：[`oh-no-codex`](https://www.npmjs.com/package/oh-no-codex) · 命令：
+`ohno` · 当前版本：**`0.1.10`**。
 
 ---
 
-## 权威
+<a id="how-control-works"></a>
+
+## 它怎样控制 Codex
+
+它不是一条超长提示词，也不尝试读取 Agent 的内心。控制落在开发流程中的
+几个明确位置：
+
+| 时机 | Oh No 做什么 |
+| --- | --- |
+| 记住 | 把重要的 Owner 原话保存到 `.ohno/REQUIREMENTS.md`，不依赖聊天摘要 |
+| 计划 | 冻结当前任务的期望行为、一条精确测试、允许文件、时间预算和停止条件 |
+| 工作 | Codex hooks 与 Git pre-commit 在无活跃任务、文档待同步或路径越界时拦截受支持的写入 |
+| 验收 | `ohno verify` 只运行冻结的黑盒命令；FAIL / UNKNOWN 不推进任务 |
+| 恢复 | `status`、`resume`、`next`、hooks 和驾驶舱读取同一份原子状态 |
+| 变更 | `ohno change` 按 Owner 维护的 Truth 清单选择适用权威文档；精确 diff 和替代计划审阅前阻断编码 |
 
 ```text
-ohno CLI  ──原子替换──►  .ohno/state.json   （唯一运行时权威）
-                              │
-                              ├─ status / resume / next
-                              ├─ Codex hooks + Git pre-commit
-                              └─ GET /api/state  →  Cockpit（只读）
+Owner 原话 + 审阅后的计划
+              │
+              ▼
+          当前任务 ──► 精确黑盒测试 ──► PASS / 留在当前任务
+              │
+              ▼
+     .ohno/state.json ──► resume / next / hooks / 驾驶舱
 
-.ohno/truth.json  →  需求变更时哪些 Owner 文档适用
+.ohno/truth.json ──► 需求变化时必须同步哪些文档
 ```
 
-| 产物 | 角色 |
-| --- | --- |
-| `.ohno/state.json` | 当前目标、计划、cursor、活跃契约、证明、next |
-| `.ohno/REQUIREMENTS.md` | 追加式日志：**Owner 指令原文**（提示词 / 决定 / 约束） |
-| `.ohno/truth.json` | 治理文档适用列表（Owner 维护） |
-| PASS 收据 | 溯源 + verify CAS；不是第二套「当前真相」 |
-| `PROGRESS.md` / resume 文案 / Cockpit | 仅投影 |
-| `.ohno/cockpit.runtime.json` | 仅 pid / URL 指针 |
+`.ohno/state.json` 是唯一当前运行时权威。resume 文案、`PROGRESS.md`、收据
+和驾驶舱只是投影或证据，不会再建立一套互相打架的“真相”。
 
-协作式 hooks 注入 resume 胶囊，并拒绝部分越界写入。同一用户进程仍可绕过；这是明确的非目标。
+Hooks 是协作式护栏，同一用户进程仍能绕过。Oh No 不声称对抗恶意 Agent，
+也不声称能自动理解所有语义。
+
+---
+
+<a id="cockpit"></a>
+
+## 驾驶舱：一眼看懂当前现场
+
+<p align="center">
+  <img
+    src="./assets/brand/oh-no-cockpit.png"
+    width="960"
+    alt="Oh No, Codex! 驾驶舱 — 当前任务、计划板、证明、漂移与下一步"
+  >
+</p>
+
+<p align="center">
+  <sub>真实本机布局演示截图。cursor 3/14 表示计划进度，不是产品完成度。</sub>
+</p>
+
+驾驶舱只读，并且与 `ohno status --json` 显示同一份数据：
+
+- **NOW**：当前任务、用户可见期望和精确测试；
+- **PROOF / DRIFT**：证据是否新鲜、当前被什么阻塞；
+- **NEXT / PLAN BOARD**：唯一下一步以及线性计划做到哪里。
+
+```bash
+ohno cockpit                       # 使用空闲本机端口启动
+ohno cockpit --port 13521          # 可选固定端口
+ohno cockpit --replace             # 替换本仓库正在运行的驾驶舱
+ohno cockpit stop
+```
+
+每个仓库或 worktree 都有自己的 `.ohno/` 状态和驾驶舱。页面只轮询本机
+只读状态接口；它不是 daemon，也不是第二份状态仓库。
 
 ---
 
@@ -93,305 +134,160 @@ ohno CLI  ──原子替换──►  .ohno/state.json   （唯一运行时权�
 
 ## Codex 的十八宗罪
 
-**Codex 的十八宗罪**不是随手起的营销标题，而是 18 种经过隐私清理、彼此
-独立的失败模式：用户看见什么、项目受到什么伤害、最小约束应该是什么。
+“十八宗罪”是正式名称。它们是 18 种经过隐私清理、彼此独立的失败模式；
+并不是说每次 Codex 运行都会失败。
 
-它不声称每次 Codex 运行都会失败。完整审计和证据边界见
+| # | 模式 | 你会看到什么 |
+| ---: | --- | --- |
+| 1 | 越俎代庖 | 一个窄需求被悄悄做成更大的产品或架构 |
+| 2 | 把含糊词解释到最大 | “管控”“稳健”等词被解释到最高保证级别 |
+| 3 | 完成以后不停 | 验收已经通过，Agent 仍继续修改或自行开启新阶段 |
+| 4 | 把审查当修改权 | 只读审计变成未经授权的改代码和提交 |
+| 5 | 旧权威复活 | 旧计划或旧摘要压过 Owner 最新决定 |
+| 6 | 用摘要改写真相 | 压缩交接中的遗漏在下一会话变成虚假历史 |
+| 7 | 局部绿灯冒充完成 | 一个单测或 mock 通过，就声称整个功能完成 |
+| 8 | 同一 Agent 自证闭环 | 同一 Agent 定成功标准、做实现，再引用自己当证明 |
+| 9 | 测试剧场 | 测试只证明内部路径，用户真正使用的路径仍坏着 |
+| 10 | 代理目标反客为主 | 覆盖率、架构洁癖或 Reviewer 口味压过 Owner 结果 |
+| 11 | Reviewer 扩大分母 | 审查加入从未冻结的新标准，任务永远无法结束 |
+| 12 | 对控制税失明 | 护栏本身比它防住的漂移更慢、更重 |
+| 13 | 重造轮子 | 价值交付前，先用新平台替换 Git、测试和简单文件 |
+| 14 | 工作区混乱 | 工作落在错误分支、worktree、HEAD 或脏检出上 |
+| 15 | 把交接税转嫁给用户 | 每个新会话都要重新从聊天考古项目现场 |
+| 16 | 用户体验最后偿还 | 内部机器不断增长，用户界面仍通用、粗糙或没验收 |
+| 17 | 附和与过度自信 | 道歉以后，立刻给出另一个没有证据的大承诺 |
+| 18 | 道歉没有变成约束 | 解释了失败，却没有改变测试或工作规则 |
+
+完整事故审计和证据边界：
 [`docs/CODEX-SINS.md`](./docs/CODEX-SINS.md)。
 
-| # | 模式 | 症状（你会看到什么） |
-| ---: | --- | --- |
-| 1 | 越俎代庖 | 你要的是窄结果；Agent 悄悄做成更大的产品/架构，且当它才是需求 |
-| 2 | 把含糊词解释到最大 | 「管控 / 完善 / 稳健」被解释到极限，轻量诉求变成平台/OS |
-| 3 | 完成以后不停 | 冻结验收已 PASS，仍继续改代码、提交，或自行开下一阶段 |
-| 4 | 把审查当修改权 | 你只要 inspect / 诊断 / 审计，它却重写、派审、甚至提交 |
-| 5 | 旧权威复活 | 旧计划、旧分支名、旧进度说明压过你**最新**的决定 |
-| 6 | 用摘要改写真相 | 交接/压缩摘要变成「事实」；遗漏在下一会话硬化成假历史 |
-| 7 | 局部绿灯冒充完成 | 一个单测或 mock 路径绿了 → 宣称功能/产品完成 |
-| 8 | 同一 Agent 自证闭环 | 同一 Agent 定义成功标准、实现、再引用自己的文字当证明 |
-| 9 | 测试剧场 | 测试只证明内部/mock；用户真正在意的可见路径坏了或没测 |
-| 10 | 代理目标反客为主 | 覆盖率、架构洁癖、评审口味压过 Owner 的产品结果 |
-| 11 | Reviewer 扩大分母 | 评审塞进从未冻结的新验收项；这一刀永远收不了口 |
-| 12 | 对控制税失明 | 额外闸门/台账/全量套件让日常更慢，超过它防住的漂移 |
-| 13 | 重造轮子 | 不用 Git/测试/简单文件，先造网关、账本、框架再交付价值 |
-| 14 | 工作区混乱 | 错 worktree / 分支 / HEAD / 脏树；活干到另一份检出上 |
-| 15 | 把交接税转嫁给用户 | 下一会话只能从聊天考古「做到哪了」，没有一键 resume 现场 |
-| 16 | 用户体验最后偿还 | 内务做几周；界面通用、半成品，或从未浏览器验收 |
-| 17 | 附和与过度自信 | 立刻认错，再许下未度量的大承诺（「完全可控」「可上线」「很快」） |
-| 18 | 道歉没有变成约束 | 解释了为什么漂；不改测试、hook、契约或工作规则 — 下次同一失败 |
-
-Oh No 的回答：**记 Owner 原文 · 冻结一份契约 · 证据结束这一刀 · 审查只读 · `state.json` 压过聊天 · 公开黑盒压过内部绿 · 度量延迟 · 工作区身份精确。**
-
 ---
+
+<a id="install"></a>
 
 ## 安装
 
+需要 Node.js **22.20 或更高版本**。
+
 ```bash
 npm install -g oh-no-codex
-# 镜像可能滞后：
-# npm install -g oh-no-codex@0.1.10 --registry https://registry.npmjs.org
 
 cd your-git-repo
-ohno init --goal "Owner 项目目标"   # 目标必填
-ohno install                        # hooks + ~/.codex/skills/oh-no-*
+ohno init --goal "Owner 项目目标"
+ohno install
+ohno doctor
 ```
+
+`ohno install` 会添加项目 hooks，并安装 `oh-no-*` Codex skills。安装 skill
+后请新开一个 Codex 会话，让 skill discovery 重新加载。
+
+也可以单独刷新 skills：
 
 ```bash
-ohno skill install    # 仅 skills
+ohno skill install
 ohno skill status
-# 需新开 Codex 会话，skill discovery 才会加载
 ```
-
-Node.js **≥ 22.20**（稳定 `path.matchesGlob`）。
 
 ### Windows
 
-- 全局 npm bin 进 `PATH`（`%AppData%\npm` 或自定义 prefix）。
-- 用 `ohno` / `ohno.cmd`。不要双击 `dist\cli.js`（WSH 跑不了该 ESM 入口）。
-- Cockpit 进度是 **`cursor / task_count`**，不是产品完成度。
+把全局 npm bin 目录加入 `PATH`，然后在终端运行 `ohno` 或 `ohno.cmd`。
+不要双击 `dist\cli.js`；Windows Script Host 无法运行这个 ESM 入口。
 
-### 已有 / 在建 / 做了一半的仓库（必须实事求是）
+### 已有代码或做到一半的仓库
 
-半成品**可以**挂 Oh No：在代码旁搭 harness，再**显式**教会它什么作准。  
-**不是**自动考古旧文档 / git 历史 /「做到哪了」。  
-`init` 只在 `.ohno/` 建 IDLE 的 `state.json`（无 plan）、Truth 种子、REQUIREMENTS 壳、preferences（+ AGENTS managed 块），**不动**业务代码。已有 `state.json` 拒绝静默重 init。进度要等你 `plan accept` + `verify` 才开始。
+Oh No 可以安装在现有代码旁边，但它不会根据 Git 历史自动猜出旧真相、
+已完成工作或正确计划。
+
+1. 用**当前阶段**目标初始化，而不是塞入整个历史愿景。
+2. 用 Owner 原话记录已经成立的事实、本阶段必须交付、非目标和硬约束。
+3. 审阅哪些 PRD、设计、验收、计划、README 和 Agent 文件仍是当前权威；Truth 只保留一套作准文件。
+4. Plan 只安排仍需用户可见黑盒证明的工作，不要伪造历史 PASS 收据。
+5. 启动 cursor 任务，在文件边界内工作，让 `ohno verify` 决定是否推进。
 
 ```bash
-cd your-existing-git-repo
-ohno init --goal "当前阶段 Owner 目标（原文）"   # --goal 必填
+ohno init --goal "当前阶段 Owner 目标"
 ohno install
 ohno doctor
-# 然后做下面的 bootstrap —— 别指望 init 会猜真相源或进度
+ohno requirements note --text "这个仓库里已经成立的事实"
+ohno requirements note --text "本阶段仍然必须交付的结果"
 ```
 
-**推荐半成品接入顺序（Codex + Owner）：**
-
-1. **Goal** — `ohno init --goal "…"` 写**当前阶段**结果，不是远古愿景全文。  
-2. **Owner 语料** — `requirements note`：已有什么、本阶段必须交付、非目标、硬约束（原文）。  
-3. **真相源候选** — 列出旧 PRD/DESIGN/ACCEPTANCE 等路径，**Owner 确认**。Oh No 不发明权威。  
-4. **可选且常更好：在护栏下重写治理文档** — 旧文档多半写在**没有 Oh No** 时（叙事、过期、无冻结/黑盒形状）。把旧文档当**只读原料**，生成**护栏友好**的新版（目标/非目标、阶段、用户可见验收口径）。Owner 确认后：Truth **指向新路径**；`requirements note` 写明「自某日起以 `docs/新…` 为准，旧 `docs/旧…` 仅参考」。禁止两套互相打架的权威。若 Truth 目标已在适用列表中，换文档走 **`ohno change`** 审 diff，禁止静默替换后继续编码。  
-5. **Plan 只排未证明的工作** — `plan propose` / `accept` 做**仍需黑盒验收**的切片。禁止把历史「假装 PASS」塞进 `completed`。新文档定规矩，**不会**自动填进度。  
-6. **一次只动 cursor** — `task start` → 实现或补测 → **只有 `ohno verify` 算推进**。只 review 不 verify ≠ 进度。  
-7. **改范围** — 实质变更走 `ohno change` + 新 plan revision，禁止手改 state、禁止聊天里扩 scope。
-
-| 重写新版 | 沿用旧路径 |
-| --- | --- |
-| 旧文档 = 只读灵感 | Owner 整理后旧路径仍进 Truth |
-| 新文档进适用列表 | 须仍清晰、可冻结、Owner 负责 |
-| REQUIREMENTS 记切换日与作准文件 | 冲突时以哪份为准也要 note |
-| 适合「装 Oh No 之前」的乱文档仓 | 适合旧文档已紧、仍现时的仓 |
-
-**装完后可粘贴的 Codex 提示词**（**新 session**、项目 cwd）：
-
-```text
-本仓库已有代码和文档（写在 Oh No 之前）。Oh No 已安装（ohno doctor 应通过）。
-
-禁止手改 .ohno/state.json。只用 oh-no-* skill / ohno CLI。
-旧文档在 Owner 冻结新权威前一律只读参考。
-
-1) 只读盘点：旧治理文档候选、看起来已实现的能力、矛盾与风险。提出两条路供 Owner 选：
-   (A) 重写：生成护栏友好的新治理文档 + Truth 指向新路径；
-   (B) 沿用：Truth 指向整理后的旧路径。
-2) Owner 确认后按约定写/改文档；requirements note 记切换
-   （「新版作准、旧版仅参考」或「旧路径 X 为唯一权威」）。
-   若替换已在适用列表中的 Truth 目标，用 ohno change 审文档 diff。
-3) requirements note：「树里已成立」与「本阶段仍须证明」分开（原文约束）。
-4) 起草线性 plan：只含剩余的、用户可见黑盒切片
-   （expected_behavior + 一条 test_command + allowed_files + stop）。
-   优先证明缺口，不要把已完成工作编成 PASS。
-5) ohno plan propose → 等 Owner accept → 仅冻结 cursor：
-   task start → 干活 → ohno verify。每次 PASS 后停下；next 是定位器。
-6) 需求变了走 ohno change —— 禁止在 active 切片里扩 scope。
-```
-
-空仓可跳过 bootstrap 细节直接 plan。半成品若跳过 bootstrap，界面上「已安装」但看板不认识你的产品——**这是预期行为，不是 bug**。
+接入后若权威需求发生变化，使用 `ohno change`；不要手改
+`.ohno/state.json`，也不要静默替换计划。
 
 ---
 
-## 操作
+<a id="daily-use"></a>
 
-安装只走终端。日常：自然语言 → Codex 加载 `oh-no-*` skill → 跑对应 `ohno` 命令。hooks 协助；**完成仍要求真实 `ohno verify`**。
+## 日常使用
 
 ### 最小闭环
 
+平时可以直接对 Codex 说“起草一份有边界的计划”。安装后的 `oh-no-plan`
+skill 会准备计划文件和审阅流程；想自己确定性执行时，使用下面同一套命令。
+
 ```bash
-ohno requirements note --text "Owner 原话，勿改写"   # 陈述范围/约束时建议立刻记
+ohno requirements note --text "Owner 原话，勿改写"  # 真正作出决定时记录
 ohno plan propose --file plan.json
 ohno plan accept --revision <rev> --diff <digest>
-ohno task start                 # 不接受调用方塞契约字段
-# …只改 allowed_files…
-ohno verify                     # 冻结的精确 test_command
-ohno resume                     # 从文件恢复，不靠聊天
-ohno next                       # 仅定位
+ohno task start
+# Codex 只做冻结任务和允许文件
+ohno verify
+ohno resume
+ohno next
 ```
 
-### Owner 原文（防漂移指令集）
+- 精确测试以 0 退出，且作用域文件前后不变，才产生新鲜 PASS 并推进一次。
+- FAIL、超时、状态不可读或测试期间文件变化，都会把任务留在当前项。
+- `next` 只说明计划做到哪里，不授权 Agent 自己发明下一项工作。
 
-聊天会丢。Owner 一说出目标、约束、非目标或决定，就应**追加原文**，
-不能只让模型把意思「总结进计划」。
+### 在 Codex 里直接说人话
 
-| 命令 | 作用 |
+安装后的 skills 会把普通说法映射到正确流程：
+
+| 你怎么说 | Skill / 命令 |
 | --- | --- |
-| `ohno requirements note --text "…"` | 向 `.ohno/REQUIREMENTS.md` 追加一条 **Owner 原文** |
-| `ohno requirements show` | 打印日志 |
-| skill `oh-no-requirements` | 自然语言触发（「记下来 / remember this」） |
+| “把这条需求原样记下来” | `oh-no-requirements` → `ohno requirements note` |
+| “起草或审阅有边界的计划” | `oh-no-plan` |
+| “开始当前任务” | `oh-no-task` → `ohno task start` |
+| “我觉得这项做完了” | `oh-no-verify` → `ohno verify` |
+| “现在做到哪里了？” | `oh-no-resume` / `ohno status` |
+| “需求变了” | `oh-no-change` |
+| “打开看板” | `oh-no-cockpit` → `ohno cockpit` |
+| “检查安装是否正常” | `oh-no-doctor` |
 
-这是项目的**指令语料**：后续会话、resume、Agent 应优先对照这些句子，
-而不是压缩后的聊天摘要。
-
-| 该记 | 不要当成 requirements 主内容 |
-| --- | --- |
-| 目标、硬约束、非目标、Owner 明确拍板 | 实现碎聊、debug 流水、「也许试试 X」 |
-| 阶段边界（「先交付个人自用版」） | 临时目录结构草稿、Agent 随口计划 |
-| Owner 原文（**任意 session**，同一项目 cwd） | 自动灌入每一句聊天提示词 |
-
-**按项目、不按 session：** 同一仓库上所有 Codex 会话共用一份
-`.ohno/REQUIREMENTS.md`。除非执行了 `requirements note`（或你手动跑），
-聊天内容不会自动进账本。跨 session 连续靠的是磁盘上的文件。
-
-实质改范围仍走 `ohno change` + 新计划；日志是耐久的引文表，不是第二套计划权威。
-
-### 说法 → skill
-
-| 你 | Skill / 命令 |
-| --- | --- |
-| 起草 / 接受线性计划 | `oh-no-plan` |
-| 开始 / 重开 cursor 这一刀 | `oh-no-task` → `ohno task start` |
-| 做完了 | `oh-no-verify` → `ohno verify` |
-| 做到哪了 | `oh-no-resume` / `ohno status` |
-| 记下来 / 记住原话 | `oh-no-requirements` → `ohno requirements note` |
-| 需求变了 | `oh-no-change` |
-| 看板 | `oh-no-cockpit` → `ohno cockpit` |
-| 体检 | `oh-no-doctor` |
-| 总入口 | `oh-no-control` |
-
-另有：`oh-no-status`、`oh-no-next`、`oh-no-preferences`、`oh-no-projectors`（共 13 个 skill）。`init` / `install` 不是 skill。
-
-### 何时自己跑 CLI
-
-| 情况 | 动作 |
-| --- | --- |
-| 空仓 / 第一次接入 | `ohno init` + `ohno install` |
-| 已有代码 / 做了一半 | 同样 init+install；用 requirements 记现状；plan **只排未验收**切片 |
-| 模型宣称完成却没 verify | 强制 `ohno verify` |
-| 升级后 skill 丢失 | `ohno skill install` + 新会话 |
-| 要确定性 | 自己在终端跑命令 |
-
-**硬规则：** 没有 PASS ≠ 做完。`next` ≠ 空白授权。聊天里贴长 CLI 是噪声。
-
-### 控制实际落在哪
-
-Cockpit 和聊天 **不会**靠读模型长文来「感应漂移」。控制是离散的：
-
-| 层 | 作用 |
-| --- | --- |
-| 冻结的 cursor 任务 | 一条期望行为 + **一条**黑盒 `test_command` + 允许 glob + 停止条件 |
-| `ohno verify` | 只跑那条命令；PASS 是绑定 plan rev + 合同 + 作用域 digest 的收据 |
-| STALE | PASS 与 allowed-files 的 subject digest（或合同/计划）不再一致 |
-| `ohno change` | 实质改需求时，审阅治理文档 diff 前阻断编码 |
-| Hooks / pre-commit | 协作式提醒与范围护栏 —— 不是对抗同用户的安全边界 |
-| `next` / 看板 | 状态机「下一步是什么」的定位器 —— 不是空白授权 |
-
-实现细节落在 **代码 + 冻结合同 + verify**，不靠聊天备份。
+Owner 决定应该进入 `.ohno/REQUIREMENTS.md`，不能只留在聊天里。同一仓库
+里的所有 Codex 会话读取同一组项目文件，因此新会话不必相信旧聊天摘要。
 
 ---
 
-## Cockpit
+<a id="limits-evidence"></a>
 
-本机只读看板。载荷与 `ohno status --json` 相同。永不改写计划/状态。
+## 诚实边界与证据
 
-<p align="center">
-  <img
-    src="./assets/brand/oh-no-cockpit.png"
-    width="960"
-    alt="Oh No, Codex! 驾驶舱 — 本机只读看板（ACTIVE 切片、计划板、PROOF/DRIFT、下一步）"
-  >
-</p>
+Oh No 是协作式本机护栏，不是自主 Agent OS 或安全边界。它无法阻止
+`--no-verify`、同一用户直接写文件、不受支持的托管工具，或故意无视所有
+规则的 Agent。
 
-<p align="center">
-  <sub>驾驶舱布局演示用的可丢弃 scroll-smoke 项目实拍（14 步计划、cursor 3/14、ACTIVE 中盘 — 不是产品完成度 %）。数值是 <code>.ohno/state.json</code> 的投影。</sub>
-</p>
+它也不会用 NLP 自动判断文案语义，不会自动重建半成品项目，更不保证所有
+仓库都绝对正确、绝对快速。驾驶舱进度是 `cursor / task_count`，不是产品
+完成百分比。
 
-```bash
-cd your-git-repo            # 必须已 init
-# worktree：cd 进该 worktree —— 每棵树各自有 .ohno/
-ohno cockpit
-ohno cockpit --port 13521
-ohno cockpit stop
-ohno cockpit --replace
-ohno cockpit --replace --port 13521
-```
-
-```text
-Cockpit: http://127.0.0.1:<port>/
-```
-
-可见标签约 100ms 轮询 `/api/state`（设计带 100–125ms）。不是 daemon：Ctrl+C 或 `ohno cockpit stop`。
-
-| 规则 | 行为 |
+| 公开事实 | 当前证据 |
 | --- | --- |
-| 默认端口 | OS 临时端口（`0`），除非 `--port N` |
-| 同项目已在跑 | 打印已有 URL 后退出 |
-| `--replace` | 先杀本 cwd 上一个 cockpit，再启动 |
-| 多项目 | 每项目 cwd 一个进程；稳定标签用不同端口 |
-| 死标签 | **COCKPIT SERVER OFFLINE**（不是 `state.json` 坏了） |
-| 进度条 | 仅 `cursor / task_count` |
+| npm 包 | [`oh-no-codex@0.1.10`](https://www.npmjs.com/package/oh-no-codex) 已发布 |
+| 核心闭环 | `ANTI_DRIFT_CORE_WORKS`，有本机公开黑盒覆盖 |
+| 真实项目试验 | 三份小型可丢弃项目副本 `TRIAL_PASS`；不是大仓普遍保证 |
+| 驾驶舱 | 与 CLI 状态同源，并经过浏览器和本机状态反射检查 |
 
-**仪表与读模型一一对应**（标签是 UI；数值是规范字段）：
+精确合同与证据：
 
-| 面板 | 字段 | 取值示例 |
-| --- | --- | --- |
-| NOW | `status`、当前任务 | `IDLE` / `ACTIVE`，冻结期望 + 精确测试 |
-| PROOF | `proof_freshness` | `NONE` · `FAIL` · `UNKNOWN` · `STALE` · `FRESH` |
-| DRIFT | `blocker` | `NONE` · `EXACT_TEST_FAILED` · `STALE_PASS` · `DOCUMENT_SYNC_PENDING` · … |
-| NEXT | `next_action` | `PROPOSE_PLAN` · `START_TASK:…` · `RUN_EXACT_TEST:…` · … |
-
-`DRIFT: NONE` 表示 **没有枚举出的 harness 阻断信号**，不是「Agent 聊天里不会偏题」。
-没有 FAIL/STALE/文档待审时，语义上的闲聊漂移靠冻结合同和 `verify` 约束，
-不是对 transcript 做 NLP。
-
-```text
-plan accept / task start / verify
-        │ 原子替换
-        ▼
-  .ohno/state.json
-        │ readModel()
-        ├── status / resume / next
-        └── GET /api/state ── 轮询 ── UI
-```
-
----
-
-## 交付物
-
-| 组件 | 作用 |
-| --- | --- |
-| CLI | `init` · `plan` · `task` · `verify` · `change` · `migrate acceptance-basis` · `resume` · `status` · `next` · `doctor` · `cockpit` · … |
-| 13 个 Codex skill | 可发现的日常流程 |
-| Hooks + pre-commit | 注入胶囊 + 协作式范围护栏 |
-| Projectors | `PROGRESS.md`、AGENTS 短块 |
-| 指令原文日志 | `.ohno/REQUIREMENTS.md`（`ohno requirements note/show`） |
-| Preferences | 可选工作默认 |
-| Cockpit | 只读 status 面 |
-
-V1 预算：一个包、一个二进制、一份 state、一份 truth、一份 hook 配置、一个 Git hook、一个本机只读 Cockpit。
-
----
-
-## 证据
-
-| 声明 | 标签 |
-| --- | --- |
-| 核心护栏 | `ANTI_DRIFT_CORE_WORKS` |
-| 公开发布 | **`0.1.10` 已发布**（registry.npmjs.org `latest`）；完整性修正 + same-batch LIVE |
-| CLI / hooks / 原子状态 | `LOCAL_PASS`（plan-proof 前沿、migrate rebind、pre-commit 投影、锁） |
-| Cockpit = status JSON | `LOCAL_PASS` |
-| Correction 4 验收分母 | `LOCAL_PASS`；change/task-start 重检 live basis |
-| 可丢弃真实副本 P01–P06 | **`TRIAL_PASS` LIVE** batch `live-20260803T100000Z-0bd5926` — p95 ms A/B/C：status 175.451 / 170.745 / 173.641；next 181.154 / 198.192 / 168.308；resume 220.441 / 230.675 / 251.55；task_start 200.263 / 206.14 / 187.783；P06 181 / 205 / 199；P04 resume 4025 B（**仅三份小型可丢弃副本**；非大仓普遍速度保证） |
-| npm | **`oh-no-codex@0.1.10`** 在 registry.npmjs.org；镜像可能滞后 |
-| Schema 2 → 3 | 两阶段迁移：preview，再 `--diff` / `--head` apply |
-
-契约：[Product](./docs/PRODUCT-CONTRACT.md) · [Design](./docs/DESIGN.md) · [Acceptance](./docs/ACCEPTANCE.md) · [Publish](./docs/PUBLISH.md) · [Sins](./docs/CODEX-SINS.md)
+- [产品合同](./docs/PRODUCT-CONTRACT.md)
+- [设计](./docs/DESIGN.md)
+- [验收合同](./docs/ACCEPTANCE.md)
+- [实施台账](./docs/IMPLEMENTATION-PLAN.md)
+- [驾驶舱设计合同](./docs/COCKPIT-DESIGN-CONTRACT.md)
+- [发布流程](./docs/PUBLISH.md)
 
 ---
 
