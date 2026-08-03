@@ -263,11 +263,11 @@ V1 budget: one package, one binary, one state file, one truth file, one hook con
 | Claim | Label |
 | --- | --- |
 | Core harness | `ANTI_DRIFT_CORE_WORKS` |
-| Public release | **`0.1.9` published** on registry.npmjs.org (`latest`); integrity + LIVE remeasure |
+| Public release | **`0.1.9` published** on registry.npmjs.org (`latest`). Main may be ahead of npm |
 | CLI / hooks / atomic state | `LOCAL_PASS` (plan-revision completion frontier, basis re-read, locks) |
 | Cockpit = status JSON | `LOCAL_PASS` |
 | Correction 4 acceptance basis | `LOCAL_PASS`; change/task-start re-check live basis |
-| Disposable real-copy P01–P06 | **`TRIAL_PASS` LIVE** batch `live-20260803T224800Z-57ab1d7` — p95 ms A/B/C: status 242.169 / 211.435 / 147.727; next 248.956 / 218.824 / 157.178; resume 314.502 / 253.265 / 234.506; task_start 247.211 / 236.058 / 180.406; P06 197 / 210 / 207; P04 resume 4025 B (**these three small disposable copies only**; not a universal large-repo speed claim) |
+| Disposable real-copy P01–P06 | **`HISTORICAL`** sample batch `live-20260803T224800Z-57ab1d7` — p95 ms A/B/C: status 242.169 / 211.435 / 147.727; next 248.956 / 218.824 / 157.178; resume 314.502 / 253.265 / 234.506; task_start 247.211 / 236.058 / 180.406; P06 197 / 210 / 207; P04 resume 4025 B (small disposable copies; **not** re-measured on post-0.1.9 main; not universal speed) |
 | npm | **`oh-no-codex@0.1.9`** on registry.npmjs.org; mirrors may lag |
 | Schema 2 → 3 | Two-phase migrate: preview, then `--diff` / `--head` apply |
 

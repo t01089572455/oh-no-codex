@@ -13,16 +13,14 @@ import {
   type PreferencesFile,
 } from "./preferences.js";
 import {
-  isPidLockStale,
-  removePathForce,
-  tryCreatePidLockFile,
+  acquirePidTokenLock,
+  releasePidTokenLock,
 } from "./process-lock.js";
 import {
   type ReadModel,
   readModel,
 } from "./read-model.js";
 import { displayFieldByteLimits, displayTextIssue } from "./state.js";
-import { setTimeout as delay } from "node:timers/promises";
 
 export const requirementsProjectionBegin =
   "<!-- ohno:requirements-projection-begin -->";
@@ -52,23 +50,20 @@ async function withRequirementsLock<T>(
   const directory = resolve(projectPath, ".ohno");
   await mkdir(directory, { recursive: true });
   const lockPath = resolve(directory, "requirements.lock");
-  const deadline = Date.now() + 30_000;
-  while (Date.now() < deadline) {
-    if (await tryCreatePidLockFile(lockPath)) {
-      try {
-        return await work();
-      } finally {
-        await removePathForce(lockPath);
-      }
-    }
-    // Only reclaim when owner pid is dead or lock is empty past emptyStaleMs.
-    if (await isPidLockStale(lockPath, 5_000)) {
-      await removePathForce(lockPath);
-      continue;
-    }
-    await delay(20 + Math.floor(Math.random() * 40));
+  let token: string;
+  try {
+    token = await acquirePidTokenLock(lockPath, {
+      deadlineMs: 30_000,
+      emptyStaleMs: 5_000,
+    });
+  } catch {
+    throw new Error("cannot acquire requirements log lock");
   }
-  throw new Error("cannot acquire requirements log lock");
+  try {
+    return await work();
+  } finally {
+    await releasePidTokenLock(lockPath, token);
+  }
 }
 
 function renderProjection(

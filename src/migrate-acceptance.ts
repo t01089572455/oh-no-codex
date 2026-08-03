@@ -41,16 +41,39 @@ import type { TruthDocument } from "./truth.js";
 import { readTruth } from "./truth.js";
 import { classifyWithTruthDocument } from "./truth-inventory.js";
 
+function sameAllowedFiles(
+  left: readonly string[],
+  right: readonly string[],
+): boolean {
+  if (left.length !== right.length) {
+    return false;
+  }
+  for (let index = 0; index < left.length; index += 1) {
+    if (left[index] !== right[index]) {
+      return false;
+    }
+  }
+  return true;
+}
+
 /**
  * Keep PASS history meaningful after schema migrate binds a new plan_revision.
- * Only rebind receipts whose frozen contract fields still match ordered tasks.
+ * Only rebind receipts that already belonged to the pre-migrate plan_revision
+ * and still exact-match the full frozen contract (including files + budget).
  */
 function rebindCompletedReceiptsToPlanRevision(
   completed: readonly TaskContract[],
   orderedTasks: readonly PlanTask[],
-  planRevision: string,
+  previousPlanRevision: string | null,
+  newPlanRevision: string,
 ): TaskContract[] {
+  if (previousPlanRevision === null) {
+    return [...completed];
+  }
   return completed.map((receipt) => {
+    if (receipt.plan_revision !== previousPlanRevision) {
+      return receipt;
+    }
     const task = orderedTasks.find(
       (entry) => entry.status === "FROZEN" && entry.id === receipt.id,
     );
@@ -61,6 +84,8 @@ function rebindCompletedReceiptsToPlanRevision(
       task.expected_behavior !== receipt.expected_behavior
       || task.test_command !== receipt.test_command
       || task.stop_condition !== receipt.stop_condition
+      || task.time_budget_minutes !== receipt.time_budget_minutes
+      || !sameAllowedFiles(task.allowed_files, receipt.allowed_files)
     ) {
       return receipt;
     }
@@ -69,9 +94,9 @@ function rebindCompletedReceiptsToPlanRevision(
       expected_behavior: receipt.expected_behavior,
       test_command: receipt.test_command,
       stop_condition: receipt.stop_condition,
-      allowed_files: receipt.allowed_files,
+      allowed_files: [...receipt.allowed_files],
       time_budget_minutes: receipt.time_budget_minutes,
-      plan_revision: planRevision,
+      plan_revision: newPlanRevision,
     };
     return {
       ...unsigned,
@@ -483,10 +508,12 @@ async function planMigration(
     : state.ordered_tasks;
   // A01: preserve completed history across migrate. New plan_revision would
   // otherwise orphan receipts under plan-proof (cross-revision refuse).
+  // Only exact full-contract matches from the *previous* revision rebind.
   const nextCompleted = hasAcceptedPlan && nextPlanRevision !== null
     ? rebindCompletedReceiptsToPlanRevision(
       state.completed,
       nextOrdered,
+      state.plan_revision,
       nextPlanRevision,
     )
     : state.completed;

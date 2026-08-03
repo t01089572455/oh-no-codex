@@ -255,6 +255,88 @@ test("MIGRATE next blocks verify and beats FAIL receipt", async (t) => {
   assert.match(verified.stderr, /MIGRATE_ACCEPTANCE_BASIS/i);
 });
 
+test("migrate refuses to rebind completion when allowed_files or budget diverge", async (t) => {
+  const projectPath = await createProject(t);
+  await writePassScript(projectPath);
+  const task = frozenUnit;
+  const tasks = [task];
+  const rev = createHash("sha256").update(JSON.stringify(tasks)).digest("hex");
+  const unsigned = {
+    id: task.id,
+    expected_behavior: task.expected_behavior,
+    test_command: task.test_command,
+    stop_condition: task.stop_condition,
+    allowed_files: ["old-broad/**"],
+    time_budget_minutes: 999,
+    plan_revision: rev,
+  };
+  const contract = {
+    ...unsigned,
+    contract_digest: createHash("sha256")
+      .update(JSON.stringify(unsigned))
+      .digest("hex"),
+  };
+  // Plan lists narrow files/budget; receipt is broader — must not rebind.
+  const planTasks = [{
+    ...task,
+    allowed_files: ["pass.mjs"],
+    time_budget_minutes: 30,
+  }];
+  const planRev = createHash("sha256").update(JSON.stringify(planTasks)).digest("hex");
+  const now = new Date().toISOString();
+  const state = {
+    schema_version: 2,
+    goal: ownerGoal,
+    status: "IDLE",
+    plan_revision: planRev,
+    ordered_tasks: planTasks,
+    cursor: 1,
+    plan_review: {
+      status: "LOCAL_REVIEW_RECORDED",
+      plan_revision: planRev,
+      diff_digest: planRev,
+      head: "UNBORN",
+      proposed_at: now,
+      recorded_at: now,
+    },
+    pending_plan: null,
+    truth_inventory: {
+      inventory_digest: createHash("sha256")
+        .update(JSON.stringify([]))
+        .digest("hex"),
+      classification: [],
+    },
+    active_task: null,
+    last_verification: null,
+    completed: [contract],
+    document_sync: {
+      status: "CLEAN",
+      change_id: null,
+      required_paths: [],
+      reviewed_diff_digest: null,
+    },
+  };
+  await mkdir(resolve(projectPath, ".ohno"), { recursive: true });
+  await writeFile(
+    resolve(projectPath, ".ohno", "state.json"),
+    `${JSON.stringify(state, null, 2)}\n`,
+    "utf8",
+  );
+  writeStructuredAcceptanceBasis(projectPath, [basisUnit], basisPath);
+  const preview = runMigratePreview(projectPath);
+  assert.equal(preview.status, 0, preview.stderr);
+  const applied = runMigrateApply(projectPath, preview.stdout);
+  assert.equal(applied.status, 0, applied.stderr);
+  const after = JSON.parse(
+    await readFile(resolve(projectPath, ".ohno", "state.json"), "utf8"),
+  );
+  assert.notEqual(after.completed[0].plan_revision, after.plan_revision);
+  assert.notEqual(
+    runCli(projectPath, ["next"]).stdout.trim(),
+    "PROJECT_COMPLETE",
+  );
+});
+
 test("schema 2 PROJECT_COMPLETE remains complete after migrate rebinds receipts", async (t) => {
   const projectPath = await createProject(t);
   await writePassScript(projectPath);

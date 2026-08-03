@@ -559,12 +559,17 @@ Owning checks: projectors, codex-hooks, resume-status-next, cockpit black boxes.
 
 There is exactly one. **Unique next:**
 
-> **`STOP` on design-bugfix line after `0.1.9` publish.** npm `latest=0.1.9`
-> remains published. Main adds contract-aligned fixes: migrate rebinds
-> completed receipts (A01), pre-commit allows harness authority after FRESH
-> PASS (O4), requirements file lock (Owner log durability), README/ACCEPTANCE
-> honesty. Sample LIVE batch retained with recomputed package digests; not a
-> new npm version unless Owner authorizes `0.1.10`. Procedure: `docs/PUBLISH.md`.
+> **`CORRECTION` closed on main after Codex post-0.1.9 re-audit; npm still
+> `0.1.9`.** Frozen slice: (1) migrate rebind only if receipt.plan_revision
+> equals pre-migrate revision and full frozen contract matches including
+> allowed_files + budget; (2) pre-commit projection allowlist is only
+> state.json/PROGRESS/.gitignore — Truth/AGENTS/basis/REQUIREMENTS still in
+> scope; (3) requirements pid+token lock with snapshot CAS reclaim;
+> (4) performance evidence is `HISTORICAL` (not silent LIVE rebind). Owning
+> tests: acceptance-denominator migrate rebind negatives; git-precommit
+> Truth/AGENTS tamper; integrity concurrent notes; correction-2/performance
+> HISTORICAL honesty. Do not publish `0.1.10` until Owner authorizes and,
+> if claiming LIVE p95, a same-batch remeasure is run. `docs/PUBLISH.md`.
 
 ## Shared implementation rules
 

@@ -3,14 +3,14 @@
   "classification": "TRIAL_EVIDENCE",
   "generated_at": "2026-08-03T05:41:57.656Z",
   "measurement_batch_id": "live-20260803T224800Z-57ab1d7",
-  "measurement_binding": "LIVE",
-  "measurement_note": "Same-batch LIVE live-20260803T224800Z-57ab1d7 (CLI p95/P06 samples). Digests refreshed after design-bugfix commits (migrate rebind, pre-commit harness, lock token, README honesty). Sample wall-times not remeasured; package binding recomputed. Small disposable copies only — not universal speed.",
+  "measurement_binding": "HISTORICAL",
+  "measurement_note": "HISTORICAL: wall-clock samples from batch live-20260803T224800Z-57ab1d7 on small disposable copies. Not re-measured on post-0.1.9 main runtime after migrate/pre-commit/lock corrections. Digests intentionally not bound to current package. Not release proof for current HEAD.",
   "implementation": {
-    "dist_cli_sha256": "a99c9eb7e77133d6f8eef1b1ecabef68929dd5942eae5449eb262e0ebbf6d644",
-    "package_subject_sha256": "5c5a195706dec215027c84b71e633d45d32e29a4a60dedf457a2709372e380d6",
-    "runtime_subject_sha256": "00b23f4f109ad6dd0518d2b0a17cd1c1996c95e8175d804cc5ba299b002af1d3",
-    "head": "28ac0ba1548a9fe9cff498d3b88e5b80691c01f0",
-    "tree": "476ac05b15f8fec493a27c08ac629b9bff27942c"
+    "dist_cli_sha256": "00000000000000000000000000000000000000000000000000000000000000a1",
+    "package_subject_sha256": "f29c5a7b5fb37a209fd8990183ceef6362a84fb890190afbb45e03abbf560fce",
+    "runtime_subject_sha256": "3b39adaa72de2aa1711f794983ab4c066d55626b14818c11da68a25027694650",
+    "head": "57ab1d792d3e9416c6c6a6cbc86b02f516513e3a",
+    "tree": "bf0a95e8bcb65ab7964e77e28ced90d53fd23d13"
   },
   "machine": {
     "arch": "x64",
@@ -556,7 +556,7 @@
     "classification": "P06_BROWSER_RECEIPT",
     "generated_at": "2026-08-03T05:45:15.604Z",
     "measurement_batch_id": "live-20260803T224800Z-57ab1d7",
-    "measurement_binding": "LIVE",
+    "measurement_binding": "HISTORICAL",
     "result": "TRIAL_PASS",
     "sample_method": {
       "clock": "Date.now epoch ms (cross-process)",
@@ -701,11 +701,11 @@
       }
     ],
     "implementation": {
-      "dist_cli_sha256": "a99c9eb7e77133d6f8eef1b1ecabef68929dd5942eae5449eb262e0ebbf6d644",
-      "package_subject_sha256": "5c5a195706dec215027c84b71e633d45d32e29a4a60dedf457a2709372e380d6",
-      "runtime_subject_sha256": "00b23f4f109ad6dd0518d2b0a17cd1c1996c95e8175d804cc5ba299b002af1d3",
-      "head": "28ac0ba1548a9fe9cff498d3b88e5b80691c01f0",
-      "tree": "476ac05b15f8fec493a27c08ac629b9bff27942c"
+      "dist_cli_sha256": "00000000000000000000000000000000000000000000000000000000000000a1",
+      "package_subject_sha256": "f29c5a7b5fb37a209fd8990183ceef6362a84fb890190afbb45e03abbf560fce",
+      "runtime_subject_sha256": "3b39adaa72de2aa1711f794983ab4c066d55626b14818c11da68a25027694650",
+      "head": "57ab1d792d3e9416c6c6a6cbc86b02f516513e3a",
+      "tree": "bf0a95e8bcb65ab7964e77e28ced90d53fd23d13"
     }
   },
   "limitations": [

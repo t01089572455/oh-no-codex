@@ -40,6 +40,100 @@ export async function tryCreatePidLockFile(lockPath: string): Promise<boolean> {
   }
 }
 
+/**
+ * Acquire a pid+token lock file. Stale reclaim only renames the *observed*
+ * snapshot away (ABA-safe). Release must pass the same token.
+ */
+export async function acquirePidTokenLock(
+  lockPath: string,
+  options: { deadlineMs?: number; emptyStaleMs?: number } = {},
+): Promise<string> {
+  const deadlineMs = options.deadlineMs ?? 30_000;
+  const emptyStaleMs = options.emptyStaleMs ?? 5_000;
+  const deadline = Date.now() + deadlineMs;
+  await mkdir(dirname(lockPath), { recursive: true });
+  while (Date.now() < deadline) {
+    const token = randomUUID();
+    try {
+      await writeFile(
+        lockPath,
+        `${process.pid}\n${token}\n`,
+        { flag: "wx", mode: 0o600 },
+      );
+      return token;
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code === "EPERM" || code === "EACCES" || code === "EBUSY") {
+        await delay(20 + Math.floor(Math.random() * 40));
+        continue;
+      }
+      if (code !== "EEXIST") {
+        throw error;
+      }
+    }
+    // Snapshot then re-check: never delete a lock we did not observe as stale.
+    let snapshot: string | null = null;
+    try {
+      snapshot = await readFile(lockPath, "utf8");
+    } catch {
+      continue;
+    }
+    const pid = Number.parseInt(snapshot.trim().split(/\s+/u)[0] ?? "", 10);
+    let stale = false;
+    if (Number.isInteger(pid) && pid > 0) {
+      stale = !processLooksAlive(pid);
+    } else {
+      try {
+        const info = await stat(lockPath);
+        stale = Date.now() - info.mtimeMs >= emptyStaleMs;
+      } catch {
+        stale = true;
+      }
+    }
+    if (!stale) {
+      await delay(20 + Math.floor(Math.random() * 40));
+      continue;
+    }
+    let again: string | null = null;
+    try {
+      again = await readFile(lockPath, "utf8");
+    } catch {
+      continue;
+    }
+    if (again !== snapshot) {
+      // Ownership changed (ABA) — do not reclaim.
+      continue;
+    }
+    const grave = `${lockPath}.${randomUUID()}.stale`;
+    try {
+      await rename(lockPath, grave);
+      await removePathForce(grave);
+    } catch {
+      // Peer already reclaimed or recreated.
+    }
+  }
+  throw new Error(`cannot acquire lock ${lockPath}`);
+}
+
+export async function releasePidTokenLock(
+  lockPath: string,
+  token: string,
+): Promise<void> {
+  try {
+    const body = await readFile(lockPath, "utf8");
+    if (!body.includes(token)) {
+      return;
+    }
+    const again = await readFile(lockPath, "utf8");
+    if (again !== body) {
+      return;
+    }
+    await removePathForce(lockPath);
+  } catch {
+    // Already released or reassigned.
+  }
+}
+
 export async function readLockPid(lockPath: string): Promise<number | null> {
   try {
     const body = await readFile(lockPath, "utf8");

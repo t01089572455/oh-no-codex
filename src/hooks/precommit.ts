@@ -9,24 +9,20 @@ import { pathsOutsideGlobs } from "./scope.js";
 import type { ScopedPath } from "./scope.js";
 
 /**
- * Canonical harness paths that must travel with Git for O4 recovery.
- * Not product mutation; allowed beside a fresh PASS subject (A09 still gates
- * product files to the verified allowed_files + subject digest).
+ * Product-generated projections that may ride with a fresh PASS so sole
+ * authority can travel in Git (O4). Owner-governed content (Truth, basis,
+ * REQUIREMENTS, preferences, AGENTS) is NOT included — those stay in scope
+ * or need their own proof (A09).
  */
-const HARNESS_AUTHORITY_PATHS = new Set([
-  "AGENTS.md",
+const HARNESS_PROJECTION_PATHS = new Set([
   ".ohno/state.json",
-  ".ohno/truth.json",
-  ".ohno/acceptance-basis.json",
-  ".ohno/REQUIREMENTS.md",
-  ".ohno/preferences.json",
   ".ohno/PROGRESS.md",
   ".ohno/.gitignore",
 ]);
 
-function isHarnessAuthorityPath(path: string): boolean {
+function isHarnessProjectionPath(path: string): boolean {
   const normalized = path.replaceAll("\\", "/");
-  return HARNESS_AUTHORITY_PATHS.has(normalized);
+  return HARNESS_PROJECTION_PATHS.has(normalized);
 }
 
 function stagedPaths(projectPath: string): string[] {
@@ -136,19 +132,19 @@ export async function checkPreCommit(startPath: string): Promise<string> {
     );
   }
 
-  const productStaged = staged.filter((path) => !isHarnessAuthorityPath(path));
-  const harnessStaged = staged.filter((path) => isHarnessAuthorityPath(path));
+  const productStaged = staged.filter((path) => !isHarnessProjectionPath(path));
+  const projectionStaged = staged.filter((path) => isHarnessProjectionPath(path));
 
-  // O4: after fresh PASS, Owner may commit sole authority + projectors alone.
+  // O4: after fresh PASS, sole-authority projections may commit alone.
   if (productStaged.length === 0) {
-    if (harnessStaged.length === 0) {
+    if (projectionStaged.length === 0) {
       throw new Error(
         "COOPERATIVE_GUARDRAIL: nothing staged under the fresh PASS subject "
-          + "or harness authority paths",
+          + "or harness projection paths (.ohno/state.json, PROGRESS, .gitignore)",
       );
     }
-    return `COOPERATIVE_GUARDRAIL: fresh PASS; harness authority paths only: `
-      + `${harnessStaged.join(", ")}\n`;
+    return `COOPERATIVE_GUARDRAIL: fresh PASS; harness projection paths only: `
+      + `${projectionStaged.join(", ")}\n`;
   }
 
   let indexDigest: string;
@@ -171,8 +167,8 @@ export async function checkPreCommit(startPath: string): Promise<string> {
   }
 
   assertPathsInScope(productStaged, completedTask.allowed_files);
-  const extra = harnessStaged.length > 0
-    ? `; harness authority also staged: ${harnessStaged.join(", ")}`
+  const extra = projectionStaged.length > 0
+    ? `; harness projections also staged: ${projectionStaged.join(", ")}`
     : "";
   return `COOPERATIVE_GUARDRAIL: fresh PASS covers in-scope staged paths: `
     + `${productStaged.join(", ") || "NONE"}${extra}\n`;

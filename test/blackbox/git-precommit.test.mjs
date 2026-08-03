@@ -354,16 +354,46 @@ test("pre-commit accepts a fresh completed in-scope subject", async (t) => {
   assert.match(result.stdout, /fresh PASS.*subject\.txt/i);
 });
 
-test("pre-commit accepts harness authority paths after fresh PASS (O4)", async (t) => {
+test("pre-commit accepts harness projection paths after fresh PASS (O4)", async (t) => {
   const projectPath = await createProject(t);
   await initialize(projectPath);
   await completeFreshTask(projectPath);
-  // Product subject already staged by completeFreshTask flow — restage harness.
-  runGit(projectPath, ["add", "--", "AGENTS.md", ".ohno/state.json", ".ohno/PROGRESS.md"]);
+  runGit(projectPath, ["add", "--", ".ohno/state.json", ".ohno/PROGRESS.md"]);
 
   const result = runPreCommit(projectPath);
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /harness authority|fresh PASS/i);
+  assert.match(result.stdout, /harness projection|fresh PASS/i);
+});
+
+test("pre-commit rejects Owner authority tamper (Truth/AGENTS) after unrelated PASS", async (t) => {
+  const projectPath = await createProject(t);
+  await initialize(projectPath);
+  await completeFreshTask(projectPath);
+  await writeFile(
+    resolve(projectPath, ".ohno", "truth.json"),
+    `${JSON.stringify({ schema_version: 1, targets: [] }, null, 2)}\n`,
+    "utf8",
+  );
+  await writeFile(resolve(projectPath, "AGENTS.md"), "MALICIOUS OUTSIDE MANAGED BLOCK\n", "utf8");
+  runGit(projectPath, ["add", "--", "subject.txt", ".ohno/truth.json", "AGENTS.md"]);
+
+  const result = runPreCommit(projectPath);
+  assert.notEqual(result.status, 0, result.stdout + result.stderr);
+  assert.match(result.stderr, /outside|scope|truth|AGENTS/i);
+});
+
+test("pre-commit rejects Truth-only stage after fresh PASS (no free ride)", async (t) => {
+  const projectPath = await createProject(t);
+  await initialize(projectPath);
+  await completeFreshTask(projectPath);
+  await writeFile(
+    resolve(projectPath, ".ohno", "truth.json"),
+    `${JSON.stringify({ schema_version: 1, targets: [] }, null, 2)}\n`,
+    "utf8",
+  );
+  runGit(projectPath, ["add", "--", ".ohno/truth.json"]);
+  const result = runPreCommit(projectPath);
+  assert.notEqual(result.status, 0, result.stdout + result.stderr);
 });
 
 test("pre-commit rejects a completed subject after its proof becomes stale", async (t) => {
