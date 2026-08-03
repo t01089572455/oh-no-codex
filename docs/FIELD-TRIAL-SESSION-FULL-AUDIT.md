@@ -1,8 +1,10 @@
 # Full session audit (public, privacy-scrubbed)
 
 This file replaces a prior machine-local transcript dump that contained absolute
-paths, session identifiers, and private prompt excerpts. Those materials are
-**not** published in this repository (see `docs/CODEX-SINS.md` evidence boundary).
+paths, session identifiers, and private prompt excerpts. The unredacted JSON
+extract and monitor log were **removed from the public tree** (see
+`docs/CODEX-SINS.md` evidence boundary). Sibling field-trial docs are
+paraphrased only.
 
 ## What was audited
 

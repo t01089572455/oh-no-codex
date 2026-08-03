@@ -559,10 +559,12 @@ Owning checks: projectors, codex-hooks, resume-status-next, cockpit black boxes.
 
 There is exactly one. **Unique next:**
 
-> **`0.1.9` candidate ready for Owner publish decision.** Integrity corrections
-> + same-batch LIVE `live-20260803T224800Z-57ab1d7` (P01–P06 `TRIAL_PASS`).
-> Version is `0.1.9` on main. Do **not** `npm publish` until Owner explicitly
-> authorizes. Procedure: `docs/PUBLISH.md`.
+> **`0.1.9` candidate — public hygiene pass then Owner publish.** Integrity
+> corrections (plan-proof frontier; basis re-read) + same-batch LIVE
+> `live-20260803T224800Z-57ab1d7` (P01–P06 `TRIAL_PASS`). Public tree scrub of
+> remaining field-trial privacy materials; contract clarifies Git porcelain for
+> handoff. Do **not** `npm publish` until Owner explicitly authorizes.
+> Procedure: `docs/PUBLISH.md`.
 
 ## Shared implementation rules
 

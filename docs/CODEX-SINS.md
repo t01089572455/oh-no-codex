@@ -154,8 +154,10 @@ without measuring how much slower ordinary work becomes.
 
 **Damage:** The anti-drift tool creates more friction than the drift it prevents.
 
-**Executable correction:** Latency, capsule size, and no-full-scan normal paths
-are hard acceptance rows measured on real project copies.
+**Executable correction:** Latency, capsule size, and no Truth/test-suite scans
+on normal paths are hard acceptance rows measured on real project copies.
+One ordinary Git porcelain for exact handoff dirty is allowed (see product
+contract handoff exception).
 
 ## 13. Rebuilding the world / 重造轮子
 

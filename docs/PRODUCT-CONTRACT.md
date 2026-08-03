@@ -128,9 +128,16 @@ V1 may not contain:
 - a policy DSL, plugin/provider framework, multi-agent scheduler, or generic
   effect gateway;
 - autonomous production identity or CI/Owner trust claims;
-- full-repository scans or full-suite runs on normal commands;
+- full Truth-inventory rescans, full governing-document walks, or full project
+  test-suite runs on normal `status` / `next` / `resume` / hook / Cockpit paths
+  (inventory rescans stay limited to init and `change begin` — see A15);
 - Claude integration;
 - npm publication or release automation.
+
+**Handoff exception (exact dirty/tree):** normal `status` / `resume` / Cockpit
+may run one ordinary `git status --porcelain` (and related rev-parse) so
+handoff reports exact dirty and tree identity. That is not a Truth inventory
+scan and not a test suite. Optional short process-local caching is allowed.
 
 Runtime dependencies should remain zero unless a failing public acceptance test
 demonstrates that a Node built-in cannot meet the contract. Development
