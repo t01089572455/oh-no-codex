@@ -686,17 +686,8 @@ async function exerciseRealProject(cwd, label, stack, identity) {
     })],
     ".ohno/replacement-plan.json",
   );
-  // reviewPlan rewrites basis; ensure non-empty required coverage vs HEAD.
-  {
-    const basisFile = resolve(cwd, ".ohno", "acceptance-basis.json");
-    const basisDoc = JSON.parse(await readFile(basisFile, "utf8"));
-    basisDoc.trial_change_note = `coverage ${Date.now()}`;
-    await writeFile(
-      basisFile,
-      `${JSON.stringify(basisDoc, null, 2)}\n`,
-      "utf8",
-    );
-  }
+  // PRODUCT.md / PLAN.md already mutated above; replacement plan review
+  // rewrites basis in lockstep with the plan (change accept re-reads basis).
   const displayed = requireSuccess(
     runCli(cwd, ["change", "diff"]),
     "ohno change diff",

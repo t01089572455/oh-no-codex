@@ -559,12 +559,10 @@ Owning checks: projectors, codex-hooks, resume-status-next, cockpit black boxes.
 
 There is exactly one. **Unique next:**
 
-> **Integrity corrections on main after `0.1.8`.** Plan-revision completion
-> frontier, basis re-read, requirements lock, worktree hooks, resume hard 4 KiB,
-> handoff tree, read-only SessionStart capsule. Trial evidence is
-> **`HISTORICAL`** until a fresh same-batch LIVE remeasure. Owner wants a
-> publishable release: complete LIVE remeasure + version bump, then follow
-> `docs/PUBLISH.md` only after Owner says publish.
+> **`0.1.9` candidate ready for Owner publish decision.** Integrity corrections
+> + same-batch LIVE `live-20260803T224800Z-57ab1d7` (P01–P06 `TRIAL_PASS`).
+> Version is `0.1.9` on main. Do **not** `npm publish` until Owner explicitly
+> authorizes. Procedure: `docs/PUBLISH.md`.
 
 ## Shared implementation rules
 

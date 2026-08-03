@@ -42,7 +42,7 @@
 
 ## Contract
 
-Package: [`oh-no-codex`](https://www.npmjs.com/package/oh-no-codex) · binary: `ohno` · current: **`0.1.8`**.
+Package: [`oh-no-codex`](https://www.npmjs.com/package/oh-no-codex) · binary: `ohno` · current: **`0.1.9`**.
 
 | Rule | Meaning |
 | --- | --- |
@@ -117,7 +117,7 @@ Harness response in one line: **record Owner words · freeze one contract · evi
 ```bash
 npm install -g oh-no-codex
 # mirrors may lag a fresh release:
-# npm install -g oh-no-codex@0.1.8 --registry https://registry.npmjs.org
+# npm install -g oh-no-codex@0.1.9 --registry https://registry.npmjs.org
 
 cd your-git-repo
 ohno init --goal "Owner project goal"   # goal required
@@ -130,7 +130,7 @@ ohno skill status
 # new Codex session required for skill discovery
 ```
 
-Node.js **≥ 22.20** (stable `path.matchesGlob`).
+Node.js **≥ 22.20** (stable `path.matchesGlob`). Package version **`0.1.9`**.
 
 ### Windows
 
@@ -263,12 +263,12 @@ V1 budget: one package, one binary, one state file, one truth file, one hook con
 | Claim | Label |
 | --- | --- |
 | Core harness | `ANTI_DRIFT_CORE_WORKS` |
-| Public release | **`0.1.8` on npm** (cockpit UX). Post-publish integrity fixes on main are **not** yet a new release |
-| CLI / hooks / atomic state | `LOCAL_PASS` (includes plan-cursor honesty + basis re-read) |
+| Public release | **`0.1.9` candidate** — integrity + LIVE remeasure (publish only with Owner words) |
+| CLI / hooks / atomic state | `LOCAL_PASS` (plan-revision completion frontier, basis re-read, locks) |
 | Cockpit = status JSON | `LOCAL_PASS` |
-| Correction 4 acceptance basis | `LOCAL_PASS` (on main); change/task-start now re-check live basis |
-| Disposable real-copy P01–P06 | Prior LIVE batch numbers retained as **`HISTORICAL`** reference only (not re-measured on current package; not release proof). Fresh LIVE remeasure required before claiming current p95 |
-| npm | **`oh-no-codex@0.1.8`** on registry.npmjs.org; mirrors may lag |
+| Correction 4 acceptance basis | `LOCAL_PASS`; change/task-start re-check live basis |
+| Disposable real-copy P01–P06 | **`TRIAL_PASS` LIVE** batch `live-20260803T224800Z-57ab1d7` — p95 ms A/B/C: status 242.169 / 211.435 / 147.727; next 248.956 / 218.824 / 157.178; resume 314.502 / 253.265 / 234.506; task_start 247.211 / 236.058 / 180.406; P06 197 / 210 / 207; P04 resume 4025 B (batch-bound; not a universal speed claim) |
+| npm | Target **`oh-no-codex@0.1.9`** on registry.npmjs.org after Owner publish; mirrors may lag |
 | Schema 2 → 3 | Two-phase migrate: preview, then `--diff` / `--head` apply |
 
 Contracts: [Product](./docs/PRODUCT-CONTRACT.md) · [Design](./docs/DESIGN.md) · [Acceptance](./docs/ACCEPTANCE.md) · [Publish](./docs/PUBLISH.md) · [Sins](./docs/CODEX-SINS.md)

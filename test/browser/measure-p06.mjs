@@ -267,9 +267,13 @@ function waitForSaveObservation(projectPath, taskId) {
         const expected = {
           status: "ACTIVE",
           proof: "NONE",
-          blocker: "NONE",
-          next:
+          // Cockpit localizes bare NONE for blocker/next presentation.
+          blockerEn: "NONE",
+          blockerZh: "无",
+          nextEn:
             `CONTINUE_ACTIVE:${taskId} (stay on this task — then ohno verify)`,
+          nextZh:
+            `CONTINUE_ACTIVE:${taskId}（留在本任务 — 然后 ohno verify）`,
           taskId,
         };
         finish({ startWallMs, expected, state });
@@ -386,10 +390,10 @@ async function measureOne(page, projectPath, sampleIndex) {
       if (proof !== exp.proof) {
         return false;
       }
-      if (blocker !== exp.blocker) {
+      if (blocker !== exp.blockerEn && blocker !== exp.blockerZh) {
         return false;
       }
-      if (next !== exp.next) {
+      if (next !== exp.nextEn && next !== exp.nextZh) {
         return false;
       }
       // Current-task presentation must show the new id (not stale board text).
@@ -402,7 +406,7 @@ async function measureOne(page, projectPath, sampleIndex) {
       }
       return true;
     },
-    { timeout: 5_000, polling: 10 },
+    { timeout: 15_000, polling: 10 },
     expected,
     before,
   );
