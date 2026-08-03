@@ -4,10 +4,10 @@
   "generated_at": "2026-08-03T10:11:42.390Z",
   "measurement_batch_id": "live-20260803T100000Z-0bd5926",
   "measurement_binding": "LIVE",
-  "measurement_note": "Same-batch LIVE live-20260803T100000Z-0bd5926 for oh-no-codex@0.1.10 candidate. Three distinct small disposable stacks. Integrity corrections included. Not a universal large-repo speed claim. package_subject refreshed after post-publish README honesty commit; runtime samples unchanged.",
+  "measurement_note": "Same-batch LIVE live-20260803T100000Z-0bd5926 for oh-no-codex@0.1.10 candidate. Three distinct small disposable stacks. Integrity corrections included. Not a universal large-repo speed claim. package_subject refreshed after post-publish README-only documentation commits; runtime samples unchanged.",
   "implementation": {
     "dist_cli_sha256": "2af021a781f098753057912cb1a5971b86b1934edbc90249c2068b56906db91d",
-    "package_subject_sha256": "60f9d9cfe1c593b1b85b167654f1e05cdd80d4d6a85dfbc9083d2f409d2d3ec5",
+    "package_subject_sha256": "5fcc3e4c0b1640ded518e1d23c2f5442d00ea125a78f3e5442c5201bdc0d8bb8",
     "runtime_subject_sha256": "a48ced5c471ffef5f3d839e9eec1248f6ad50c85240679502f6109d7e66a63e5",
     "head": "b9c0c2833b84135fdf3e65b762ef597f6a05bd1c",
     "tree": "86111a08d29d244ef6fb28a0e40b538b2637d50c"
@@ -702,7 +702,7 @@
     ],
     "implementation": {
       "dist_cli_sha256": "2af021a781f098753057912cb1a5971b86b1934edbc90249c2068b56906db91d",
-      "package_subject_sha256": "60f9d9cfe1c593b1b85b167654f1e05cdd80d4d6a85dfbc9083d2f409d2d3ec5",
+      "package_subject_sha256": "5fcc3e4c0b1640ded518e1d23c2f5442d00ea125a78f3e5442c5201bdc0d8bb8",
       "runtime_subject_sha256": "a48ced5c471ffef5f3d839e9eec1248f6ad50c85240679502f6109d7e66a63e5",
       "head": "b9c0c2833b84135fdf3e65b762ef597f6a05bd1c",
       "tree": "86111a08d29d244ef6fb28a0e40b538b2637d50c"

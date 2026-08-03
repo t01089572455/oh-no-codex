@@ -1,15 +1,16 @@
-# Codex's eighteen sins
+# The Eighteen Sins of Codex / Codex 的十八宗罪
 
 > A public, privacy-scrubbed failure audit behind Oh No, Codex!
 
-This is not a scientific prevalence study and it is not a claim that every
-Codex run fails in these ways. It is a product-design incident review: repeated
-failure patterns observed while using coding agents across long-running,
-multi-session work.
+This is not a scientific prevalence study, and it does not claim that every
+Codex run fails in these ways.
 
-This document names **Codex’s eighteen sins**: eighteen distinct audited
-patterns. Keeping all eighteen is more honest than compressing them to fit a
-shorter title.
+It is a product-design incident review: repeated failure patterns observed while
+using coding agents across long-running, multi-session work.
+
+This document names **The Eighteen Sins of Codex / Codex 的十八宗罪**: eighteen
+distinct audited patterns. Keeping all eighteen is more honest than compressing
+them to fit a shorter title.
 
 ## Evidence boundary
 
@@ -24,9 +25,11 @@ The source audit covered one local session corpus:
 - one empty file.
 
 Those numbers describe that corpus only. They do not measure all users or all
-Codex versions. The public edition excludes raw session identifiers, user
-identity, email, local paths, private repository names, proprietary source, and
-verbatim private prompts. The patterns below are paraphrased.
+Codex versions.
+
+The public edition excludes raw session identifiers, user identity, email,
+local paths, private repository names, proprietary source, and verbatim private
+prompts. The patterns below are paraphrased.
 
 ## 1. Semantic usurpation / 越俎代庖
 
@@ -156,6 +159,7 @@ without measuring how much slower ordinary work becomes.
 
 **Executable correction:** Latency, capsule size, and no Truth/test-suite scans
 on normal paths are hard acceptance rows measured on real project copies.
+
 One ordinary Git porcelain for exact handoff dirty is allowed (see product
 contract handoff exception).
 

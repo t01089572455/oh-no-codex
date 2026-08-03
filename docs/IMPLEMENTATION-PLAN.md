@@ -1,6 +1,6 @@
 # Codex-only V1 implementation plan
 
-Status: **RELEASE_CHANGES_REQUIRED** (core: **ANTI_DRIFT_CORE_WORKS**)
+Status: **STOP** (core: **ANTI_DRIFT_CORE_WORKS**; npm: **0.1.10 published**)
 
 Owner authorization: Tasks 1–7 below, including 6A–6C, were authorized as the
 complete V1 implementation scope on 2026-07-30. Correction 2 (audit F3/F4/F5/F8,
@@ -563,6 +563,18 @@ There is exactly one. **Unique next:**
 > to registry.npmjs.org (`latest=0.1.10`). Gate green (154 tests + LIVE batch
 > `live-20260803T100000Z-0bd5926`). Not `V1_TRIAL_ACCEPTED`. Do not republish
 > or retag without new Owner words. Procedure: `docs/PUBLISH.md`.
+
+### README terminology correction (2026-08-03)
+
+Owner fixed the public incident name as **The Eighteen Sins of Codex / Codex 的
+十八宗罪**. The English and Simplified Chinese READMEs now foreground that exact
+name and retain all 18 entries; `docs/CODEX-SINS.md` remains the detailed audit.
+This is a documentation-only correction. Product behavior and version are
+unchanged, and the unique next action remains `STOP`.
+
+Verification: exact 1–18/name/Han-character and local-link checks; `git diff
+--check`; `node --test test/blackbox/release-honesty.test.mjs` (2/2 PASS); and
+`npm pack --dry-run` (`oh-no-codex@0.1.10`, both READMEs included).
 
 ## Shared implementation rules
 

@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  <strong>Local anti-drift harness for Codex.</strong>
+  <strong>A fast, local anti-drift harness for Codex vibe coding.</strong>
 </p>
 
 <p align="center">
@@ -31,7 +31,7 @@
 <p align="center">
   <a href="#contract">Contract</a> ·
   <a href="#authority">Authority</a> ·
-  <a href="#failure-modes">Failures</a> ·
+  <a href="#eighteen-sins">The Eighteen Sins</a> ·
   <a href="#install">Install</a> ·
   <a href="#operation">Operate</a> ·
   <a href="#cockpit">Cockpit</a> ·
@@ -41,6 +41,13 @@
 ---
 
 ## Contract
+
+Codex can write excellent code and still move the project in the wrong direction.
+Oh No, Codex! keeps one Owner goal, one bounded task, one user-visible black-box
+test, and one next action readable across sessions.
+
+It was built in response to [**The Eighteen Sins of Codex**](./docs/CODEX-SINS.md):
+18 recurring ways a coding agent can drift while still appearing productive.
 
 Package: [`oh-no-codex`](https://www.npmjs.com/package/oh-no-codex) · binary: `ohno` · current: **`0.1.10`**.
 
@@ -52,7 +59,7 @@ Package: [`oh-no-codex`](https://www.npmjs.com/package/oh-no-codex) · binary: `
 | Advance | Fresh PASS closes the task once and advances `cursor`; FAIL / UNKNOWN leave the task active |
 | Locate | `next` is a **locator**, not authorization to start new work |
 | Recover | `status` / `resume` / hooks / Cockpit all read the same atomic state |
-| Change | Material scope change: `ohno change` syncs named governing docs before coding continues |
+| Change | Material scope change: `ohno change` identifies applicable governing docs and verifies their reviewed diff before coding resumes |
 
 Not a product claim: autonomous multi-agent OS, hostile same-user security, database, daemon, hosted control plane.
 
@@ -83,9 +90,17 @@ Cooperative hooks inject the resume capsule and deny some out-of-scope writes. A
 
 ---
 
-## Failure modes
+<a id="eighteen-sins"></a>
 
-Codex can stay “busy” while the repo drifts. Full audit: [`docs/CODEX-SINS.md`](./docs/CODEX-SINS.md).
+## The Eighteen Sins of Codex
+
+**The Eighteen Sins of Codex** is the deliberate name for 18 distinct,
+privacy-scrubbed failure patterns observed across long-running coding-agent work.
+
+It is not a claim that every Codex run fails. It is a public incident taxonomy:
+what users see, how the project is harmed, and which small constraint answers it.
+
+Read the full audit and evidence boundary: [`docs/CODEX-SINS.md`](./docs/CODEX-SINS.md).
 
 | # | Pattern | Symptom (what you see) |
 | ---: | --- | --- |
@@ -108,7 +123,7 @@ Codex can stay “busy” while the repo drifts. Full audit: [`docs/CODEX-SINS.m
 | 17 | Agree + overclaim | Instant apology, then another unmeasured promise (“fully controlled”, “prod ready”, “fast”) |
 | 18 | Apology without constraint | Explains the drift; adds no test, hook, contract, or working rule — same failure next run |
 
-Harness response in one line: **record Owner words · freeze one contract · evidence ends the slice · review is read-only · `state.json` outranks chat · public black box outranks internal green · measure latency · exact workspace identity.**
+Oh No’s answer in one line: **record Owner words · freeze one contract · evidence ends the slice · review is read-only · `state.json` outranks chat · public black box outranks internal green · measure latency · exact workspace identity.**
 
 ---
 
@@ -166,13 +181,15 @@ Chat is ephemeral. When the Owner states a goal, constraint, non-goal, or decisi
 | --- | --- |
 | `ohno requirements note --text "…"` | Append one entry to `.ohno/REQUIREMENTS.md` (verbatim Owner line) |
 | `ohno requirements show` | Print the log |
-| skill `oh-no-requirements` | Same, from natural language (“记下来 / remember this”) |
+| skill `oh-no-requirements` | Same, from natural language (“remember this”) |
 
 This is the **instruction corpus** for the project: later sessions, resume, and agents
-should prefer these lines over compacted chat. Material rewrites of scope still go
-through `ohno change` + a new plan; the log is the durable quote sheet, not a second plan authority.
+should prefer these lines over compacted chat.
 
-### Language → skill
+Material rewrites of scope still go through `ohno change` + a new plan. The log is
+the durable quote sheet, not a second plan authority.
+
+### Intent → skill
 
 | You | Skill / command |
 | --- | --- |
@@ -180,7 +197,7 @@ through `ohno change` + a new plan; the log is the durable quote sheet, not a se
 | Start / reopen cursor slice | `oh-no-task` → `ohno task start` |
 | Done | `oh-no-verify` → `ohno verify` |
 | Where are we | `oh-no-resume` / `ohno status` |
-| Record my words / 记下来 | `oh-no-requirements` → `ohno requirements note` |
+| Record my words | `oh-no-requirements` → `ohno requirements note` |
 | Requirements changed | `oh-no-change` |
 | Board | `oh-no-cockpit` → `ohno cockpit` |
 | Health | `oh-no-doctor` |
