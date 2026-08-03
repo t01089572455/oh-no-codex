@@ -270,6 +270,18 @@ Implementation details belong in **code + the frozen task + verify**, not in a c
 
 Read-only local board. Same payload as `ohno status --json`. Never mutates plan/state.
 
+<p align="center">
+  <img
+    src="./assets/brand/oh-no-cockpit.png"
+    width="960"
+    alt="Oh No, Codex! Cockpit — live read-only board (ACTIVE slice, plan board, PROOF/DRIFT, next)"
+  >
+</p>
+
+<p align="center">
+  <sub>Live capture from a real local project under harness control (not a mock). Values are projections of <code>.ohno/state.json</code>.</sub>
+</p>
+
 ```bash
 cd your-git-repo            # must already be init'd
 # worktree: cd that worktree — each tree has its own .ohno/

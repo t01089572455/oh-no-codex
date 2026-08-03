@@ -266,6 +266,18 @@ Cockpit 和聊天 **不会**靠读模型长文来「感应漂移」。控制是�
 
 本机只读看板。载荷与 `ohno status --json` 相同。永不改写计划/状态。
 
+<p align="center">
+  <img
+    src="./assets/brand/oh-no-cockpit.png"
+    width="960"
+    alt="Oh No, Codex! 驾驶舱 — 本机只读看板（ACTIVE 切片、计划板、PROOF/DRIFT、下一步）"
+  >
+</p>
+
+<p align="center">
+  <sub>真实本机项目在 harness 管控下的实拍（非 mock）。画面数值是 <code>.ohno/state.json</code> 的投影。</sub>
+</p>
+
 ```bash
 cd your-git-repo            # 必须已 init
 # worktree：cd 进该 worktree —— 每棵树各自有 .ohno/
