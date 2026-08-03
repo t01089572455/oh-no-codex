@@ -153,6 +153,28 @@ Node.js **≥ 22.20** (stable `path.matchesGlob`). Package version **`0.1.10`**.
 - Use `ohno` / `ohno.cmd`. Do not double-click `dist\cli.js` (WSH cannot run that ESM entry).
 - Cockpit progress is **`cursor / task_count`**, not product completion.
 
+### Existing / in-progress repos
+
+Half-built and ongoing products are first-class. `init` does **not** require an empty tree and does **not** rewrite your app code.
+
+```bash
+cd your-existing-git-repo
+ohno init --goal "Current-stage Owner goal (verbatim)"
+ohno install
+ohno doctor
+ohno requirements note --text "What already exists; what this stage must deliver; non-goals"
+# then plan from remaining work — not a rewrite of history
+```
+
+| Fact | Meaning |
+| --- | --- |
+| Same commands | `init` + `install` as a greenfield repo |
+| Code stays | Harness files under `.ohno/` (+ managed AGENTS block); business sources untouched by init |
+| No auto-progress | `completed` starts empty; git history is not imported as harness “done” |
+| Plan from remainder | Linear slices for **unproven** work on the current tree |
+| Re-init | Refuses if `.ohno/state.json` already exists — no silent goal/state replace |
+| New Codex session | Required after `install` / `skill install` so `oh-no-*` skills load |
+
 ---
 
 ## Operation
@@ -186,6 +208,16 @@ Chat is ephemeral. When the Owner states a goal, constraint, non-goal, or decisi
 This is the **instruction corpus** for the project: later sessions, resume, and agents
 should prefer these lines over compacted chat.
 
+| Record | Do not treat as requirements |
+| --- | --- |
+| Goals, hard constraints, non-goals, explicit Owner decisions | Implementation chatter, debug trails, “maybe try X” |
+| Stage boundaries (“ship personal alpha first”) | File layout drafts, temporary agent plans |
+| Verbatim Owner lines (any session, same project cwd) | Auto-import of every chat prompt |
+
+**Project-scoped, not session-scoped:** every Codex session on this repo shares one
+`.ohno/REQUIREMENTS.md`. Nothing is copied from chat unless something runs
+`requirements note` (or you do). Cross-session continuity is the file on disk.
+
 Material rewrites of scope still go through `ohno change` + a new plan. The log is
 the durable quote sheet, not a second plan authority.
 
@@ -209,12 +241,28 @@ Also: `oh-no-status`, `oh-no-next`, `oh-no-preferences`, `oh-no-projectors` (13 
 
 | Situation | Action |
 | --- | --- |
-| First repo | `ohno init` + `ohno install` |
+| First / empty repo | `ohno init` + `ohno install` |
+| Existing / half-built repo | Same init+install; note current reality; plan **remaining** slices only |
 | Model claims done without verify | Force `ohno verify` |
 | Skills missing after upgrade | `ohno skill install` + new session |
 | Need certainty | Run the command in your own terminal |
 
 **Hard rules:** no PASS → not done. `next` ≠ blank cheque. Long CLI dumps in chat are noise.
+
+### Where control actually lives
+
+Cockpit and chat do not “sense drift” by reading the model’s prose. Control is discrete:
+
+| Layer | Job |
+| --- | --- |
+| Frozen cursor task | One expected behavior + **one** black-box `test_command` + allowed globs + stop |
+| `ohno verify` | Only that command; PASS is a receipt bound to plan rev + contract + scoped digests |
+| STALE | PASS no longer matches allowed-file subject digest (or contract/plan mismatch) |
+| `ohno change` | Requirement rewrites block coding until governing-doc diff is reviewed |
+| Hooks / pre-commit | Cooperative reminders and scope guards — not hostile same-user security |
+| `next` / board | Locator of what the state machine allows next — not a blank cheque |
+
+Implementation details belong in **code + the frozen task + verify**, not in a chat dump.
 
 ---
 
@@ -246,6 +294,19 @@ Visible tab polls `/api/state` ~100ms (design band 100–125ms). Not a daemon: C
 | Multi-project | One process per project cwd; use distinct ports for stable tabs |
 | Dead tab | **COCKPIT SERVER OFFLINE** (not corrupt `state.json`) |
 | Progress bar | `cursor / task_count` only |
+
+**Instruments map 1:1 to the read model** (labels are UI chrome; values are canonical):
+
+| Panel | Field | Examples |
+| --- | --- | --- |
+| NOW | `status`, active task | `IDLE` / `ACTIVE`, frozen expected + exact test |
+| PROOF | `proof_freshness` | `NONE` · `FAIL` · `UNKNOWN` · `STALE` · `FRESH` |
+| DRIFT | `blocker` | `NONE` · `EXACT_TEST_FAILED` · `STALE_PASS` · `DOCUMENT_SYNC_PENDING` · … |
+| NEXT | `next_action` | `PROPOSE_PLAN` · `START_TASK:…` · `RUN_EXACT_TEST:…` · … |
+
+`DRIFT: NONE` means **no enumerated harness blocker**, not “the agent cannot wander in chat.”
+Semantic chat drift without a FAIL/STALE/sync signal is controlled by the frozen task and
+`verify`, not by NLP on the transcript.
 
 ```text
 plan accept / task start / verify

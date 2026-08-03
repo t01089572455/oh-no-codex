@@ -150,6 +150,28 @@ Node.js **≥ 22.20**（稳定 `path.matchesGlob`）。
 - 用 `ohno` / `ohno.cmd`。不要双击 `dist\cli.js`（WSH 跑不了该 ESM 入口）。
 - Cockpit 进度是 **`cursor / task_count`**，不是产品完成度。
 
+### 已有 / 在建 / 做了一半的仓库
+
+半成品和进行中的产品是一等公民。`init` **不要求**空目录，也 **不会**改写你的业务代码。
+
+```bash
+cd your-existing-git-repo
+ohno init --goal "当前阶段 Owner 目标（原文）"
+ohno install
+ohno doctor
+ohno requirements note --text "现状已有什么；本阶段必须交付什么；明确非目标"
+# 然后从「还剩什么」排 plan —— 不是重写历史进度
+```
+
+| 事实 | 含义 |
+| --- | --- |
+| 命令相同 | 与空仓一样：`init` + `install` |
+| 代码保留 | 主要写 `.ohno/`（+ AGENTS managed 块）；init 不动业务源码 |
+| 不自动认领进度 | `completed` 从空开始；git 历史不会导入成 harness「已完成」 |
+| 从剩余工作起 plan | 线性切片只覆盖 **尚未被黑盒证明** 的工作 |
+| 重复 init | 已有 `.ohno/state.json` 时拒绝覆盖 —— 禁止静默改 goal/state |
+| 新 Codex 会话 | `install` / `skill install` 后需新开会话，技能才能被发现 |
+
 ---
 
 ## 操作
@@ -181,8 +203,19 @@ ohno next                       # 仅定位
 | skill `oh-no-requirements` | 自然语言触发（「记下来 / remember this」） |
 
 这是项目的**指令语料**：后续会话、resume、Agent 应优先对照这些句子，
-而不是压缩后的聊天摘要。实质改范围仍走 `ohno change` + 新计划；
-日志是耐久的引文表，不是第二套计划权威。
+而不是压缩后的聊天摘要。
+
+| 该记 | 不要当成 requirements 主内容 |
+| --- | --- |
+| 目标、硬约束、非目标、Owner 明确拍板 | 实现碎聊、debug 流水、「也许试试 X」 |
+| 阶段边界（「先交付个人自用版」） | 临时目录结构草稿、Agent 随口计划 |
+| Owner 原文（**任意 session**，同一项目 cwd） | 自动灌入每一句聊天提示词 |
+
+**按项目、不按 session：** 同一仓库上所有 Codex 会话共用一份
+`.ohno/REQUIREMENTS.md`。除非执行了 `requirements note`（或你手动跑），
+聊天内容不会自动进账本。跨 session 连续靠的是磁盘上的文件。
+
+实质改范围仍走 `ohno change` + 新计划；日志是耐久的引文表，不是第二套计划权威。
 
 ### 说法 → skill
 
@@ -204,12 +237,28 @@ ohno next                       # 仅定位
 
 | 情况 | 动作 |
 | --- | --- |
-| 仓库第一次接入 | `ohno init` + `ohno install` |
+| 空仓 / 第一次接入 | `ohno init` + `ohno install` |
+| 已有代码 / 做了一半 | 同样 init+install；用 requirements 记现状；plan **只排未验收**切片 |
 | 模型宣称完成却没 verify | 强制 `ohno verify` |
 | 升级后 skill 丢失 | `ohno skill install` + 新会话 |
 | 要确定性 | 自己在终端跑命令 |
 
 **硬规则：** 没有 PASS ≠ 做完。`next` ≠ 空白授权。聊天里贴长 CLI 是噪声。
+
+### 控制实际落在哪
+
+Cockpit 和聊天 **不会**靠读模型长文来「感应漂移」。控制是离散的：
+
+| 层 | 作用 |
+| --- | --- |
+| 冻结的 cursor 任务 | 一条期望行为 + **一条**黑盒 `test_command` + 允许 glob + 停止条件 |
+| `ohno verify` | 只跑那条命令；PASS 是绑定 plan rev + 合同 + 作用域 digest 的收据 |
+| STALE | PASS 与 allowed-files 的 subject digest（或合同/计划）不再一致 |
+| `ohno change` | 实质改需求时，审阅治理文档 diff 前阻断编码 |
+| Hooks / pre-commit | 协作式提醒与范围护栏 —— 不是对抗同用户的安全边界 |
+| `next` / 看板 | 状态机「下一步是什么」的定位器 —— 不是空白授权 |
+
+实现细节落在 **代码 + 冻结合同 + verify**，不靠聊天备份。
 
 ---
 
@@ -241,6 +290,19 @@ Cockpit: http://127.0.0.1:<port>/
 | 多项目 | 每项目 cwd 一个进程；稳定标签用不同端口 |
 | 死标签 | **COCKPIT SERVER OFFLINE**（不是 `state.json` 坏了） |
 | 进度条 | 仅 `cursor / task_count` |
+
+**仪表与读模型一一对应**（标签是 UI；数值是规范字段）：
+
+| 面板 | 字段 | 取值示例 |
+| --- | --- | --- |
+| NOW | `status`、当前任务 | `IDLE` / `ACTIVE`，冻结期望 + 精确测试 |
+| PROOF | `proof_freshness` | `NONE` · `FAIL` · `UNKNOWN` · `STALE` · `FRESH` |
+| DRIFT | `blocker` | `NONE` · `EXACT_TEST_FAILED` · `STALE_PASS` · `DOCUMENT_SYNC_PENDING` · … |
+| NEXT | `next_action` | `PROPOSE_PLAN` · `START_TASK:…` · `RUN_EXACT_TEST:…` · … |
+
+`DRIFT: NONE` 表示 **没有枚举出的 harness 阻断信号**，不是「Agent 聊天里不会偏题」。
+没有 FAIL/STALE/文档待审时，语义上的闲聊漂移靠冻结合同和 `verify` 约束，
+不是对 transcript 做 NLP。
 
 ```text
 plan accept / task start / verify
