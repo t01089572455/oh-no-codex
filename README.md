@@ -153,27 +153,61 @@ Node.js **≥ 22.20** (stable `path.matchesGlob`). Package version **`0.1.10`**.
 - Use `ohno` / `ohno.cmd`. Do not double-click `dist\cli.js` (WSH cannot run that ESM entry).
 - Cockpit progress is **`cursor / task_count`**, not product completion.
 
-### Existing / in-progress repos
+### Existing / in-progress repos (honest limits)
 
-Half-built and ongoing products are first-class. `init` does **not** require an empty tree and does **not** rewrite your app code.
+You **can** hang Oh No on a half-built product. That means: scaffold the harness
+**beside** the code, then **explicitly** teach it what matters. It does **not**
+mean automatic archaeology of old docs, git history, or “where we left off.”
 
 ```bash
 cd your-existing-git-repo
-ohno init --goal "Current-stage Owner goal (verbatim)"
+ohno init --goal "Current-stage Owner goal (verbatim)"   # --goal required
 ohno install
 ohno doctor
-ohno requirements note --text "What already exists; what this stage must deliver; non-goals"
-# then plan from remaining work — not a rewrite of history
+# then bootstrap (below) — do not expect init to invent truth or progress
 ```
 
-| Fact | Meaning |
+| Claim | Truth |
 | --- | --- |
-| Same commands | `init` + `install` as a greenfield repo |
-| Code stays | Harness files under `.ohno/` (+ managed AGENTS block); business sources untouched by init |
-| No auto-progress | `completed` starts empty; git history is not imported as harness “done” |
-| Plan from remainder | Linear slices for **unproven** work on the current tree |
-| Re-init | Refuses if `.ohno/state.json` already exists — no silent goal/state replace |
-| New Codex session | Required after `install` / `skill install` so `oh-no-*` skills load |
+| Install on non-empty tree | Yes. Same `init` + `install` as greenfield |
+| App code rewritten by init | No. Only `.ohno/*` (+ managed AGENTS block) |
+| Auto-import design docs as Truth | **No.** `.ohno/truth.json` is Owner-maintained applicability |
+| Auto-fill `completed` / plan cursor from git | **No.** Cursor starts empty until you `plan accept` + `verify` |
+| Re-init to “refresh” goal/progress | **No.** Existing `.ohno/state.json` refuses silent replace |
+| What init *does* create | Fresh `state.json` (IDLE, no plan), seed Truth list, REQUIREMENTS shell, preferences |
+
+**Recommended brownfield bootstrap (Codex + Owner):**
+
+1. **Goal** — `ohno init --goal "…"` with the *current stage* outcome, not ancient vision text.
+2. **Owner corpus** — `ohno requirements note` for: what already exists, this stage’s must-ship, non-goals, hard constraints (verbatim).
+3. **Truth candidates** — list which existing docs govern (PRD, DESIGN, ACCEPTANCE…). Owner confirms; put paths in Truth / note. Oh No does not invent the list.
+4. **Plan only unproven work** — `ohno plan propose` / `accept` slices that still need a black-box proof on *this* tree. Do **not** fake-PASS history into `completed`.
+5. **One cursor at a time** — `task start` → implement or wire tests → **`ohno verify` only**. PASS advances the plan cursor. Review-without-verify is not progress.
+6. **Scope change** — material rewrites use `ohno change` + a new plan revision, not chat edits to state.
+
+**Suggested Codex prompt after install** (paste in a **new** session, project cwd):
+
+```text
+This repo already has code and docs. Oh No is installed (ohno doctor should be green).
+
+Do NOT hand-edit .ohno/state.json. Use oh-no-* skills / ohno CLI only.
+
+1) Survey the tree (read-only): list candidate governing docs (PRD/DESIGN/ACCEPTANCE/…),
+   what appears already implemented, and open risks. Propose a Truth applicability list
+   for Owner confirmation — do not invent authority.
+2) Append Owner-facing findings with ohno requirements note (verbatim constraints;
+   separate notes for “already true in tree” vs “this stage must still prove”).
+3) Draft a linear plan of ONLY remaining, user-visible black-box slices
+   (expected_behavior + one test_command + allowed_files + stop). Prefer proving
+   residual gaps over re-narrating finished work as PASS.
+4) ohno plan propose → wait for Owner accept → then only the frozen cursor:
+   task start → work → ohno verify. Stop after each PASS; next is a locator, not a blank cheque.
+5) If requirements change, ohno change — do not expand scope inside an active slice.
+```
+
+Empty repos skip steps 2–3 detail and go straight to plan. Half-built repos that skip
+bootstrap will look “installed” but the board will not know your product — that is
+expected, not a bug.
 
 ---
 

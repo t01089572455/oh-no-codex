@@ -150,27 +150,56 @@ Node.js **≥ 22.20**（稳定 `path.matchesGlob`）。
 - 用 `ohno` / `ohno.cmd`。不要双击 `dist\cli.js`（WSH 跑不了该 ESM 入口）。
 - Cockpit 进度是 **`cursor / task_count`**，不是产品完成度。
 
-### 已有 / 在建 / 做了一半的仓库
+### 已有 / 在建 / 做了一半的仓库（必须实事求是）
 
-半成品和进行中的产品是一等公民。`init` **不要求**空目录，也 **不会**改写你的业务代码。
+半成品**可以**挂 Oh No：在代码旁搭 harness，再**显式**教会它什么作准。  
+**不是**自动考古旧文档 / git 历史 /「做到哪了」。
 
 ```bash
 cd your-existing-git-repo
-ohno init --goal "当前阶段 Owner 目标（原文）"
+ohno init --goal "当前阶段 Owner 目标（原文）"   # --goal 必填
 ohno install
 ohno doctor
-ohno requirements note --text "现状已有什么；本阶段必须交付什么；明确非目标"
-# 然后从「还剩什么」排 plan —— 不是重写历史进度
+# 然后做下面的 bootstrap —— 别指望 init 会猜真相源或进度
 ```
 
-| 事实 | 含义 |
+| 说法 | 真相 |
 | --- | --- |
-| 命令相同 | 与空仓一样：`init` + `install` |
-| 代码保留 | 主要写 `.ohno/`（+ AGENTS managed 块）；init 不动业务源码 |
-| 不自动认领进度 | `completed` 从空开始；git 历史不会导入成 harness「已完成」 |
-| 从剩余工作起 plan | 线性切片只覆盖 **尚未被黑盒证明** 的工作 |
-| 重复 init | 已有 `.ohno/state.json` 时拒绝覆盖 —— 禁止静默改 goal/state |
-| 新 Codex 会话 | `install` / `skill install` 后需新开会话，技能才能被发现 |
+| 非空仓也能装 | 可以。命令与空仓相同：`init` + `install` |
+| init 会改业务代码 | **不会**。主要写 `.ohno/*`（+ AGENTS managed 块） |
+| 自动把设计文档收成 Truth | **不会**。`.ohno/truth.json` 由 Owner 维护适用列表 |
+| 从 git 自动填 `completed` / cursor | **不会**。要等你 `plan accept` + `verify` |
+| 再 init 一次「刷新进度」 | **不行**。已有 `state.json` 拒绝静默覆盖 |
+| init **实际**创建的 | 新的 `state.json`（IDLE、无 plan）、Truth 种子、REQUIREMENTS 壳、preferences |
+
+**推荐半成品接入顺序（Codex + Owner）：**
+
+1. **Goal** — `ohno init --goal "…"` 写**当前阶段**结果，不是远古愿景全文。  
+2. **Owner 语料** — `requirements note`：已有什么、本阶段必须交付、非目标、硬约束（原文）。  
+3. **真相源候选** — 列出可能治理文档（PRD/DESIGN/ACCEPTANCE…），**Owner 确认**后再进 Truth / note。Oh No 不发明权威。  
+4. **Plan 只排未证明的工作** — `plan propose` / `accept` 做**仍需黑盒验收**的切片。禁止把历史「假装 PASS」塞进 `completed`。  
+5. **一次只动 cursor** — `task start` → 实现或补测 → **只有 `ohno verify` 算推进**。只 review 不 verify ≠ 进度。  
+6. **改范围** — 实质变更走 `ohno change` + 新 plan revision，禁止手改 state、禁止聊天里扩 scope。
+
+**装完后可粘贴的 Codex 提示词**（**新 session**、项目 cwd）：
+
+```text
+本仓库已有代码和文档。Oh No 已安装（ohno doctor 应通过）。
+
+禁止手改 .ohno/state.json。只用 oh-no-* skill / ohno CLI。
+
+1) 只读盘点：候选治理文档（PRD/DESIGN/ACCEPTANCE…）、看起来已实现的能力、开放风险。
+   提出 Truth 适用列表草案供 Owner 确认 —— 不得擅自当权威。
+2) 用 ohno requirements note 追加（原文约束；「树里已成立」与「本阶段仍须证明」分开记）。
+3) 起草线性 plan：只含剩余的、用户可见黑盒切片
+   （expected_behavior + 一条 test_command + allowed_files + stop）。
+   优先证明缺口，不要把已完成工作编成 PASS。
+4) ohno plan propose → 等 Owner accept → 仅冻结 cursor：
+   task start → 干活 → ohno verify。每次 PASS 后停下；next 是定位器，不是空白授权。
+5) 需求变了走 ohno change —— 禁止在 active 切片里扩 scope。
+```
+
+空仓可跳过 2–3 的细节直接 plan。半成品若跳过 bootstrap，界面上「已安装」但看板不认识你的产品——**这是预期行为，不是 bug**。
 
 ---
 
