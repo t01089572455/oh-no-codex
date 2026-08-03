@@ -158,6 +158,10 @@ Node.js **≥ 22.20** (stable `path.matchesGlob`). Package version **`0.1.10`**.
 You **can** hang Oh No on a half-built product. That means: scaffold the harness
 **beside** the code, then **explicitly** teach it what matters. It does **not**
 mean automatic archaeology of old docs, git history, or “where we left off.”
+`init` only creates a fresh IDLE `state.json` (no plan), a seed Truth list,
+REQUIREMENTS shell, and preferences under `.ohno/` (+ managed AGENTS block) — not
+app code. Existing `state.json` refuses silent re-init. Progress starts empty until
+you `plan accept` and `verify`.
 
 ```bash
 cd your-existing-git-repo
@@ -166,15 +170,6 @@ ohno install
 ohno doctor
 # then bootstrap (below) — do not expect init to invent truth or progress
 ```
-
-| Claim | Truth |
-| --- | --- |
-| Install on non-empty tree | Yes. Same `init` + `install` as greenfield |
-| App code rewritten by init | No. Only `.ohno/*` (+ managed AGENTS block) |
-| Auto-import design docs as Truth | **No.** `.ohno/truth.json` is Owner-maintained applicability |
-| Auto-fill `completed` / plan cursor from git | **No.** Cursor starts empty until you `plan accept` + `verify` |
-| Re-init to “refresh” goal/progress | **No.** Existing `.ohno/state.json` refuses silent replace |
-| What init *does* create | Fresh `state.json` (IDLE, no plan), seed Truth list, REQUIREMENTS shell, preferences |
 
 **Recommended brownfield bootstrap (Codex + Owner):**
 

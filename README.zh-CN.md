@@ -153,7 +153,8 @@ Node.js **≥ 22.20**（稳定 `path.matchesGlob`）。
 ### 已有 / 在建 / 做了一半的仓库（必须实事求是）
 
 半成品**可以**挂 Oh No：在代码旁搭 harness，再**显式**教会它什么作准。  
-**不是**自动考古旧文档 / git 历史 /「做到哪了」。
+**不是**自动考古旧文档 / git 历史 /「做到哪了」。  
+`init` 只在 `.ohno/` 建 IDLE 的 `state.json`（无 plan）、Truth 种子、REQUIREMENTS 壳、preferences（+ AGENTS managed 块），**不动**业务代码。已有 `state.json` 拒绝静默重 init。进度要等你 `plan accept` + `verify` 才开始。
 
 ```bash
 cd your-existing-git-repo
@@ -162,15 +163,6 @@ ohno install
 ohno doctor
 # 然后做下面的 bootstrap —— 别指望 init 会猜真相源或进度
 ```
-
-| 说法 | 真相 |
-| --- | --- |
-| 非空仓也能装 | 可以。命令与空仓相同：`init` + `install` |
-| init 会改业务代码 | **不会**。主要写 `.ohno/*`（+ AGENTS managed 块） |
-| 自动把设计文档收成 Truth | **不会**。`.ohno/truth.json` 由 Owner 维护适用列表 |
-| 从 git 自动填 `completed` / cursor | **不会**。要等你 `plan accept` + `verify` |
-| 再 init 一次「刷新进度」 | **不行**。已有 `state.json` 拒绝静默覆盖 |
-| init **实际**创建的 | 新的 `state.json`（IDLE、无 plan）、Truth 种子、REQUIREMENTS 壳、preferences |
 
 **推荐半成品接入顺序（Codex + Owner）：**
 
