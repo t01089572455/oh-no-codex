@@ -4,6 +4,10 @@ import { stat } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import {
+  assertFrozenTasksMatchBasis,
+  loadStructuredAcceptanceBasis,
+} from "./acceptance-basis.js";
+import {
   compareAndSwapStateAtomic,
   readState,
 } from "./state.js";
@@ -425,6 +429,24 @@ export async function acceptChange(
   const currentState = await readState(projectPath);
   if (JSON.stringify(currentState) !== JSON.stringify(pending.state)) {
     throw new Error("pending state drifted during acceptance");
+  }
+
+  // Replacement plan review must still bind a live acceptance basis.
+  if (
+    currentState.plan_review !== null
+    && "acceptance_source_path" in currentState.plan_review
+  ) {
+    const loaded = await loadStructuredAcceptanceBasis(
+      projectPath,
+      currentState.plan_review.acceptance_source_path,
+    );
+    if (loaded.digest !== currentState.plan_review.acceptance_source_digest) {
+      throw new Error(
+        "ACCEPTANCE_BASIS_STALE: acceptance_source changed after replacement "
+          + "plan review; re-propose the plan against the current basis",
+      );
+    }
+    assertFrozenTasksMatchBasis(currentState.ordered_tasks, loaded.document);
   }
 
   const finalSnapshot = diffSnapshot(

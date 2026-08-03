@@ -1,9 +1,13 @@
 import {
   mkdir,
   readFile,
+  rename,
+  rm,
   writeFile,
 } from "node:fs/promises";
 import { resolve } from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
+import { randomUUID } from "node:crypto";
 
 import {
   ensurePreferences,
@@ -22,9 +26,77 @@ export const requirementsProjectionEnd =
   "<!-- ohno:requirements-projection-end -->";
 
 const notesHeader = "## Owner notes (append-only)";
+const systemEventsHeader = "## System events (harness, not Owner prose)";
 
 function requirementsPath(projectPath: string): string {
   return resolve(projectPath, ".ohno", "REQUIREMENTS.md");
+}
+
+async function atomicWriteRequirements(
+  path: string,
+  body: string,
+): Promise<void> {
+  const temporary = `${path}.${process.pid}.${randomUUID()}.tmp`;
+  await writeFile(temporary, body, "utf8");
+  await rename(temporary, path);
+}
+
+function processLooksAlive(pid: number): boolean {
+  if (!Number.isInteger(pid) || pid <= 0) {
+    return false;
+  }
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === "EPERM";
+  }
+}
+
+async function withRequirementsLock<T>(
+  projectPath: string,
+  work: () => Promise<T>,
+): Promise<T> {
+  const directory = resolve(projectPath, ".ohno");
+  // Directory create is a more reliable exclusive lock on Windows than O_EXCL files.
+  const lockDir = resolve(directory, "requirements.lock.d");
+  const ownerPath = resolve(lockDir, "owner");
+  await mkdir(directory, { recursive: true });
+  const deadline = Date.now() + 30_000;
+  let held = false;
+  while (!held) {
+    try {
+      await mkdir(lockDir);
+      await writeFile(ownerPath, `${process.pid}\n`, "utf8");
+      held = true;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "EEXIST") {
+        throw error;
+      }
+      let stale = false;
+      try {
+        const body = await readFile(ownerPath, "utf8");
+        const pid = Number.parseInt(body.trim().split(/\s+/u)[0] ?? "", 10);
+        stale = Number.isInteger(pid) && pid > 0 && !processLooksAlive(pid);
+      } catch {
+        // Owner file missing while dir exists — reclaim only if empty-ish and old.
+        stale = false;
+      }
+      if (stale) {
+        await rm(lockDir, { recursive: true, force: true }).catch(() => undefined);
+        continue;
+      }
+      if (Date.now() >= deadline) {
+        throw new Error("cannot acquire requirements log lock");
+      }
+      await delay(30 + Math.floor(Math.random() * 50));
+    }
+  }
+  try {
+    return await work();
+  } finally {
+    await rm(lockDir, { recursive: true, force: true }).catch(() => undefined);
+  }
 }
 
 function renderProjection(
@@ -119,13 +191,11 @@ function ensureScaffold(existing: string): string {
   ].join("\n");
 }
 
-export async function refreshRequirementsProjection(
+async function writeRequirementsProjectionUnlocked(
   projectPath: string,
-  model?: ReadModel,
-  prefs?: PreferencesFile,
+  model: ReadModel,
+  prefs: PreferencesFile,
 ): Promise<string> {
-  const resolved = model ?? await readModel(projectPath);
-  const resolvedPrefs = prefs ?? await ensurePreferences(projectPath);
   await mkdir(resolve(projectPath, ".ohno"), { recursive: true });
   const path = requirementsPath(projectPath);
   let existing = "";
@@ -137,10 +207,56 @@ export async function refreshRequirementsProjection(
   const scaffolded = ensureScaffold(existing);
   const next = upsertProjection(
     scaffolded,
-    renderProjection(resolved, resolvedPrefs),
+    renderProjection(model, prefs),
   );
-  await writeFile(path, next, "utf8");
+  await atomicWriteRequirements(path, next);
   return ".ohno/REQUIREMENTS.md";
+}
+
+export async function refreshRequirementsProjection(
+  projectPath: string,
+  model?: ReadModel,
+  prefs?: PreferencesFile,
+): Promise<string> {
+  const resolved = model ?? await readModel(projectPath);
+  const resolvedPrefs = prefs ?? await ensurePreferences(projectPath);
+  return withRequirementsLock(projectPath, () =>
+    writeRequirementsProjectionUnlocked(projectPath, resolved, resolvedPrefs));
+}
+
+function appendUnderHeader(
+  body: string,
+  header: string,
+  entry: string,
+): string {
+  let next = body;
+  if (!next.includes(header)) {
+    const projectionAt = next.indexOf(requirementsProjectionBegin);
+    if (projectionAt === -1) {
+      next = `${next.replace(/\s*$/u, "")}\n\n${header}\n`;
+    } else {
+      next = `${next.slice(0, projectionAt).replace(/\s*$/u, "")}\n\n${header}\n\n${
+        next.slice(projectionAt)
+      }`;
+    }
+  }
+  const headerIndex = next.indexOf(header);
+  const projectionAt = next.indexOf(requirementsProjectionBegin);
+  // Insert before the next major section after this header (system events or projection).
+  let sectionEnd = next.length;
+  if (header === notesHeader) {
+    const systemAt = next.indexOf(systemEventsHeader, headerIndex + header.length);
+    if (systemAt !== -1) {
+      sectionEnd = systemAt;
+    } else if (projectionAt !== -1 && projectionAt > headerIndex) {
+      sectionEnd = projectionAt;
+    }
+  } else if (projectionAt !== -1 && projectionAt > headerIndex) {
+    sectionEnd = projectionAt;
+  }
+  return `${next.slice(0, sectionEnd).replace(/\s*$/u, "")}${entry}\n${
+    next.slice(sectionEnd)
+  }`;
 }
 
 export async function appendRequirementsNote(
@@ -163,45 +279,40 @@ export async function appendRequirementsNote(
     throw new Error("--text cannot be blank");
   }
 
-  await mkdir(resolve(projectPath, ".ohno"), { recursive: true });
-  const path = requirementsPath(projectPath);
-  let existing = "";
-  try {
-    existing = await readFile(path, "utf8");
-  } catch {
-    existing = "";
-  }
-  let body = ensureScaffold(existing);
-  body = body.replace(/\n_No owner notes yet\._\n/u, "\n");
-  if (!body.includes(notesHeader)) {
-    body = `${body.replace(/\s*$/u, "")}\n\n${notesHeader}\n`;
-  }
-  const stamp = new Date().toISOString();
-  const entry = [
-    "",
-    `### ${stamp}`,
-    "",
-    `- source: \`${source}\``,
-    `- text: ${trimmed}`,
-    "",
-  ].join("\n");
-  const headerIndex = body.indexOf(notesHeader);
-  if (headerIndex === -1) {
-    body = `${body}${entry}`;
-  } else {
-    // Append notes after the notes header section, before projection if needed.
-    const projectionAt = body.indexOf(requirementsProjectionBegin);
-    if (projectionAt !== -1 && projectionAt > headerIndex) {
-      body = `${body.slice(0, projectionAt).replace(/\s*$/u, "")}${entry}\n${
-        body.slice(projectionAt)
-      }`;
-    } else {
-      body = `${body.replace(/\s*$/u, "")}${entry}`;
+  // Compute projection inputs outside the lock (no REQUIREMENTS I/O).
+  const model = await readModel(projectPath);
+  const prefs = await ensurePreferences(projectPath);
+
+  return withRequirementsLock(projectPath, async () => {
+    const path = requirementsPath(projectPath);
+    let existing = "";
+    try {
+      existing = await readFile(path, "utf8");
+    } catch {
+      existing = "";
     }
-  }
-  await writeFile(path, body, "utf8");
-  await refreshRequirementsProjection(projectPath);
-  return ".ohno/REQUIREMENTS.md";
+    let body = ensureScaffold(existing);
+    body = body.replace(/\n_No owner notes yet\._\n/u, "\n");
+    const stamp = new Date().toISOString();
+    const entry = [
+      "",
+      `### ${stamp}`,
+      "",
+      `- source: \`${source}\``,
+      `- text: ${trimmed}`,
+      "",
+    ].join("\n");
+    // Owner CLI notes stay under Owner notes; harness events get a separate section.
+    const ownerSource = source === "owner-note";
+    const header = ownerSource ? notesHeader : systemEventsHeader;
+    body = appendUnderHeader(body, header, entry);
+    const withProjection = upsertProjection(
+      body,
+      renderProjection(model, prefs),
+    );
+    await atomicWriteRequirements(path, withProjection);
+    return ".ohno/REQUIREMENTS.md";
+  });
 }
 
 export async function showRequirements(projectPath: string): Promise<string> {

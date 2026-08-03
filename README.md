@@ -263,11 +263,11 @@ V1 budget: one package, one binary, one state file, one truth file, one hook con
 | Claim | Label |
 | --- | --- |
 | Core harness | `ANTI_DRIFT_CORE_WORKS` |
-| Public release | **`0.1.8` published** (cockpit UX); local trials remain `TRIAL_PASS`, not `V1_TRIAL_ACCEPTED` |
-| CLI / hooks / atomic state | `LOCAL_PASS` |
+| Public release | **`0.1.8` on npm** (cockpit UX). Post-publish integrity fixes on main are **not** yet a new release |
+| CLI / hooks / atomic state | `LOCAL_PASS` (includes plan-cursor honesty + basis re-read) |
 | Cockpit = status JSON | `LOCAL_PASS` |
-| Correction 4 acceptance basis | `LOCAL_PASS` (on main) |
-| Disposable real-copy P01–P06 | **`TRIAL_PASS` LIVE** — p95 ms A/B/C: status 139.361 / 140.512 / 132.802; next 169.689 / 157.331 / 136.215; resume 168.616 / 195.458 / 193.012; task_start 136.947 / 156.410 / 159.346; P06 163 / 178 / 164; P04 resume 4006 B (batch-bound; not a universal speed claim) |
+| Correction 4 acceptance basis | `LOCAL_PASS` (on main); change/task-start now re-check live basis |
+| Disposable real-copy P01–P06 | Prior LIVE batch numbers retained as **`HISTORICAL`** reference only (not re-measured on current package; not release proof). Fresh LIVE remeasure required before claiming current p95 |
 | npm | **`oh-no-codex@0.1.8`** on registry.npmjs.org; mirrors may lag |
 | Schema 2 → 3 | Two-phase migrate: preview, then `--diff` / `--head` apply |
 

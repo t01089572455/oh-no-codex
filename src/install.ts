@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import {
   chmod,
   mkdir,
@@ -5,7 +6,7 @@ import {
   rm,
   writeFile,
 } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { dirname, isAbsolute, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { findProjectRoot } from "./hooks/project-root.js";
@@ -89,6 +90,26 @@ function renderTemplate(file: InstallFile, source: Buffer): Buffer {
   return Buffer.from(rendered, "utf8");
 }
 
+/**
+ * Resolve the real Git hooks directory. Linked worktrees use a `.git` *file*
+ * that points at the common dir — writing `<worktree>/.git/hooks/...` is ENOTDIR.
+ */
+export function resolveGitHooksDirectory(projectPath: string): string {
+  try {
+    const out = execFileSync(
+      "git",
+      ["-C", projectPath, "rev-parse", "--git-path", "hooks"],
+      { encoding: "utf8", windowsHide: true },
+    ).trim();
+    if (out.length === 0) {
+      throw new Error("empty");
+    }
+    return isAbsolute(out) ? out : resolve(projectPath, out);
+  } catch {
+    return resolve(projectPath, ".git", "hooks");
+  }
+}
+
 function installFiles(projectPath: string): InstallFile[] {
   return [
     {
@@ -101,7 +122,10 @@ function installFiles(projectPath: string): InstallFile[] {
       label: ".git/hooks/pre-commit",
       sourceLabel: "templates/git/pre-commit",
       sourcePath: resolve(packageRoot, "templates", "git", "pre-commit"),
-      destinationPath: resolve(projectPath, ".git", "hooks", "pre-commit"),
+      destinationPath: resolve(
+        resolveGitHooksDirectory(projectPath),
+        "pre-commit",
+      ),
       mode: 0o755,
     },
   ];

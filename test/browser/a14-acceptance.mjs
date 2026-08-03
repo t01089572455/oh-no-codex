@@ -96,7 +96,7 @@ async function openPage(browser, url, viewport) {
 async function assertNoMastheadOverlap(page, label) {
   const overlap = await page.evaluate(() => {
     const aperture = document.querySelector(".brand-aperture")?.getBoundingClientRect();
-    const controls = document.querySelector(".masthead-controls")?.getBoundingClientRect();
+    const controls = document.querySelector(".nav-actions")?.getBoundingClientRect();
     const locality = document.querySelector(".locality")?.getBoundingClientRect();
     const copy = document.querySelector(".brand-copy")?.getBoundingClientRect();
     if (!aperture || !controls || !locality || !copy) {

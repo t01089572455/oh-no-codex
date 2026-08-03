@@ -20,9 +20,23 @@ export function nextActionFromPlan(state: ProjectState): string {
       ? "PROPOSE_PLAN"
       : `REVIEW_PLAN:${state.pending_plan.plan_revision}`;
   }
+  // Cursor past proven work is not completion — repair toward completed frontier.
+  if (state.cursor > state.completed.length) {
+    const repair = state.ordered_tasks[state.completed.length];
+    if (repair === undefined) {
+      return "PROPOSE_PLAN";
+    }
+    return repair.status === "OUTLINE"
+      ? `FREEZE_TASK:${repair.id}`
+      : `START_TASK:${repair.id}`;
+  }
   const current = state.ordered_tasks[state.cursor];
   if (current === undefined) {
-    return "PROJECT_COMPLETE";
+    // PROJECT_COMPLETE only when every ordered task has a PASS receipt.
+    if (state.completed.length >= state.ordered_tasks.length) {
+      return "PROJECT_COMPLETE";
+    }
+    return "PROPOSE_PLAN";
   }
   return current.status === "OUTLINE"
     ? `FREEZE_TASK:${current.id}`

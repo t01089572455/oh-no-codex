@@ -3,7 +3,7 @@
   "classification": "P06_BROWSER_RECEIPT",
   "generated_at": "2026-08-02T14:30:31.757Z",
   "measurement_batch_id": "live-20260802T072712Z-660743f7",
-  "measurement_binding": "LIVE",
+  "measurement_binding": "HISTORICAL",
   "browser": "System Chrome/Edge via puppeteer-core",
   "sample_method": {
     "clock": "Date.now epoch ms (cross-process)",
@@ -154,5 +154,6 @@
       ],
       "result": "TRIAL_PASS"
     }
-  ]
+  ],
+  "measurement_note": " HISTORICAL after integrity fixes; not re-measured on current package."
 }

@@ -1,6 +1,7 @@
 import {
   access,
   open,
+  readFile,
   rm,
   writeFile,
 } from "node:fs/promises";
@@ -38,24 +39,57 @@ export type VerificationOutcome =
 
 type ReleaseVerificationLock = () => Promise<void>;
 
+function processLooksAlive(pid: number): boolean {
+  if (!Number.isInteger(pid) || pid <= 0) {
+    return false;
+  }
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === "EPERM";
+  }
+}
+
 async function acquireVerificationLock(
   projectPath: string,
 ): Promise<ReleaseVerificationLock> {
   const lockPath = resolve(projectPath, ".ohno", "verify.lock");
-  let handle: FileHandle;
-  try {
-    handle = await open(lockPath, "wx", 0o600);
-  } catch (error) {
-    const code = (error as NodeJS.ErrnoException).code;
-    if (code === "EEXIST") {
+  let handle: FileHandle | undefined;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      handle = await open(lockPath, "wx", 0o600);
+      break;
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code === "ENOENT") {
+        throw new Error("project is not initialized; run ohno init");
+      }
+      if (code !== "EEXIST") {
+        throw error;
+      }
+      // Stale lock after crash: only reclaim when recorded pid is dead.
+      let stale = false;
+      try {
+        const body = await readFile(lockPath, "utf8");
+        const pid = Number.parseInt(body.trim().split(/\s+/u)[0] ?? "", 10);
+        stale = !processLooksAlive(pid);
+      } catch {
+        stale = true;
+      }
+      if (stale && attempt === 0) {
+        await rm(lockPath, { force: true }).catch(() => undefined);
+        continue;
+      }
       throw new Error(
         "verification already in progress; wait for it to finish before retrying",
       );
     }
-    if (code === "ENOENT") {
-      throw new Error("project is not initialized; run ohno init");
-    }
-    throw error;
+  }
+  if (handle === undefined) {
+    throw new Error(
+      "verification already in progress; wait for it to finish before retrying",
+    );
   }
 
   try {

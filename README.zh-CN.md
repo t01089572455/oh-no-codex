@@ -263,11 +263,11 @@ V1 预算：一个包、一个二进制、一份 state、一份 truth、一份 h
 | 声明 | 标签 |
 | --- | --- |
 | 核心护栏 | `ANTI_DRIFT_CORE_WORKS` |
-| 公开发布 | **`0.1.8` 已发布**（Cockpit 体验）；本地试验仍是 `TRIAL_PASS`，不是 `V1_TRIAL_ACCEPTED` |
-| CLI / hooks / 原子状态 | `LOCAL_PASS` |
+| 公开发布 | **npm 上仍是 `0.1.8`**（Cockpit 体验）。发布后的完整性修复在 main，**尚未**再发版 |
+| CLI / hooks / 原子状态 | `LOCAL_PASS`（含 plan cursor 诚实性 + basis 重读） |
 | Cockpit = status JSON | `LOCAL_PASS` |
-| Correction 4 验收分母 | `LOCAL_PASS`（已在 main） |
-| 可丢弃真实副本 P01–P06 | **`TRIAL_PASS` LIVE** — p95 ms A/B/C：status 139.361 / 140.512 / 132.802；next 169.689 / 157.331 / 136.215；resume 168.616 / 195.458 / 193.012；task_start 136.947 / 156.410 / 159.346；P06 163 / 178 / 164；P04 resume 4006 B（绑定 batch；非全球性能保证） |
+| Correction 4 验收分母 | `LOCAL_PASS`（main）；change/task-start 现会重检 live basis |
+| 可丢弃真实副本 P01–P06 | 旧 LIVE 数字仅作 **`HISTORICAL`** 参考（未在当前 package 上重测；不能当现网发布证明）。宣称当前 p95 前需重新 LIVE |
 | npm | **`oh-no-codex@0.1.8`** 在 registry.npmjs.org；镜像可能滞后 |
 | Schema 2 → 3 | 两阶段迁移：preview，再 `--diff` / `--head` apply |
 

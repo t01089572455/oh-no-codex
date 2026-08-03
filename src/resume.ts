@@ -113,11 +113,7 @@ export function serializeResume(model: ReadModel): string {
     `BLOCKER: ${model.blocker}`,
     `DOC_SYNC: ${model.document_sync_status}`,
     `TRUTH_TARGETS: ${model.truth_target_count}`,
-    `TRUTH_PATHS: ${
-      model.truth_targets.length === 0
-        ? "NONE"
-        : model.truth_targets.join(" | ")
-    }`,
+    `TRUTH_PATHS: ${formatTruthPaths(model.truth_targets)}`,
     `HANDOFF_PATH: ${model.handoff.path}`,
     `HANDOFF_BRANCH: ${model.handoff.branch ?? "NONE"}`,
     `HANDOFF_HEAD: ${model.handoff.head ?? "NONE"}`,
@@ -128,6 +124,30 @@ export function serializeResume(model: ReadModel): string {
     `NEXT: ${model.next_action}`,
     "",
   ].join("\n");
+}
+
+/** Keep TRUTH_PATHS from blowing the 4 KiB resume capsule budget. */
+function formatTruthPaths(paths: string[]): string {
+  if (paths.length === 0) {
+    return "NONE";
+  }
+  const budget = 900;
+  const joined = paths.join(" | ");
+  if (Buffer.byteLength(joined, "utf8") <= budget) {
+    return joined;
+  }
+  const kept: string[] = [];
+  let used = 0;
+  for (const path of paths) {
+    const extra = Buffer.byteLength(path, "utf8") + (kept.length > 0 ? 3 : 0);
+    if (used + extra > budget - 24) {
+      break;
+    }
+    kept.push(path);
+    used += extra;
+  }
+  const omitted = paths.length - kept.length;
+  return `${kept.join(" | ")} | …(+${omitted} more)`;
 }
 
 /** Async resume with sibling worktree discovery (FT-13). */

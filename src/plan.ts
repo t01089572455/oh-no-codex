@@ -195,6 +195,31 @@ export function parsePlan(bytes: string): PlanProposalFile {
   };
 }
 
+/**
+ * Cursor is only advanced by fresh PASS (verify). Plan propose/accept may
+ * restate any cursor in `0..ordered_tasks.length`, except it must never jump
+ * *ahead* of proven work (`cursor > completed.length`) — that forges board DONE
+ * / PROJECT_COMPLETE without PASS. Rewinding below completed.length is allowed
+ * (historical receipts remain; board DONE is receipt-based, not bare cursor).
+ */
+export function assertPlanCursorHonest(
+  cursor: number,
+  completedCount: number,
+  orderedTaskCount: number,
+): void {
+  if (cursor > orderedTaskCount) {
+    throw new Error("plan cursor cannot exceed ordered_tasks length");
+  }
+  if (cursor > completedCount) {
+    throw new Error(
+      "plan cursor cannot exceed completed task count "
+        + `(cursor=${cursor}, completed=${completedCount}); `
+        + "only ohno verify may advance past proven work — "
+        + "accepting a higher cursor would forge DONE without PASS",
+    );
+  }
+}
+
 /** Exact plan diff body used by propose/accept (and migrate pending rebind). */
 export function exactPlanDiff(
   state: ProjectState,
@@ -277,6 +302,12 @@ export async function proposePlan(
         + `target (truth_target=true): ${source.proposal.acceptance_source}`,
     );
   }
+
+  assertPlanCursorHonest(
+    source.proposal.cursor,
+    state.completed.length,
+    source.proposal.ordered_tasks.length,
+  );
 
   const loaded = await loadStructuredAcceptanceBasis(
     projectPath,
@@ -363,6 +394,11 @@ export async function acceptPlan(
   ) {
     throw new Error("review must name the exact proposed revision and diff digest");
   }
+  assertPlanCursorHonest(
+    pending.cursor,
+    state.completed.length,
+    pending.ordered_tasks.length,
+  );
   const currentHead = readGitHead(projectPath);
   if (currentHead !== pending.head) {
     throw new Error(

@@ -1,3 +1,7 @@
+import {
+  assertFrozenTasksMatchBasis,
+  loadStructuredAcceptanceBasis,
+} from "./acceptance-basis.js";
 import { assertMigrationNotRequired } from "./migration-guard.js";
 import {
   compareAndSwapStateAtomic,
@@ -39,6 +43,21 @@ export async function startTask(
       "plan review lacks acceptance basis; next is MIGRATE_ACCEPTANCE_BASIS",
     );
   }
+  // Re-read structured basis: post-review edits must not silently drift the
+  // acceptance denominator away from the frozen plan (change-path hole).
+  const loaded = await loadStructuredAcceptanceBasis(
+    projectPath,
+    state.plan_review.acceptance_source_path,
+  );
+  if (loaded.digest !== state.plan_review.acceptance_source_digest) {
+    throw new Error(
+      "ACCEPTANCE_BASIS_STALE: acceptance_source changed after plan review; "
+        + "re-run plan propose/accept (or change + replacement plan) before "
+        + "task start",
+    );
+  }
+  assertFrozenTasksMatchBasis(state.ordered_tasks, loaded.document);
+
   const task = state.ordered_tasks[state.cursor];
   if (task === undefined) {
     throw new Error("linear plan is complete; next action is PROJECT_COMPLETE");

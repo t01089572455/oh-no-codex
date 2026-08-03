@@ -259,19 +259,25 @@ function planBoardFor(
   state: ProjectState,
   freshness: ProofFreshness,
 ): PlanBoardEntry[] {
+  // DONE only from PASS receipts — never paint DONE from a bare cursor jump.
+  const completedIds = new Set(state.completed.map((entry) => entry.id));
   return state.ordered_tasks.map((task, index) => {
     const kind = task.status === "OUTLINE" ? "OUTLINE" : "FROZEN";
     let phase: PlanBoardPhase;
-    if (index < state.cursor) {
-      phase = "DONE";
-    } else if (index > state.cursor) {
-      phase = task.status === "OUTLINE" ? "OUTLINE" : "QUEUED";
-    } else if (state.active_task?.id === task.id) {
+    if (state.active_task?.id === task.id) {
+      // Includes reopen of a previously completed id — show live work, not DONE.
       phase = freshness === "FAIL"
           || freshness === "UNKNOWN"
           || freshness === "STALE"
         ? "HALF"
         : "ACTIVE";
+    } else if (completedIds.has(task.id)) {
+      phase = "DONE";
+    } else if (index > state.cursor) {
+      phase = task.status === "OUTLINE" ? "OUTLINE" : "QUEUED";
+    } else if (index < state.cursor) {
+      // Dishonest gap (cursor past proof without completed id) — not DONE.
+      phase = task.status === "OUTLINE" ? "OUTLINE" : "READY";
     } else if (task.status === "OUTLINE") {
       phase = "OUTLINE";
     } else {
@@ -287,13 +293,25 @@ function planBoardFor(
   });
 }
 
+/** Short TTL so Cockpit 100ms polls do not re-run full-tree porcelain every tick. */
+const handoffCache = new Map<string, {
+  expires: number;
+  value: ReadModel["handoff"];
+}>();
+const handoffCacheTtlMs = 400;
+
 async function handoffIdentity(projectPath: string): Promise<ReadModel["handoff"]> {
   const resolvedPath = await realpath(projectPath).catch(() => projectPath);
+  const cached = handoffCache.get(resolvedPath);
+  if (cached !== undefined && cached.expires > Date.now()) {
+    return cached.value;
+  }
+  // Fail closed on dirty: unknown git status must not look clean.
   const base = {
     path: resolvedPath,
     branch: null as string | null,
     head: null as string | null,
-    dirty: false,
+    dirty: true,
   };
   try {
     const [branch, head, dirty] = await Promise.all([
@@ -317,18 +335,24 @@ async function handoffIdentity(projectPath: string): Promise<ReadModel["handoff"
           return "UNBORN";
         }
       }),
+      // --untracked-files=no keeps normal-path cost down (tracked dirt only).
       execFileAsync(
         "git",
-        ["-C", resolvedPath, "status", "--porcelain"],
+        ["-C", resolvedPath, "status", "--porcelain", "--untracked-files=no"],
         { windowsHide: true, maxBuffer: 1024 * 1024 },
-      ).then((r) => r.stdout.trim().length > 0).catch(() => false),
+      ).then((r) => r.stdout.trim().length > 0).catch(() => true),
     ]);
-    return {
+    const value = {
       path: resolvedPath,
       branch,
       head,
       dirty: Boolean(dirty),
     };
+    handoffCache.set(resolvedPath, {
+      expires: Date.now() + handoffCacheTtlMs,
+      value,
+    });
+    return value;
   } catch {
     return base;
   }

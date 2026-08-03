@@ -923,6 +923,18 @@ export async function writeStateAtomic(
   }
 }
 
+function processLooksAlive(pid: number): boolean {
+  if (!Number.isInteger(pid) || pid <= 0) {
+    return false;
+  }
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === "EPERM";
+  }
+}
+
 async function acquireStateCasLock(
   projectPath: string,
 ): Promise<FileHandle> {
@@ -935,11 +947,24 @@ async function acquireStateCasLock(
   while (handle === undefined) {
     try {
       handle = await open(lockPath, "wx", 0o600);
+      await handle.writeFile(`${process.pid}\n`, "utf8");
     } catch (error) {
-      if (
-        (error as NodeJS.ErrnoException).code !== "EEXIST"
-        || Date.now() >= deadline
-      ) {
+      if ((error as NodeJS.ErrnoException).code !== "EEXIST") {
+        throw new Error("cannot acquire atomic state update lock");
+      }
+      let stale = false;
+      try {
+        const body = await readFile(lockPath, "utf8");
+        const pid = Number.parseInt(body.trim().split(/\s+/u)[0] ?? "", 10);
+        stale = !processLooksAlive(pid);
+      } catch {
+        stale = true;
+      }
+      if (stale) {
+        await rm(lockPath, { force: true }).catch(() => undefined);
+        continue;
+      }
+      if (Date.now() >= deadline) {
         throw new Error("cannot acquire atomic state update lock");
       }
       await delay(10);
