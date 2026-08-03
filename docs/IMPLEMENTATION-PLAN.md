@@ -559,12 +559,11 @@ Owning checks: projectors, codex-hooks, resume-status-next, cockpit black boxes.
 
 There is exactly one. **Unique next:**
 
-> **`OWNER_PUBLISH_DECISION` for `oh-no-codex@0.1.9`.** Core integrity +
-> same-batch LIVE batch id `live-20260803T224800Z-57ab1d7` (P01–P06
-> `TRIAL_PASS`; id is a measurement label, not a claim that wall-clock equals
-> `generated_at`). Public HEAD is privacy-scrubbed; older commits may still
-> contain deleted field-trial extracts unless Owner separately authorizes a
-> history rewrite. Do **not** `npm publish` until Owner explicitly authorizes.
+> **`STOP` after Owner-authorized publish of `oh-no-codex@0.1.9`.** Published
+> to registry.npmjs.org (`latest=0.1.9`, modified 2026-08-03). Gate was green
+> (149 tests + performance LIVE batch `live-20260803T224800Z-57ab1d7`). Public
+> HEAD remains privacy-scrubbed; optional history rewrite still needs separate
+> Owner auth. Do not republish or retag without new Owner words.
 > Procedure: `docs/PUBLISH.md`.
 
 ## Shared implementation rules
