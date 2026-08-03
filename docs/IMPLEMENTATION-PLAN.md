@@ -559,12 +559,10 @@ Owning checks: projectors, codex-hooks, resume-status-next, cockpit black boxes.
 
 There is exactly one. **Unique next:**
 
-> **`OWNER_PUBLISH_DECISION` for `oh-no-codex@0.1.10`.** Same-batch LIVE
-> `live-20260803T100000Z-0bd5926` (P01–P06 `TRIAL_PASS` on three small
-> disposable stacks). Contract-aligned corrections included (migrate rebind,
-> pre-commit projections only, requirements lock CAS, public honesty). npm
-> still `0.1.9` until Owner authorizes publish. Not `V1_TRIAL_ACCEPTED`.
-> Procedure: `docs/PUBLISH.md`.
+> **`STOP` after Owner-authorized publish of `oh-no-codex@0.1.10`.** Published
+> to registry.npmjs.org (`latest=0.1.10`). Gate green (154 tests + LIVE batch
+> `live-20260803T100000Z-0bd5926`). Not `V1_TRIAL_ACCEPTED`. Do not republish
+> or retag without new Owner words. Procedure: `docs/PUBLISH.md`.
 
 ## Shared implementation rules
 

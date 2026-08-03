@@ -263,12 +263,12 @@ V1 预算：一个包、一个二进制、一份 state、一份 truth、一份 h
 | 声明 | 标签 |
 | --- | --- |
 | 核心护栏 | `ANTI_DRIFT_CORE_WORKS` |
-| 公开发布 | **`0.1.10` 发布候选**（完整性修正 + same-batch LIVE）；仅 Owner 授权后 publish |
+| 公开发布 | **`0.1.10` 已发布**（registry.npmjs.org `latest`）；完整性修正 + same-batch LIVE |
 | CLI / hooks / 原子状态 | `LOCAL_PASS`（plan-proof 前沿、migrate rebind、pre-commit 投影、锁） |
 | Cockpit = status JSON | `LOCAL_PASS` |
 | Correction 4 验收分母 | `LOCAL_PASS`；change/task-start 重检 live basis |
 | 可丢弃真实副本 P01–P06 | **`TRIAL_PASS` LIVE** batch `live-20260803T100000Z-0bd5926` — p95 ms A/B/C：status 175.451 / 170.745 / 173.641；next 181.154 / 198.192 / 168.308；resume 220.441 / 230.675 / 251.55；task_start 200.263 / 206.14 / 187.783；P06 181 / 205 / 199；P04 resume 4025 B（**仅三份小型可丢弃副本**；非大仓普遍速度保证） |
-| npm | Owner 授权后目标 **`0.1.10`**；此前 registry 仍是 **`0.1.9`** |
+| npm | **`oh-no-codex@0.1.10`** 在 registry.npmjs.org；镜像可能滞后 |
 | Schema 2 → 3 | 两阶段迁移：preview，再 `--diff` / `--head` apply |
 
 契约：[Product](./docs/PRODUCT-CONTRACT.md) · [Design](./docs/DESIGN.md) · [Acceptance](./docs/ACCEPTANCE.md) · [Publish](./docs/PUBLISH.md) · [Sins](./docs/CODEX-SINS.md)

@@ -15,10 +15,10 @@
   },
   "implementation": {
     "dist_cli_sha256": "2af021a781f098753057912cb1a5971b86b1934edbc90249c2068b56906db91d",
-    "package_subject_sha256": "5c9e3c15b98667367c5fd897fabe27f684520061a29e3bf07e8703b2085d5b4a",
+    "package_subject_sha256": "60f9d9cfe1c593b1b85b167654f1e05cdd80d4d6a85dfbc9083d2f409d2d3ec5",
     "runtime_subject_sha256": "a48ced5c471ffef5f3d839e9eec1248f6ad50c85240679502f6109d7e66a63e5",
-    "head": "0bd5926f4b632fc3ad3f3ab8e90f4548805e8e23",
-    "tree": "153b1451d90454b1ac98cb061e3328dfeb423dbe"
+    "head": "b9c0c2833b84135fdf3e65b762ef597f6a05bd1c",
+    "tree": "86111a08d29d244ef6fb28a0e40b538b2637d50c"
   },
   "result": "TRIAL_PASS",
   "trials": [
@@ -154,5 +154,6 @@
       ],
       "result": "TRIAL_PASS"
     }
-  ]
+  ],
+  "measurement_note": " package_subject refreshed after post-publish README honesty commit; runtime samples unchanged."
 }
