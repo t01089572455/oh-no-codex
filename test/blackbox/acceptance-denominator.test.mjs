@@ -255,6 +255,93 @@ test("MIGRATE next blocks verify and beats FAIL receipt", async (t) => {
   assert.match(verified.stderr, /MIGRATE_ACCEPTANCE_BASIS/i);
 });
 
+test("schema 2 PROJECT_COMPLETE remains complete after migrate rebinds receipts", async (t) => {
+  const projectPath = await createProject(t);
+  await writePassScript(projectPath);
+  const task = frozenUnit;
+  const tasks = [task];
+  const rev = createHash("sha256").update(JSON.stringify(tasks)).digest("hex");
+  const unsigned = {
+    id: task.id,
+    expected_behavior: task.expected_behavior,
+    test_command: task.test_command,
+    stop_condition: task.stop_condition,
+    allowed_files: task.allowed_files,
+    time_budget_minutes: task.time_budget_minutes,
+    plan_revision: rev,
+  };
+  const contract = {
+    ...unsigned,
+    contract_digest: createHash("sha256")
+      .update(JSON.stringify(unsigned))
+      .digest("hex"),
+  };
+  const now = new Date().toISOString();
+  const state = {
+    schema_version: 2,
+    goal: ownerGoal,
+    status: "IDLE",
+    plan_revision: rev,
+    ordered_tasks: tasks,
+    cursor: 1,
+    plan_review: {
+      status: "LOCAL_REVIEW_RECORDED",
+      plan_revision: rev,
+      diff_digest: rev,
+      head: "UNBORN",
+      proposed_at: now,
+      recorded_at: now,
+    },
+    pending_plan: null,
+    truth_inventory: {
+      inventory_digest: createHash("sha256")
+        .update(JSON.stringify([]))
+        .digest("hex"),
+      classification: [],
+    },
+    active_task: null,
+    last_verification: null,
+    completed: [contract],
+    document_sync: {
+      status: "CLEAN",
+      change_id: null,
+      required_paths: [],
+      reviewed_diff_digest: null,
+    },
+  };
+  await mkdir(resolve(projectPath, ".ohno"), { recursive: true });
+  await writeFile(
+    resolve(projectPath, ".ohno", "state.json"),
+    `${JSON.stringify(state, null, 2)}\n`,
+    "utf8",
+  );
+  writeStructuredAcceptanceBasis(projectPath, [basisUnit], basisPath);
+
+  assert.equal(
+    runCli(projectPath, ["next"]).stdout.trim(),
+    "MIGRATE_ACCEPTANCE_BASIS",
+  );
+  const preview = runMigratePreview(projectPath);
+  assert.equal(preview.status, 0, preview.stderr);
+  const applied = runMigrateApply(projectPath, preview.stdout);
+  assert.equal(applied.status, 0, applied.stderr);
+
+  const after = JSON.parse(
+    await readFile(resolve(projectPath, ".ohno", "state.json"), "utf8"),
+  );
+  assert.equal(after.schema_version, 3);
+  assert.equal(after.cursor, 1);
+  assert.equal(after.completed.length, 1);
+  assert.equal(after.completed[0].plan_revision, after.plan_revision);
+  assert.equal(
+    runCli(projectPath, ["next"]).stdout.trim(),
+    "PROJECT_COMPLETE",
+  );
+  const status = JSON.parse(runCli(projectPath, ["status", "--json"]).stdout);
+  assert.equal(status.plan_board[0].phase, "DONE");
+  assert.notEqual(status.next_action, "START_TASK:cloudbase-data");
+});
+
 test("empty-Truth schema 2 ACTIVE two-phase migrates and enables change begin", async (t) => {
   const projectPath = await createProject(t);
   const { rev: oldRev } = await writeSchema2ActiveFixture(projectPath);

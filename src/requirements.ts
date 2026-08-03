@@ -12,12 +12,17 @@ import {
   enabledRules,
   type PreferencesFile,
 } from "./preferences.js";
-import { withDirectoryLock } from "./process-lock.js";
+import {
+  isPidLockStale,
+  removePathForce,
+  tryCreatePidLockFile,
+} from "./process-lock.js";
 import {
   type ReadModel,
   readModel,
 } from "./read-model.js";
 import { displayFieldByteLimits, displayTextIssue } from "./state.js";
+import { setTimeout as delay } from "node:timers/promises";
 
 export const requirementsProjectionBegin =
   "<!-- ohno:requirements-projection-begin -->";
@@ -46,21 +51,24 @@ async function withRequirementsLock<T>(
 ): Promise<T> {
   const directory = resolve(projectPath, ".ohno");
   await mkdir(directory, { recursive: true });
-  const lockDir = resolve(directory, "requirements.lock.d");
-  try {
-    return await withDirectoryLock(lockDir, work, {
-      deadlineMs: 30_000,
-      emptyStaleMs: 5_000,
-    });
-  } catch (error) {
-    if (
-      error instanceof Error
-      && error.message.startsWith("cannot acquire lock")
-    ) {
-      throw new Error("cannot acquire requirements log lock");
+  const lockPath = resolve(directory, "requirements.lock");
+  const deadline = Date.now() + 30_000;
+  while (Date.now() < deadline) {
+    if (await tryCreatePidLockFile(lockPath)) {
+      try {
+        return await work();
+      } finally {
+        await removePathForce(lockPath);
+      }
     }
-    throw error;
+    // Only reclaim when owner pid is dead or lock is empty past emptyStaleMs.
+    if (await isPidLockStale(lockPath, 5_000)) {
+      await removePathForce(lockPath);
+      continue;
+    }
+    await delay(20 + Math.floor(Math.random() * 40));
   }
+  throw new Error("cannot acquire requirements log lock");
 }
 
 function renderProjection(

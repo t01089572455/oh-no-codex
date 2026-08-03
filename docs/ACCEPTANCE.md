@@ -124,9 +124,11 @@ harness label cannot paper over unfinished release evidence (#17).
 > (bounded plan, freeze, verify, resume, hooks, read-only Cockpit) works on
 > real multi-slice sessions. Not a coverage score over the eighteen sins.
 
-> **Release / public status:** `RELEASE_CHANGES_REQUIRED` — full A/P matrix,
-> performance budgets, package publication claims, and honest public surfaces
-> are not all green. Do not display `V1_TRIAL_ACCEPTED` until those close.
+> **Release / public status:** `0.1.9` is **published** on the public npm
+> registry with cooperative harness evidence (`ANTI_DRIFT_CORE_WORKS`, local
+> LIVE `TRIAL_PASS` on three disposable copies). That is **not**
+> `V1_TRIAL_ACCEPTED` (no absolute Codex control, no universal speed claim,
+> incomplete premium A14 matrix). Keep publication labels honest after release.
 
 If any A/P row later fails or is withdrawn, keep or return to
 `RELEASE_CHANGES_REQUIRED` with the exact failing rows. Do not use older

@@ -2,9 +2,11 @@
  * Exclusive-lock helpers: create lock with pid in one atomic write so peers
  * never observe an empty lock and reclaim a live owner.
  */
+import { randomUUID } from "node:crypto";
 import {
   mkdir,
   readFile,
+  rename,
   rm,
   stat,
   writeFile,
@@ -72,7 +74,12 @@ export async function removePathForce(path: string): Promise<void> {
   await rm(path, { force: true, recursive: true }).catch(() => undefined);
 }
 
-/** Directory lock: mkdir exclusive + owner file written immediately after. */
+/**
+ * Directory lock: mkdir exclusive + owner file with pid+token.
+ * Release only removes the directory when the same token still owns it.
+ * Stale reclaim renames the dead dir away (does not rm a path a peer may have
+ * just recreated).
+ */
 export async function withDirectoryLock<T>(
   lockDir: string,
   work: () => Promise<T>,
@@ -82,14 +89,24 @@ export async function withDirectoryLock<T>(
   const emptyStaleMs = options.emptyStaleMs ?? 5_000;
   const ownerPath = resolve(lockDir, "owner");
   const deadline = Date.now() + deadlineMs;
+  const token = randomUUID();
   let held = false;
   while (!held) {
     try {
       await mkdir(lockDir);
-      await writeFile(ownerPath, `${process.pid}\n`, "utf8");
+      await writeFile(ownerPath, `${process.pid}\n${token}\n`, "utf8");
       held = true;
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "EEXIST") {
+      const code = (error as NodeJS.ErrnoException).code;
+      // Windows can return EPERM while a peer is renaming/removing the dir.
+      if (code === "EPERM" || code === "EACCES" || code === "EBUSY") {
+        if (Date.now() >= deadline) {
+          throw new Error(`cannot acquire lock ${lockDir}`);
+        }
+        await delay(30 + Math.floor(Math.random() * 50));
+        continue;
+      }
+      if (code !== "EEXIST") {
         throw error;
       }
       let stale = false;
@@ -111,7 +128,14 @@ export async function withDirectoryLock<T>(
         }
       }
       if (stale) {
-        await removePathForce(lockDir);
+        // Move dead lock aside instead of rm'ing a path a new owner may hold.
+        const grave = `${lockDir}.${randomUUID()}.stale`;
+        try {
+          await rename(lockDir, grave);
+          await removePathForce(grave);
+        } catch {
+          // Peer already reclaimed or recreated — retry acquire.
+        }
         continue;
       }
       if (Date.now() >= deadline) {
@@ -123,6 +147,13 @@ export async function withDirectoryLock<T>(
   try {
     return await work();
   } finally {
-    await removePathForce(lockDir);
+    try {
+      const body = await readFile(ownerPath, "utf8");
+      if (body.includes(token)) {
+        await removePathForce(lockDir);
+      }
+    } catch {
+      // Lock already gone or reassigned — do not force-delete peers.
+    }
   }
 }

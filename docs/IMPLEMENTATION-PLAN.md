@@ -559,12 +559,12 @@ Owning checks: projectors, codex-hooks, resume-status-next, cockpit black boxes.
 
 There is exactly one. **Unique next:**
 
-> **`STOP` after Owner-authorized publish of `oh-no-codex@0.1.9`.** Published
-> to registry.npmjs.org (`latest=0.1.9`, modified 2026-08-03). Gate was green
-> (149 tests + performance LIVE batch `live-20260803T224800Z-57ab1d7`). Public
-> HEAD remains privacy-scrubbed; optional history rewrite still needs separate
-> Owner auth. Do not republish or retag without new Owner words.
-> Procedure: `docs/PUBLISH.md`.
+> **`STOP` on design-bugfix line after `0.1.9` publish.** npm `latest=0.1.9`
+> remains published. Main adds contract-aligned fixes: migrate rebinds
+> completed receipts (A01), pre-commit allows harness authority after FRESH
+> PASS (O4), requirements file lock (Owner log durability), README/ACCEPTANCE
+> honesty. Sample LIVE batch retained with recomputed package digests; not a
+> new npm version unless Owner authorizes `0.1.10`. Procedure: `docs/PUBLISH.md`.
 
 ## Shared implementation rules
 

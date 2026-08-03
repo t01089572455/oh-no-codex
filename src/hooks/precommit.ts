@@ -8,6 +8,27 @@ import { findProjectRoot } from "./project-root.js";
 import { pathsOutsideGlobs } from "./scope.js";
 import type { ScopedPath } from "./scope.js";
 
+/**
+ * Canonical harness paths that must travel with Git for O4 recovery.
+ * Not product mutation; allowed beside a fresh PASS subject (A09 still gates
+ * product files to the verified allowed_files + subject digest).
+ */
+const HARNESS_AUTHORITY_PATHS = new Set([
+  "AGENTS.md",
+  ".ohno/state.json",
+  ".ohno/truth.json",
+  ".ohno/acceptance-basis.json",
+  ".ohno/REQUIREMENTS.md",
+  ".ohno/preferences.json",
+  ".ohno/PROGRESS.md",
+  ".ohno/.gitignore",
+]);
+
+function isHarnessAuthorityPath(path: string): boolean {
+  const normalized = path.replaceAll("\\", "/");
+  return HARNESS_AUTHORITY_PATHS.has(normalized);
+}
+
 function stagedPaths(projectPath: string): string[] {
   const result = spawnSync(
     "git",
@@ -115,6 +136,21 @@ export async function checkPreCommit(startPath: string): Promise<string> {
     );
   }
 
+  const productStaged = staged.filter((path) => !isHarnessAuthorityPath(path));
+  const harnessStaged = staged.filter((path) => isHarnessAuthorityPath(path));
+
+  // O4: after fresh PASS, Owner may commit sole authority + projectors alone.
+  if (productStaged.length === 0) {
+    if (harnessStaged.length === 0) {
+      throw new Error(
+        "COOPERATIVE_GUARDRAIL: nothing staged under the fresh PASS subject "
+          + "or harness authority paths",
+      );
+    }
+    return `COOPERATIVE_GUARDRAIL: fresh PASS; harness authority paths only: `
+      + `${harnessStaged.join(", ")}\n`;
+  }
+
   let indexDigest: string;
   try {
     indexDigest = digestAllowedIndex(
@@ -134,7 +170,10 @@ export async function checkPreCommit(startPath: string): Promise<string> {
     );
   }
 
-  assertPathsInScope(staged, completedTask.allowed_files);
+  assertPathsInScope(productStaged, completedTask.allowed_files);
+  const extra = harnessStaged.length > 0
+    ? `; harness authority also staged: ${harnessStaged.join(", ")}`
+    : "";
   return `COOPERATIVE_GUARDRAIL: fresh PASS covers in-scope staged paths: `
-    + `${staged.join(", ") || "NONE"}\n`;
+    + `${productStaged.join(", ") || "NONE"}${extra}\n`;
 }

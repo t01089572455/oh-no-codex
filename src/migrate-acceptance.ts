@@ -22,6 +22,7 @@ import { assertSafeProjectRelativePath } from "./paths.js";
 import { readGitHead } from "./subject-digest.js";
 import {
   compareAndSwapStateWithSideEffects,
+  contractDigestFor,
   needsAcceptanceBasisMigration,
   planRevisionFor,
   readState,
@@ -30,13 +31,54 @@ import {
 import type {
   AnyPendingPlan,
   PendingPlan,
+  PlanTask,
   ProjectState,
+  TaskContract,
   TruthClassificationEntry,
   TruthInventory,
 } from "./state.js";
 import type { TruthDocument } from "./truth.js";
 import { readTruth } from "./truth.js";
 import { classifyWithTruthDocument } from "./truth-inventory.js";
+
+/**
+ * Keep PASS history meaningful after schema migrate binds a new plan_revision.
+ * Only rebind receipts whose frozen contract fields still match ordered tasks.
+ */
+function rebindCompletedReceiptsToPlanRevision(
+  completed: readonly TaskContract[],
+  orderedTasks: readonly PlanTask[],
+  planRevision: string,
+): TaskContract[] {
+  return completed.map((receipt) => {
+    const task = orderedTasks.find(
+      (entry) => entry.status === "FROZEN" && entry.id === receipt.id,
+    );
+    if (task === undefined || task.status !== "FROZEN") {
+      return receipt;
+    }
+    if (
+      task.expected_behavior !== receipt.expected_behavior
+      || task.test_command !== receipt.test_command
+      || task.stop_condition !== receipt.stop_condition
+    ) {
+      return receipt;
+    }
+    const unsigned = {
+      id: receipt.id,
+      expected_behavior: receipt.expected_behavior,
+      test_command: receipt.test_command,
+      stop_condition: receipt.stop_condition,
+      allowed_files: receipt.allowed_files,
+      time_budget_minutes: receipt.time_budget_minutes,
+      plan_revision: planRevision,
+    };
+    return {
+      ...unsigned,
+      contract_digest: contractDigestFor(unsigned),
+    };
+  });
+}
 
 function sha256(value: string): string {
   return createHash("sha256").update(value).digest("hex");
@@ -439,6 +481,15 @@ async function planMigration(
     : hasPendingOnly
     ? []
     : state.ordered_tasks;
+  // A01: preserve completed history across migrate. New plan_revision would
+  // otherwise orphan receipts under plan-proof (cross-revision refuse).
+  const nextCompleted = hasAcceptedPlan && nextPlanRevision !== null
+    ? rebindCompletedReceiptsToPlanRevision(
+      state.completed,
+      nextOrdered,
+      nextPlanRevision,
+    )
+    : state.completed;
 
   // Semantic plan_review: all fields that exist at rest except apply metadata.
   const planReviewSemantic = hasAcceptedPlan && planRevision !== null
@@ -461,7 +512,7 @@ async function planMigration(
     plan_revision: nextPlanRevision,
     ordered_tasks: nextOrdered,
     cursor: state.cursor,
-    completed: state.completed,
+    completed: nextCompleted,
     plan_review: planReviewSemantic,
     pending_plan: nextPending,
     active_task: null,
@@ -488,7 +539,7 @@ async function planMigration(
     plan_revision: nextPlanRevision,
     ordered_tasks: nextOrdered,
     cursor: state.cursor,
-    completed: state.completed,
+    completed: nextCompleted,
     pending_plan: nextPending,
     active_task: null,
     last_verification: null,

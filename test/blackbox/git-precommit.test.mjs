@@ -354,6 +354,18 @@ test("pre-commit accepts a fresh completed in-scope subject", async (t) => {
   assert.match(result.stdout, /fresh PASS.*subject\.txt/i);
 });
 
+test("pre-commit accepts harness authority paths after fresh PASS (O4)", async (t) => {
+  const projectPath = await createProject(t);
+  await initialize(projectPath);
+  await completeFreshTask(projectPath);
+  // Product subject already staged by completeFreshTask flow — restage harness.
+  runGit(projectPath, ["add", "--", "AGENTS.md", ".ohno/state.json", ".ohno/PROGRESS.md"]);
+
+  const result = runPreCommit(projectPath);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /harness authority|fresh PASS/i);
+});
+
 test("pre-commit rejects a completed subject after its proof becomes stale", async (t) => {
   const projectPath = await createProject(t);
   await initialize(projectPath);
