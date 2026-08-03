@@ -42,7 +42,7 @@
 
 ## 契约
 
-包：[`oh-no-codex`](https://www.npmjs.com/package/oh-no-codex) · 可执行文件：`ohno` · 当前：**`0.1.9`**。
+包：[`oh-no-codex`](https://www.npmjs.com/package/oh-no-codex) · 可执行文件：`ohno` · 当前：**`0.1.10`**。
 
 | 规则 | 含义 |
 | --- | --- |
@@ -117,7 +117,7 @@ Codex 可以一直「在干活」，仓库仍在漂移。全文审计：[`docs/C
 ```bash
 npm install -g oh-no-codex
 # 镜像可能滞后：
-# npm install -g oh-no-codex@0.1.9 --registry https://registry.npmjs.org
+# npm install -g oh-no-codex@0.1.10 --registry https://registry.npmjs.org
 
 cd your-git-repo
 ohno init --goal "Owner 项目目标"   # 目标必填
@@ -263,12 +263,12 @@ V1 预算：一个包、一个二进制、一份 state、一份 truth、一份 h
 | 声明 | 标签 |
 | --- | --- |
 | 核心护栏 | `ANTI_DRIFT_CORE_WORKS` |
-| 公开发布 | **`0.1.9` 已发布**（registry.npmjs.org `latest`）。main 可能领先 npm |
-| CLI / hooks / 原子状态 | `LOCAL_PASS`（plan-revision 完成前沿、basis 重读、锁） |
+| 公开发布 | **`0.1.10` 发布候选**（完整性修正 + same-batch LIVE）；仅 Owner 授权后 publish |
+| CLI / hooks / 原子状态 | `LOCAL_PASS`（plan-proof 前沿、migrate rebind、pre-commit 投影、锁） |
 | Cockpit = status JSON | `LOCAL_PASS` |
 | Correction 4 验收分母 | `LOCAL_PASS`；change/task-start 重检 live basis |
-| 可丢弃真实副本 P01–P06 | **`HISTORICAL`** 样本 batch `live-20260803T224800Z-57ab1d7` — p95 ms A/B/C：status 242.169 / 211.435 / 147.727；next 248.956 / 218.824 / 157.178；resume 314.502 / 253.265 / 234.506；task_start 247.211 / 236.058 / 180.406；P06 197 / 210 / 207；P04 resume 4025 B（小型可丢弃副本；**未**在 0.1.9 之后的 main runtime 上重测；非普遍速度） |
-| npm | **`oh-no-codex@0.1.9`** 在 registry.npmjs.org；镜像可能滞后 |
+| 可丢弃真实副本 P01–P06 | **`TRIAL_PASS` LIVE** batch `live-20260803T100000Z-0bd5926` — p95 ms A/B/C：status 175.451 / 170.745 / 173.641；next 181.154 / 198.192 / 168.308；resume 220.441 / 230.675 / 251.55；task_start 200.263 / 206.14 / 187.783；P06 181 / 205 / 199；P04 resume 4025 B（**仅三份小型可丢弃副本**；非大仓普遍速度保证） |
+| npm | Owner 授权后目标 **`0.1.10`**；此前 registry 仍是 **`0.1.9`** |
 | Schema 2 → 3 | 两阶段迁移：preview，再 `--diff` / `--head` apply |
 
 契约：[Product](./docs/PRODUCT-CONTRACT.md) · [Design](./docs/DESIGN.md) · [Acceptance](./docs/ACCEPTANCE.md) · [Publish](./docs/PUBLISH.md) · [Sins](./docs/CODEX-SINS.md)

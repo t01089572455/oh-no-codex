@@ -559,17 +559,12 @@ Owning checks: projectors, codex-hooks, resume-status-next, cockpit black boxes.
 
 There is exactly one. **Unique next:**
 
-> **`CORRECTION` closed on main after Codex post-0.1.9 re-audit; npm still
-> `0.1.9`.** Frozen slice: (1) migrate rebind only if receipt.plan_revision
-> equals pre-migrate revision and full frozen contract matches including
-> allowed_files + budget; (2) pre-commit projection allowlist is only
-> state.json/PROGRESS/.gitignore — Truth/AGENTS/basis/REQUIREMENTS still in
-> scope; (3) requirements pid+token lock with snapshot CAS reclaim;
-> (4) performance evidence is `HISTORICAL` (not silent LIVE rebind). Owning
-> tests: acceptance-denominator migrate rebind negatives; git-precommit
-> Truth/AGENTS tamper; integrity concurrent notes; correction-2/performance
-> HISTORICAL honesty. Do not publish `0.1.10` until Owner authorizes and,
-> if claiming LIVE p95, a same-batch remeasure is run. `docs/PUBLISH.md`.
+> **`OWNER_PUBLISH_DECISION` for `oh-no-codex@0.1.10`.** Same-batch LIVE
+> `live-20260803T100000Z-0bd5926` (P01–P06 `TRIAL_PASS` on three small
+> disposable stacks). Contract-aligned corrections included (migrate rebind,
+> pre-commit projections only, requirements lock CAS, public honesty). npm
+> still `0.1.9` until Owner authorizes publish. Not `V1_TRIAL_ACCEPTED`.
+> Procedure: `docs/PUBLISH.md`.
 
 ## Shared implementation rules
 

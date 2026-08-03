@@ -42,7 +42,7 @@
 
 ## Contract
 
-Package: [`oh-no-codex`](https://www.npmjs.com/package/oh-no-codex) · binary: `ohno` · current: **`0.1.9`**.
+Package: [`oh-no-codex`](https://www.npmjs.com/package/oh-no-codex) · binary: `ohno` · current: **`0.1.10`**.
 
 | Rule | Meaning |
 | --- | --- |
@@ -117,7 +117,7 @@ Harness response in one line: **record Owner words · freeze one contract · evi
 ```bash
 npm install -g oh-no-codex
 # mirrors may lag a fresh release:
-# npm install -g oh-no-codex@0.1.9 --registry https://registry.npmjs.org
+# npm install -g oh-no-codex@0.1.10 --registry https://registry.npmjs.org
 
 cd your-git-repo
 ohno init --goal "Owner project goal"   # goal required
@@ -130,7 +130,7 @@ ohno skill status
 # new Codex session required for skill discovery
 ```
 
-Node.js **≥ 22.20** (stable `path.matchesGlob`). Package version **`0.1.9`**.
+Node.js **≥ 22.20** (stable `path.matchesGlob`). Package version **`0.1.10`**.
 
 ### Windows
 
@@ -263,12 +263,12 @@ V1 budget: one package, one binary, one state file, one truth file, one hook con
 | Claim | Label |
 | --- | --- |
 | Core harness | `ANTI_DRIFT_CORE_WORKS` |
-| Public release | **`0.1.9` published** on registry.npmjs.org (`latest`). Main may be ahead of npm |
-| CLI / hooks / atomic state | `LOCAL_PASS` (plan-revision completion frontier, basis re-read, locks) |
+| Public release | **`0.1.10` release candidate** (integrity corrections + same-batch LIVE); publish only with Owner words |
+| CLI / hooks / atomic state | `LOCAL_PASS` (plan-proof frontier, migrate rebind, pre-commit projections, locks) |
 | Cockpit = status JSON | `LOCAL_PASS` |
 | Correction 4 acceptance basis | `LOCAL_PASS`; change/task-start re-check live basis |
-| Disposable real-copy P01–P06 | **`HISTORICAL`** sample batch `live-20260803T224800Z-57ab1d7` — p95 ms A/B/C: status 242.169 / 211.435 / 147.727; next 248.956 / 218.824 / 157.178; resume 314.502 / 253.265 / 234.506; task_start 247.211 / 236.058 / 180.406; P06 197 / 210 / 207; P04 resume 4025 B (small disposable copies; **not** re-measured on post-0.1.9 main; not universal speed) |
-| npm | **`oh-no-codex@0.1.9`** on registry.npmjs.org; mirrors may lag |
+| Disposable real-copy P01–P06 | **`TRIAL_PASS` LIVE** batch `live-20260803T100000Z-0bd5926` — p95 ms A/B/C: status 175.451 / 170.745 / 173.641; next 181.154 / 198.192 / 168.308; resume 220.441 / 230.675 / 251.55; task_start 200.263 / 206.14 / 187.783; P06 181 / 205 / 199; P04 resume 4025 B (**three small disposable copies only**; not a universal large-repo claim) |
+| npm | Target **`oh-no-codex@0.1.10`** after Owner publish; **`0.1.9`** remains on registry until then |
 | Schema 2 → 3 | Two-phase migrate: preview, then `--diff` / `--head` apply |
 
 Contracts: [Product](./docs/PRODUCT-CONTRACT.md) · [Design](./docs/DESIGN.md) · [Acceptance](./docs/ACCEPTANCE.md) · [Publish](./docs/PUBLISH.md) · [Sins](./docs/CODEX-SINS.md)
