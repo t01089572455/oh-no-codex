@@ -176,30 +176,43 @@ ohno doctor
 
 1. **Goal** — `ohno init --goal "…"` 写**当前阶段**结果，不是远古愿景全文。  
 2. **Owner 语料** — `requirements note`：已有什么、本阶段必须交付、非目标、硬约束（原文）。  
-3. **真相源候选** — 列出可能治理文档（PRD/DESIGN/ACCEPTANCE…），**Owner 确认**后再进 Truth / note。Oh No 不发明权威。  
-4. **Plan 只排未证明的工作** — `plan propose` / `accept` 做**仍需黑盒验收**的切片。禁止把历史「假装 PASS」塞进 `completed`。  
-5. **一次只动 cursor** — `task start` → 实现或补测 → **只有 `ohno verify` 算推进**。只 review 不 verify ≠ 进度。  
-6. **改范围** — 实质变更走 `ohno change` + 新 plan revision，禁止手改 state、禁止聊天里扩 scope。
+3. **真相源候选** — 列出旧 PRD/DESIGN/ACCEPTANCE 等路径，**Owner 确认**。Oh No 不发明权威。  
+4. **可选且常更好：在护栏下重写治理文档** — 旧文档多半写在**没有 Oh No** 时（叙事、过期、无冻结/黑盒形状）。把旧文档当**只读原料**，生成**护栏友好**的新版（目标/非目标、阶段、用户可见验收口径）。Owner 确认后：Truth **指向新路径**；`requirements note` 写明「自某日起以 `docs/新…` 为准，旧 `docs/旧…` 仅参考」。禁止两套互相打架的权威。若 Truth 目标已在适用列表中，换文档走 **`ohno change`** 审 diff，禁止静默替换后继续编码。  
+5. **Plan 只排未证明的工作** — `plan propose` / `accept` 做**仍需黑盒验收**的切片。禁止把历史「假装 PASS」塞进 `completed`。新文档定规矩，**不会**自动填进度。  
+6. **一次只动 cursor** — `task start` → 实现或补测 → **只有 `ohno verify` 算推进**。只 review 不 verify ≠ 进度。  
+7. **改范围** — 实质变更走 `ohno change` + 新 plan revision，禁止手改 state、禁止聊天里扩 scope。
+
+| 重写新版 | 沿用旧路径 |
+| --- | --- |
+| 旧文档 = 只读灵感 | Owner 整理后旧路径仍进 Truth |
+| 新文档进适用列表 | 须仍清晰、可冻结、Owner 负责 |
+| REQUIREMENTS 记切换日与作准文件 | 冲突时以哪份为准也要 note |
+| 适合「装 Oh No 之前」的乱文档仓 | 适合旧文档已紧、仍现时的仓 |
 
 **装完后可粘贴的 Codex 提示词**（**新 session**、项目 cwd）：
 
 ```text
-本仓库已有代码和文档。Oh No 已安装（ohno doctor 应通过）。
+本仓库已有代码和文档（写在 Oh No 之前）。Oh No 已安装（ohno doctor 应通过）。
 
 禁止手改 .ohno/state.json。只用 oh-no-* skill / ohno CLI。
+旧文档在 Owner 冻结新权威前一律只读参考。
 
-1) 只读盘点：候选治理文档（PRD/DESIGN/ACCEPTANCE…）、看起来已实现的能力、开放风险。
-   提出 Truth 适用列表草案供 Owner 确认 —— 不得擅自当权威。
-2) 用 ohno requirements note 追加（原文约束；「树里已成立」与「本阶段仍须证明」分开记）。
-3) 起草线性 plan：只含剩余的、用户可见黑盒切片
+1) 只读盘点：旧治理文档候选、看起来已实现的能力、矛盾与风险。提出两条路供 Owner 选：
+   (A) 重写：生成护栏友好的新治理文档 + Truth 指向新路径；
+   (B) 沿用：Truth 指向整理后的旧路径。
+2) Owner 确认后按约定写/改文档；requirements note 记切换
+   （「新版作准、旧版仅参考」或「旧路径 X 为唯一权威」）。
+   若替换已在适用列表中的 Truth 目标，用 ohno change 审文档 diff。
+3) requirements note：「树里已成立」与「本阶段仍须证明」分开（原文约束）。
+4) 起草线性 plan：只含剩余的、用户可见黑盒切片
    （expected_behavior + 一条 test_command + allowed_files + stop）。
    优先证明缺口，不要把已完成工作编成 PASS。
-4) ohno plan propose → 等 Owner accept → 仅冻结 cursor：
-   task start → 干活 → ohno verify。每次 PASS 后停下；next 是定位器，不是空白授权。
-5) 需求变了走 ohno change —— 禁止在 active 切片里扩 scope。
+5) ohno plan propose → 等 Owner accept → 仅冻结 cursor：
+   task start → 干活 → ohno verify。每次 PASS 后停下；next 是定位器。
+6) 需求变了走 ohno change —— 禁止在 active 切片里扩 scope。
 ```
 
-空仓可跳过 2–3 的细节直接 plan。半成品若跳过 bootstrap，界面上「已安装」但看板不认识你的产品——**这是预期行为，不是 bug**。
+空仓可跳过 bootstrap 细节直接 plan。半成品若跳过 bootstrap，界面上「已安装」但看板不认识你的产品——**这是预期行为，不是 bug**。
 
 ---
 

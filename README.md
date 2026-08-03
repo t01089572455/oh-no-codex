@@ -180,32 +180,46 @@ ohno doctor
 
 1. **Goal** — `ohno init --goal "…"` with the *current stage* outcome, not ancient vision text.
 2. **Owner corpus** — `ohno requirements note` for: what already exists, this stage’s must-ship, non-goals, hard constraints (verbatim).
-3. **Truth candidates** — list which existing docs govern (PRD, DESIGN, ACCEPTANCE…). Owner confirms; put paths in Truth / note. Oh No does not invent the list.
-4. **Plan only unproven work** — `ohno plan propose` / `accept` slices that still need a black-box proof on *this* tree. Do **not** fake-PASS history into `completed`.
-5. **One cursor at a time** — `task start` → implement or wire tests → **`ohno verify` only**. PASS advances the plan cursor. Review-without-verify is not progress.
-6. **Scope change** — material rewrites use `ohno change` + a new plan revision, not chat edits to state.
+3. **Truth candidates** — list possible governing paths (old PRD/DESIGN/ACCEPTANCE…). Owner confirms. Oh No does not invent the list.
+4. **Optional but often best: rewrite governing docs under the harness** — old docs were written **without** Oh No (narrative, stale, no freeze/test shape). Treat them as **read-only raw material**. Generate **new** governing docs shaped for the harness (clear goal/non-goals, stages, user-visible acceptance). Owner confirms; put **new** paths on the Truth list; `requirements note` that “from date X, `docs/NEW…` governs; old `docs/OLD…` is reference only.” Do not leave two conflicting authorities. If Truth targets already apply, use **`ohno change`** for the governing-doc diff — do not silent-swap and keep coding.
+5. **Plan only unproven work** — `ohno plan propose` / `accept` slices that still need a black-box proof on *this* tree. Do **not** fake-PASS history into `completed`. New docs set rules; they do **not** auto-fill progress.
+6. **One cursor at a time** — `task start` → implement or wire tests → **`ohno verify` only**. PASS advances the plan cursor. Review-without-verify is not progress.
+7. **Scope change** — material rewrites use `ohno change` + a new plan revision, not chat edits to state.
+
+| Rewrite path | Keep-old-docs path |
+| --- | --- |
+| Old docs = inspiration only | Old paths stay on Truth after Owner edit |
+| New docs become applicability list | Must still be consistent, freeze-friendly, Owner-owned |
+| Note the cutover in REQUIREMENTS | Note which file wins on conflict |
+| Often cleaner for pre-Oh No repos | Fine when old docs already tight and current |
 
 **Suggested Codex prompt after install** (paste in a **new** session, project cwd):
 
 ```text
-This repo already has code and docs. Oh No is installed (ohno doctor should be green).
+This repo already has code and docs written before Oh No. Oh No is installed
+(ohno doctor should be green).
 
 Do NOT hand-edit .ohno/state.json. Use oh-no-* skills / ohno CLI only.
+External/old docs are read-only inspiration until Owner freezes new authority.
 
-1) Survey the tree (read-only): list candidate governing docs (PRD/DESIGN/ACCEPTANCE/…),
-   what appears already implemented, and open risks. Propose a Truth applicability list
-   for Owner confirmation — do not invent authority.
-2) Append Owner-facing findings with ohno requirements note (verbatim constraints;
-   separate notes for “already true in tree” vs “this stage must still prove”).
-3) Draft a linear plan of ONLY remaining, user-visible black-box slices
+1) Survey (read-only): candidate old governing docs, what appears implemented,
+   contradictions/risks. Propose either:
+   (A) rewrite: new harness-friendly governing docs + Truth list pointing at NEW paths, or
+   (B) keep: Truth list on cleaned old paths — Owner chooses.
+2) After Owner confirms, write/update docs as agreed; requirements note the cutover
+   (“NEW governs; OLD reference-only” or “OLD path X is sole authority”).
+   If replacing Truth targets already in force, use ohno change for the doc diff.
+3) requirements note: “already true in tree” vs “this stage must still prove”
+   (verbatim Owner constraints).
+4) Draft a linear plan of ONLY remaining user-visible black-box slices
    (expected_behavior + one test_command + allowed_files + stop). Prefer proving
-   residual gaps over re-narrating finished work as PASS.
-4) ohno plan propose → wait for Owner accept → then only the frozen cursor:
-   task start → work → ohno verify. Stop after each PASS; next is a locator, not a blank cheque.
-5) If requirements change, ohno change — do not expand scope inside an active slice.
+   gaps over re-narrating finished work as PASS.
+5) ohno plan propose → Owner accept → frozen cursor only:
+   task start → work → ohno verify. Stop after each PASS; next is a locator.
+6) Requirements change → ohno change; never expand scope inside an active slice.
 ```
 
-Empty repos skip steps 2–3 detail and go straight to plan. Half-built repos that skip
+Empty repos skip bootstrap detail and go straight to plan. Half-built repos that skip
 bootstrap will look “installed” but the board will not know your product — that is
 expected, not a bug.
 
