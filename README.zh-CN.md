@@ -47,11 +47,12 @@
 | 规则 | 含义 |
 | --- | --- |
 | 冻结 | cursor 任务固定期望行为、**一条**精确测试命令、允许 glob、预算、停止条件 |
+| 记录 | Owner 指令以**原文**写入 `.ohno/REQUIREMENTS.md`（`ohno requirements note`），不是聊天里的转述 |
 | 验收 | `ohno verify` 只跑那条命令；PASS 是收据（任务 + 计划修订 + HEAD + 作用域 digest） |
 | 推进 | 新鲜 PASS 关闭任务一次并推进 `cursor`；FAIL / UNKNOWN 任务保持 active |
 | 定位 | `next` 是**定位器**，不是开工授权 |
 | 恢复 | `status` / `resume` / hooks / Cockpit 读同一份原子状态 |
-| 变更 | 需求变更经 `ohno change` 同步命名治理文档后，才继续编码 |
+| 变更 | 实质改范围：先 `ohno change` 同步命名治理文档，再继续编码 |
 
 **不宣称：** 自主 multi-agent OS、对抗同用户的安全边界、数据库、daemon、托管控制面。
 
@@ -72,6 +73,7 @@ ohno CLI  ──原子替换──►  .ohno/state.json   （唯一运行时权�
 | 产物 | 角色 |
 | --- | --- |
 | `.ohno/state.json` | 当前目标、计划、cursor、活跃契约、证明、next |
+| `.ohno/REQUIREMENTS.md` | 追加式日志：**Owner 指令原文**（提示词 / 决定 / 约束） |
 | `.ohno/truth.json` | 治理文档适用列表（Owner 维护） |
 | PASS 收据 | 溯源 + verify CAS；不是第二套「当前真相」 |
 | `PROGRESS.md` / resume 文案 / Cockpit | 仅投影 |
@@ -83,30 +85,30 @@ ohno CLI  ──原子替换──►  .ohno/state.json   （唯一运行时权�
 
 ## 失败模式
 
-Codex 可以一直「在干活」，仓库仍在漂移。护栏针对这些模式（全文：[`docs/CODEX-SINS.md`](./docs/CODEX-SINS.md)）：
+Codex 可以一直「在干活」，仓库仍在漂移。全文审计：[`docs/CODEX-SINS.md`](./docs/CODEX-SINS.md)。
 
-| # | 模式 | 症状 |
+| # | 模式 | 症状（你会看到什么） |
 | ---: | --- | --- |
-| 1 | 语义僭越 | 要门 → 造城 |
-| 2 | 最大解释 | 「管控」→ 平台 |
-| 3 | 停不下来 | 这一刀已 PASS；施工继续 |
-| 4 | 审查即改权 | 「看看」→ 静默重写 |
-| 5 | 僵尸权威 | 旧计划压过最新决定 |
-| 6 | 摘要当真相 | 压缩后的摘要硬化成假历史 |
-| 7 | 局部绿 = 完成 | mock 当完成 |
-| 8 | 自证闭环 | 同一 Agent 既宣称又鼓掌 |
-| 9 | 测试剧场 | 内部绿；用户路径坏 |
-| 10 | 代理目标 | 覆盖率压过结果 |
-| 11 | 评审膨胀 | 无尽新验收 |
-| 12 | 控制税盲目 | 工具成本超过漂移本身 |
-| 13 | 重建世界 | 造新机器而不是用 Git/测试 |
-| 14 | 工作区混乱 | 错树 / 错分支 / 脏检出 |
-| 15 | 交接税 | 下一会话从聊天考古 |
-| 16 | UX 垫底 | 内务几周；UI 不测 |
-| 17 | 附和 + 夸大 | 立刻道歉；未度量的承诺 |
-| 18 | 无约束道歉 | 软遗憾；明天同一失败 |
+| 1 | 语义僭越 | 你要的是窄结果；Agent 悄悄做成更大的产品/架构，且当它才是需求 |
+| 2 | 最大解释 | 「管控 / 完善 / 稳健」等含糊词被解释到极限，轻量诉求变成平台/OS |
+| 3 | 停不下来 | 冻结验收已 PASS，仍继续改代码、提交，或自行开下一阶段 |
+| 4 | 审查即改权 | 你只要 inspect / 诊断 / 审计，它却重写、派审、甚至提交 |
+| 5 | 僵尸权威 | 旧计划、旧分支名、旧进度说明压过你**最新**的决定 |
+| 6 | 摘要当真相 | 交接/压缩摘要变成「事实」；遗漏在下一会话硬化成假历史 |
+| 7 | 局部绿 = 完成 | 一个单测或 mock 路径绿了 → 宣称功能/产品完成 |
+| 8 | 自证闭环 | 同一 Agent 定义成功标准、实现、再引用自己的文字当证明 |
+| 9 | 测试剧场 | 测试只证明内部/mock；用户真正在意的可见路径坏了或没测 |
+| 10 | 代理目标 | 覆盖率、架构洁癖、评审口味压过 Owner 的产品结果 |
+| 11 | 评审膨胀 | 评审塞进从未冻结的新验收项；这一刀永远收不了口 |
+| 12 | 控制税盲目 | 额外闸门/台账/全量套件让日常更慢，超过它防住的漂移 |
+| 13 | 重建世界 | 不用 Git/测试/简单文件，先造网关、账本、框架再交付价值 |
+| 14 | 工作区混乱 | 错 worktree / 分支 / HEAD / 脏树；活干到另一份检出上 |
+| 15 | 交接税 | 下一会话只能从聊天考古「做到哪了」，没有一键 resume 现场 |
+| 16 | UX 垫底 | 内务做几周；界面通用、半成品，或从未浏览器验收 |
+| 17 | 附和 + 夸大 | 立刻认错，再许下未度量的大承诺（「完全可控」「可上线」「很快」） |
+| 18 | 无约束道歉 | 解释了为什么漂；不改测试、hook、契约或工作规则 — 下次同一失败 |
 
-产品侧折叠：**Owner 语义优先 · 一份冻结契约 · 证据结束这一刀 · 审查只读 · 项目状态压过聊天 · 公开黑盒压过内部绿 · 延迟是验收条件 · 工作区身份精确。**
+护栏一句话：**记 Owner 原文 · 冻结一份契约 · 证据结束这一刀 · 审查只读 · `state.json` 压过聊天 · 公开黑盒压过内部绿 · 度量延迟 · 工作区身份精确。**
 
 ---
 
@@ -145,6 +147,7 @@ Node.js **≥ 22.20**（稳定 `path.matchesGlob`）。
 ### 最小闭环
 
 ```bash
+ohno requirements note --text "Owner 原话，勿改写"   # 陈述范围/约束时建议立刻记
 ohno plan propose --file plan.json
 ohno plan accept --revision <rev> --diff <digest>
 ohno task start                 # 不接受调用方塞契约字段
@@ -154,6 +157,21 @@ ohno resume                     # 从文件恢复，不靠聊天
 ohno next                       # 仅定位
 ```
 
+### Owner 原文（防漂移指令集）
+
+聊天会丢。Owner 一说出目标、约束、非目标或决定，就应**追加原文**，
+不能只让模型把意思「总结进计划」。
+
+| 命令 | 作用 |
+| --- | --- |
+| `ohno requirements note --text "…"` | 向 `.ohno/REQUIREMENTS.md` 追加一条 **Owner 原文** |
+| `ohno requirements show` | 打印日志 |
+| skill `oh-no-requirements` | 自然语言触发（「记下来 / remember this」） |
+
+这是项目的**指令语料**：后续会话、resume、Agent 应优先对照这些句子，
+而不是压缩后的聊天摘要。实质改范围仍走 `ohno change` + 新计划；
+日志是耐久的引文表，不是第二套计划权威。
+
 ### 说法 → skill
 
 | 你 | Skill / 命令 |
@@ -162,7 +180,7 @@ ohno next                       # 仅定位
 | 开始 / 重开 cursor 这一刀 | `oh-no-task` → `ohno task start` |
 | 做完了 | `oh-no-verify` → `ohno verify` |
 | 做到哪了 | `oh-no-resume` / `ohno status` |
-| 记住 Owner 原话 | `oh-no-requirements` |
+| 记下来 / 记住原话 | `oh-no-requirements` → `ohno requirements note` |
 | 需求变了 | `oh-no-change` |
 | 看板 | `oh-no-cockpit` → `ohno cockpit` |
 | 体检 | `oh-no-doctor` |
@@ -231,7 +249,8 @@ plan accept / task start / verify
 | CLI | `init` · `plan` · `task` · `verify` · `change` · `migrate acceptance-basis` · `resume` · `status` · `next` · `doctor` · `cockpit` · … |
 | 13 个 Codex skill | 可发现的日常流程 |
 | Hooks + pre-commit | 注入胶囊 + 协作式范围护栏 |
-| Projectors | `PROGRESS.md`、`REQUIREMENTS.md`、AGENTS 短块 |
+| Projectors | `PROGRESS.md`、AGENTS 短块 |
+| 指令原文日志 | `.ohno/REQUIREMENTS.md`（`ohno requirements note/show`） |
 | Preferences | 可选工作默认 |
 | Cockpit | 只读 status 面 |
 

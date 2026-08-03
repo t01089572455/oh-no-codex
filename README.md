@@ -47,11 +47,12 @@ Package: [`oh-no-codex`](https://www.npmjs.com/package/oh-no-codex) · binary: `
 | Rule | Meaning |
 | --- | --- |
 | Bound | Cursor task freezes expected behavior, **one** exact test command, allowed globs, budget, stop condition |
+| Record | Owner instructions stay **verbatim** in `.ohno/REQUIREMENTS.md` via `ohno requirements note` — not paraphrased chat memory |
 | Prove | `ohno verify` runs that command only; PASS is a receipt (task + plan rev + HEAD + scoped digests) |
 | Advance | Fresh PASS closes the task once and advances `cursor`; FAIL / UNKNOWN leave the task active |
 | Locate | `next` is a **locator**, not authorization to start new work |
 | Recover | `status` / `resume` / hooks / Cockpit all read the same atomic state |
-| Change | Requirement edits sync named governing docs via `ohno change` before coding continues |
+| Change | Material scope change: `ohno change` syncs named governing docs before coding continues |
 
 Not a product claim: autonomous multi-agent OS, hostile same-user security, database, daemon, hosted control plane.
 
@@ -72,6 +73,7 @@ ohno CLI  ──atomic replace──►  .ohno/state.json   (sole runtime author
 | Artifact | Role |
 | --- | --- |
 | `.ohno/state.json` | Current goal, plan, cursor, active contract, proof, next |
+| `.ohno/REQUIREMENTS.md` | Append-only log of **Owner’s original words** (prompts / decisions / constraints) |
 | `.ohno/truth.json` | Governing-document applicability list (Owner-maintained) |
 | PASS receipt | Provenance + verify CAS; not a second “current truth” |
 | `PROGRESS.md` / resume text / Cockpit | Projections only |
@@ -83,30 +85,30 @@ Cooperative hooks inject the resume capsule and deny some out-of-scope writes. A
 
 ## Failure modes
 
-Codex can stay “busy” while the repo drifts. The harness is built against these patterns (full audit: [`docs/CODEX-SINS.md`](./docs/CODEX-SINS.md)):
+Codex can stay “busy” while the repo drifts. Full audit: [`docs/CODEX-SINS.md`](./docs/CODEX-SINS.md).
 
-| # | Pattern | Symptom |
+| # | Pattern | Symptom (what you see) |
 | ---: | --- | --- |
-| 1 | Semantic usurpation | Door request → castle |
-| 2 | Maximum interpretation | “Control” → platform |
-| 3 | Never stopping | Slice PASS; work continues |
-| 4 | Review as edit rights | “Inspect” → silent rewrite |
-| 5 | Zombie authority | Stale plan beats latest decision |
-| 6 | Summary as truth | Compaction hardens false history |
-| 7 | Local green = complete | Mock ships as done |
-| 8 | Self-certified closure | Same agent writes claim and applause |
-| 9 | Test theatre | Internals green; user path broken |
-| 10 | Proxy goals | Coverage over outcome |
-| 11 | Reviewer inflation | Endless new acceptance |
-| 12 | Control-tax blindness | Tool costs more than drift |
-| 13 | Rebuilding the world | New machinery over Git/tests |
-| 14 | Workspace confusion | Wrong tree / branch / dirty tree |
-| 15 | Handoff tax | Next session rebuilds from chat |
-| 16 | UX last | Internals for weeks; UI untested |
-| 17 | Agree + overclaim | Instant apology; unmeasured promise |
-| 18 | Apology without constraint | Soft regret; same failure tomorrow |
+| 1 | Semantic usurpation | You asked for a narrow outcome; the agent quietly solves a larger product you did not order |
+| 2 | Maximum interpretation | Vague words (“control”, “robust”) become a platform / OS instead of the smallest useful fix |
+| 3 | Never stopping | Frozen acceptance already PASS; agent keeps editing, committing, or opening a new phase on its own |
+| 4 | Review as edit rights | You asked for inspect / diagnose / audit; it rewrites code, dispatches more agents, or commits |
+| 5 | Zombie authority | An old plan, branch name, or progress note overrides your **latest** decision |
+| 6 | Summary as truth | Handoff / compaction summary becomes “facts”; omissions harden into false history next session |
+| 7 | Local green = complete | One unit test or mocked path is green → agent claims the feature / product is done |
+| 8 | Self-certified closure | Same agent defines success, implements it, then cites its own prose as proof |
+| 9 | Test theatre | Suite proves mocks / internals; the user-visible path you care about stays broken or untested |
+| 10 | Proxy goals | Coverage, architecture neatness, or reviewer taste outranks the Owner’s product outcome |
+| 11 | Reviewer inflation | Review adds new acceptance criteria that were never frozen; no slice can finish |
+| 12 | Control-tax blindness | Extra gates / ledgers / full suites make ordinary work slower than the drift they prevent |
+| 13 | Rebuilding the world | Replaces Git / tests / simple files with new gateways, journals, frameworks before value ships |
+| 14 | Workspace confusion | Wrong worktree, branch, HEAD, or dirty tree; work or status lands on the wrong checkout |
+| 15 | Handoff tax | Next session must reconstruct “where we are” from chat archaeology instead of one resume surface |
+| 16 | UX last | Machinery grows for weeks; UI stays generic, unfinished, or never browser-accepted |
+| 17 | Agree + overclaim | Instant apology, then another unmeasured promise (“fully controlled”, “prod ready”, “fast”) |
+| 18 | Apology without constraint | Explains the drift; adds no test, hook, contract, or working rule — same failure next run |
 
-Product collapse of the list: **Owner semantics win · one frozen contract · evidence ends the slice · review is read-only · project state outranks chat · public black box outranks internal green · latency is acceptance · workspace identity is exact.**
+Harness response in one line: **record Owner words · freeze one contract · evidence ends the slice · review is read-only · `state.json` outranks chat · public black box outranks internal green · measure latency · exact workspace identity.**
 
 ---
 
@@ -145,6 +147,7 @@ Setup is terminal-only. Day-to-day: natural language → Codex loads `oh-no-*` s
 ### Minimal loop
 
 ```bash
+ohno requirements note --text "Owner words, verbatim"   # optional but recommended whenever scope is stated
 ohno plan propose --file plan.json
 ohno plan accept --revision <rev> --diff <digest>
 ohno task start                 # no caller-supplied contract fields
@@ -154,6 +157,21 @@ ohno resume                     # recover from files, not chat
 ohno next                       # locator only
 ```
 
+### Owner words (anti-drift log)
+
+Chat is ephemeral. When the Owner states a goal, constraint, non-goal, or decision,
+**append the original wording** — do not only paraphrase into the model’s plan.
+
+| Command | Effect |
+| --- | --- |
+| `ohno requirements note --text "…"` | Append one entry to `.ohno/REQUIREMENTS.md` (verbatim Owner line) |
+| `ohno requirements show` | Print the log |
+| skill `oh-no-requirements` | Same, from natural language (“记下来 / remember this”) |
+
+This is the **instruction corpus** for the project: later sessions, resume, and agents
+should prefer these lines over compacted chat. Material rewrites of scope still go
+through `ohno change` + a new plan; the log is the durable quote sheet, not a second plan authority.
+
 ### Language → skill
 
 | You | Skill / command |
@@ -162,7 +180,7 @@ ohno next                       # locator only
 | Start / reopen cursor slice | `oh-no-task` → `ohno task start` |
 | Done | `oh-no-verify` → `ohno verify` |
 | Where are we | `oh-no-resume` / `ohno status` |
-| Remember Owner words | `oh-no-requirements` |
+| Record my words / 记下来 | `oh-no-requirements` → `ohno requirements note` |
 | Requirements changed | `oh-no-change` |
 | Board | `oh-no-cockpit` → `ohno cockpit` |
 | Health | `oh-no-doctor` |
@@ -231,7 +249,8 @@ plan accept / task start / verify
 | CLI | `init` · `plan` · `task` · `verify` · `change` · `migrate acceptance-basis` · `resume` · `status` · `next` · `doctor` · `cockpit` · … |
 | 13 Codex skills | Discoverable day-to-day procedures |
 | Hooks + pre-commit | Capsule inject + cooperative scope guard |
-| Projectors | `PROGRESS.md`, `REQUIREMENTS.md`, short AGENTS block |
+| Projectors | `PROGRESS.md`, short AGENTS block |
+| Requirements log | `.ohno/REQUIREMENTS.md` via `ohno requirements note/show` |
 | Preferences | Optional craft defaults |
 | Cockpit | Read-only status surface |
 
