@@ -549,7 +549,7 @@ Full inventory and reading honesty: `docs/ESSENCE-BACKLOG.md`.
 | --- | --- | --- |
 | E4 | `truth_targets[]` + Cockpit truth list | LOCAL_PASS |
 | E5 | `handoff` path/branch/head/dirty on resume | LOCAL_PASS |
-| E6 | SessionStart/PostCompact best-effort projectors refresh | LOCAL_PASS |
+| E6 | SessionStart/PostCompact read-only capsule (projectors via CLI) | LOCAL_PASS |
 | E7 | `ohno doctor [--json]` | LOCAL_PASS |
 | E8 | `ohno init` scaffolds AGENTS managed block | LOCAL_PASS |
 
@@ -559,10 +559,12 @@ Owning checks: projectors, codex-hooks, resume-status-next, cockpit black boxes.
 
 There is exactly one. **Unique next:**
 
-> **`STOP`.** Owner authorized `0.1.7`/`0.1.8` push + npm publish. Correction 4
-> is `LOCAL_PASS`. Same-batch LIVE P01–P06 bound. Cockpit UX landed in `0.1.8`.
-> Do **not** republish, retag, or open a new release without fresh Owner
-> authorization. Publish procedure: `docs/PUBLISH.md`.
+> **Integrity corrections on main after `0.1.8`.** Plan-revision completion
+> frontier, basis re-read, requirements lock, worktree hooks, resume hard 4 KiB,
+> handoff tree, read-only SessionStart capsule. Trial evidence is
+> **`HISTORICAL`** until a fresh same-batch LIVE remeasure. Owner wants a
+> publishable release: complete LIVE remeasure + version bump, then follow
+> `docs/PUBLISH.md` only after Owner says publish.
 
 ## Shared implementation rules
 

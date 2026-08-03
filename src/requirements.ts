@@ -2,11 +2,9 @@ import {
   mkdir,
   readFile,
   rename,
-  rm,
   writeFile,
 } from "node:fs/promises";
 import { resolve } from "node:path";
-import { setTimeout as delay } from "node:timers/promises";
 import { randomUUID } from "node:crypto";
 
 import {
@@ -14,6 +12,7 @@ import {
   enabledRules,
   type PreferencesFile,
 } from "./preferences.js";
+import { withDirectoryLock } from "./process-lock.js";
 import {
   type ReadModel,
   readModel,
@@ -41,61 +40,26 @@ async function atomicWriteRequirements(
   await rename(temporary, path);
 }
 
-function processLooksAlive(pid: number): boolean {
-  if (!Number.isInteger(pid) || pid <= 0) {
-    return false;
-  }
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch (error) {
-    return (error as NodeJS.ErrnoException).code === "EPERM";
-  }
-}
-
 async function withRequirementsLock<T>(
   projectPath: string,
   work: () => Promise<T>,
 ): Promise<T> {
   const directory = resolve(projectPath, ".ohno");
-  // Directory create is a more reliable exclusive lock on Windows than O_EXCL files.
-  const lockDir = resolve(directory, "requirements.lock.d");
-  const ownerPath = resolve(lockDir, "owner");
   await mkdir(directory, { recursive: true });
-  const deadline = Date.now() + 30_000;
-  let held = false;
-  while (!held) {
-    try {
-      await mkdir(lockDir);
-      await writeFile(ownerPath, `${process.pid}\n`, "utf8");
-      held = true;
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "EEXIST") {
-        throw error;
-      }
-      let stale = false;
-      try {
-        const body = await readFile(ownerPath, "utf8");
-        const pid = Number.parseInt(body.trim().split(/\s+/u)[0] ?? "", 10);
-        stale = Number.isInteger(pid) && pid > 0 && !processLooksAlive(pid);
-      } catch {
-        // Owner file missing while dir exists — reclaim only if empty-ish and old.
-        stale = false;
-      }
-      if (stale) {
-        await rm(lockDir, { recursive: true, force: true }).catch(() => undefined);
-        continue;
-      }
-      if (Date.now() >= deadline) {
-        throw new Error("cannot acquire requirements log lock");
-      }
-      await delay(30 + Math.floor(Math.random() * 50));
-    }
-  }
+  const lockDir = resolve(directory, "requirements.lock.d");
   try {
-    return await work();
-  } finally {
-    await rm(lockDir, { recursive: true, force: true }).catch(() => undefined);
+    return await withDirectoryLock(lockDir, work, {
+      deadlineMs: 30_000,
+      emptyStaleMs: 5_000,
+    });
+  } catch (error) {
+    if (
+      error instanceof Error
+      && error.message.startsWith("cannot acquire lock")
+    ) {
+      throw new Error("cannot acquire requirements log lock");
+    }
+    throw error;
   }
 }
 

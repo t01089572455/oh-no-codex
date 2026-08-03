@@ -373,14 +373,8 @@ async function handleStop(
 }
 
 async function capsule(projectPath: string): Promise<string> {
-  // Best-effort projection refresh so AGENTS/PROGRESS match state on re-entry.
-  try {
-    const { refreshProjectors } = await import("../projectors.js");
-    await refreshProjectors(projectPath);
-  } catch {
-    // Cooperative: never fail SessionStart/PostCompact on projector I/O.
-  }
-  // Same capsule as `ohno resume` (includes sibling worktree authority note).
+  // DESIGN: SessionStart/PostCompact are read-only on the normal path.
+  // Projector refresh is explicit (`ohno projectors refresh`), not a hook write.
   return serializeResumeWithWorktrees(
     await readModel(projectPath),
     projectPath,

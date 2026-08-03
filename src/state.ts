@@ -13,6 +13,11 @@ import { setTimeout as delay } from "node:timers/promises";
 import { isDeepStrictEqual } from "node:util";
 
 import { isSafeProjectRelativePath } from "./paths.js";
+import {
+  isPidLockStale,
+  removePathForce,
+  tryCreatePidLockFile,
+} from "./process-lock.js";
 
 export const displayFieldByteLimits = Object.freeze({
   goal: 256,
@@ -923,66 +928,32 @@ export async function writeStateAtomic(
   }
 }
 
-function processLooksAlive(pid: number): boolean {
-  if (!Number.isInteger(pid) || pid <= 0) {
-    return false;
-  }
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch (error) {
-    return (error as NodeJS.ErrnoException).code === "EPERM";
-  }
-}
-
 async function acquireStateCasLock(
   projectPath: string,
-): Promise<FileHandle> {
+): Promise<string> {
   const directory = stateDirectory(projectPath);
   const lockPath = resolve(directory, "state.cas.lock");
   const deadline = Date.now() + 2_000;
-  let handle: FileHandle | undefined;
-
   await mkdir(directory, { recursive: true });
-  while (handle === undefined) {
-    try {
-      handle = await open(lockPath, "wx", 0o600);
-      await handle.writeFile(`${process.pid}\n`, "utf8");
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "EEXIST") {
-        throw new Error("cannot acquire atomic state update lock");
-      }
-      let stale = false;
-      try {
-        const body = await readFile(lockPath, "utf8");
-        const pid = Number.parseInt(body.trim().split(/\s+/u)[0] ?? "", 10);
-        stale = !processLooksAlive(pid);
-      } catch {
-        stale = true;
-      }
-      if (stale) {
-        await rm(lockPath, { force: true }).catch(() => undefined);
-        continue;
-      }
-      if (Date.now() >= deadline) {
-        throw new Error("cannot acquire atomic state update lock");
-      }
-      await delay(10);
+  while (Date.now() < deadline) {
+    if (await tryCreatePidLockFile(lockPath)) {
+      return lockPath;
     }
+    if (await isPidLockStale(lockPath)) {
+      await removePathForce(lockPath);
+      continue;
+    }
+    await delay(10);
   }
-  return handle;
+  throw new Error("cannot acquire atomic state update lock");
 }
 
 async function releaseStateCasLock(
   projectPath: string,
-  handle: FileHandle,
+  _lockPath: string,
 ): Promise<void> {
   const lockPath = resolve(stateDirectory(projectPath), "state.cas.lock");
-  try {
-    await handle.close();
-  } finally {
-    await rm(lockPath, { force: true });
-  }
+  await removePathForce(lockPath);
 }
 
 export async function compareAndSwapStateAtomic(

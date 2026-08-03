@@ -81,6 +81,8 @@ export interface ReadModel {
     path: string;
     branch: string | null;
     head: string | null;
+    /** `git rev-parse HEAD^{tree}` when available. */
+    tree: string | null;
     dirty: boolean;
   };
 }
@@ -317,10 +319,11 @@ async function handoffIdentity(projectPath: string): Promise<ReadModel["handoff"
     path: resolvedPath,
     branch: null as string | null,
     head: null as string | null,
+    tree: null as string | null,
     dirty: true,
   };
   try {
-    const [branch, head, dirty] = await Promise.all([
+    const [branch, head, tree, dirty] = await Promise.all([
       execFileAsync("git", ["-C", resolvedPath, "branch", "--show-current"], {
         windowsHide: true,
         maxBuffer: 64 * 1024,
@@ -341,10 +344,15 @@ async function handoffIdentity(projectPath: string): Promise<ReadModel["handoff"
           return "UNBORN";
         }
       }),
-      // --untracked-files=no keeps normal-path cost down (tracked dirt only).
       execFileAsync(
         "git",
-        ["-C", resolvedPath, "status", "--porcelain", "--untracked-files=no"],
+        ["-C", resolvedPath, "rev-parse", "HEAD^{tree}"],
+        { windowsHide: true, maxBuffer: 64 * 1024 },
+      ).then((r) => r.stdout.trim() || null).catch(() => null),
+      // Include untracked: clean must mean no pending work of any kind.
+      execFileAsync(
+        "git",
+        ["-C", resolvedPath, "status", "--porcelain"],
         { windowsHide: true, maxBuffer: 1024 * 1024 },
       ).then((r) => r.stdout.trim().length > 0).catch(() => true),
     ]);
@@ -352,6 +360,7 @@ async function handoffIdentity(projectPath: string): Promise<ReadModel["handoff"
       path: resolvedPath,
       branch,
       head,
+      tree,
       dirty: Boolean(dirty),
     };
     handoffCache.set(resolvedPath, {
@@ -387,7 +396,8 @@ function unavailableReadModel(projectPath = "."): ReadModel {
       path: projectPath,
       branch: null,
       head: null,
-      dirty: false,
+      tree: null,
+      dirty: true,
     },
   };
 }

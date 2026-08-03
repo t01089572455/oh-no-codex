@@ -218,6 +218,7 @@ function assertHumanProjection(result, model) {
   assert.match(result.stdout, /^HANDOFF_PATH: /m);
   assert.match(result.stdout, /^HANDOFF_BRANCH: /m);
   assert.match(result.stdout, /^HANDOFF_HEAD: /m);
+  assert.match(result.stdout, /^HANDOFF_TREE: /m);
   assert.match(result.stdout, /^HANDOFF_DIRTY: /m);
   assert.match(
     result.stdout,
