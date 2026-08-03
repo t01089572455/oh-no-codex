@@ -15,7 +15,7 @@
   },
   "implementation": {
     "dist_cli_sha256": "2af021a781f098753057912cb1a5971b86b1934edbc90249c2068b56906db91d",
-    "package_subject_sha256": "5fcc3e4c0b1640ded518e1d23c2f5442d00ea125a78f3e5442c5201bdc0d8bb8",
+    "package_subject_sha256": "f6fff40a135725c433cff9608627e51c3c35d7abe3d5210e29a3ef28b39cb1ae",
     "runtime_subject_sha256": "a48ced5c471ffef5f3d839e9eec1248f6ad50c85240679502f6109d7e66a63e5",
     "head": "b9c0c2833b84135fdf3e65b762ef597f6a05bd1c",
     "tree": "86111a08d29d244ef6fb28a0e40b538b2637d50c"

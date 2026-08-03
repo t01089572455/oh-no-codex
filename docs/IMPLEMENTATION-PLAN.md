@@ -576,6 +576,15 @@ Verification: exact 1–18/name/Han-character and local-link checks; `git diff
 --check`; `node --test test/blackbox/release-honesty.test.mjs` (2/2 PASS); and
 `npm pack --dry-run` (`oh-no-codex@0.1.10`, both READMEs included).
 
+### README clarity pass (2026-08-03)
+
+Owner fixed the public order as summary, the full Eighteen Sins table, the
+Cockpit capture, installation and use, control and Authority, then limits and
+evidence. The old Rule/Meaning table is removed while installation and daily-use
+paths remain. English and Simplified Chinese stay structurally aligned and all
+18 sins remain explicit. This changes no product behavior or version, and the
+unique next action remains `STOP`.
+
 ## Shared implementation rules
 
 - Use Node.js 22.20+, TypeScript ESM, Node's built-in test runner, and ordinary
