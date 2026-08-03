@@ -17,9 +17,7 @@
 </p>
 
 <p align="center">
-  <strong>面向 Codex 的本机防漂移护栏。</strong><br>
-  一个有界任务 · 一条用户可见黑盒命令 · 一份原子
-  <code>.ohno/state.json</code> · 新鲜 PASS 证据 · 一个 next 定位器。
+  <strong>面向 Codex 的本机防漂移护栏。</strong>
 </p>
 
 <p align="center">

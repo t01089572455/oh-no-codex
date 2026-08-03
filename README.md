@@ -17,9 +17,7 @@
 </p>
 
 <p align="center">
-  <strong>Local anti-drift harness for Codex.</strong><br>
-  One bounded task. One user-visible black-box command. One atomic
-  <code>.ohno/state.json</code>. Fresh PASS evidence. One next locator.
+  <strong>Local anti-drift harness for Codex.</strong>
 </p>
 
 <p align="center">
