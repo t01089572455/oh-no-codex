@@ -30,11 +30,10 @@
 
 <p align="center">
   <a href="#why-oh-no">为什么需要它</a> ·
-  <a href="#how-control-works">怎样控制 Codex</a> ·
-  <a href="#cockpit">驾驶舱</a> ·
   <a href="#eighteen-sins">十八宗罪</a> ·
-  <a href="#install">安装</a> ·
-  <a href="#daily-use">使用</a> ·
+  <a href="#cockpit">驾驶舱</a> ·
+  <a href="#install-use">安装与使用</a> ·
+  <a href="#how-control-works">怎样控制</a> ·
   <a href="#limits-evidence">边界与证据</a>
 </p>
 
@@ -50,83 +49,8 @@ Codex 可以写出不错的代码，却仍把项目带向错误方向：扩大�
 Oh No, Codex! 在现有开发流程外加一层很小的本机护栏。它让 Owner 原话、
 一个有边界的任务、一条精确黑盒测试、新鲜证据和唯一下一步跨会话可读。
 
-> **Owner 目标 → 冻结任务 → 有边界地工作 → 精确测试 → PASS 或停住 → 唯一下一步**
-
-这个产品来自一份公开事故审计：[**Codex 的十八宗罪**](./docs/CODEX-SINS.md)。
-它们描述的是 Agent 看似一直在干活、项目却持续漂移的反复失败模式。
-
-包：[`oh-no-codex`](https://www.npmjs.com/package/oh-no-codex) · 命令：
-`ohno` · 当前版本：**`0.1.10`**。
-
----
-
-<a id="how-control-works"></a>
-
-## 它怎样控制 Codex
-
-它不是一条超长提示词，也不尝试读取 Agent 的内心。控制落在开发流程中的
-几个明确位置：
-
-| 时机 | Oh No 做什么 |
-| --- | --- |
-| 记住 | 把重要的 Owner 原话保存到 `.ohno/REQUIREMENTS.md`，不依赖聊天摘要 |
-| 计划 | 冻结当前任务的期望行为、一条精确测试、允许文件、时间预算和停止条件 |
-| 工作 | Codex hooks 与 Git pre-commit 在无活跃任务、文档待同步或路径越界时拦截受支持的写入 |
-| 验收 | `ohno verify` 只运行冻结的黑盒命令；FAIL / UNKNOWN 不推进任务 |
-| 恢复 | `status`、`resume`、`next`、hooks 和驾驶舱读取同一份原子状态 |
-| 变更 | `ohno change` 按 Owner 维护的 Truth 清单选择适用权威文档；精确 diff 和替代计划审阅前阻断编码 |
-
-```text
-Owner 原话 + 审阅后的计划
-              │
-              ▼
-          当前任务 ──► 精确黑盒测试 ──► PASS / 留在当前任务
-              │
-              ▼
-     .ohno/state.json ──► resume / next / hooks / 驾驶舱
-
-.ohno/truth.json ──► 需求变化时必须同步哪些文档
-```
-
-`.ohno/state.json` 是唯一当前运行时权威。resume 文案、`PROGRESS.md`、收据
-和驾驶舱只是投影或证据，不会再建立一套互相打架的“真相”。
-
-Hooks 是协作式护栏，同一用户进程仍能绕过。Oh No 不声称对抗恶意 Agent，
-也不声称能自动理解所有语义。
-
----
-
-<a id="cockpit"></a>
-
-## 驾驶舱：一眼看懂当前现场
-
-<p align="center">
-  <img
-    src="./assets/brand/oh-no-cockpit.png"
-    width="960"
-    alt="Oh No, Codex! 驾驶舱 — 当前任务、计划板、证明、漂移与下一步"
-  >
-</p>
-
-<p align="center">
-  <sub>真实本机布局演示截图。cursor 3/14 表示计划进度，不是产品完成度。</sub>
-</p>
-
-驾驶舱只读，并且与 `ohno status --json` 显示同一份数据：
-
-- **NOW**：当前任务、用户可见期望和精确测试；
-- **PROOF / DRIFT**：证据是否新鲜、当前被什么阻塞；
-- **NEXT / PLAN BOARD**：唯一下一步以及线性计划做到哪里。
-
-```bash
-ohno cockpit                       # 使用空闲本机端口启动
-ohno cockpit --port 13521          # 可选固定端口
-ohno cockpit --replace             # 替换本仓库正在运行的驾驶舱
-ohno cockpit stop
-```
-
-每个仓库或 worktree 都有自己的 `.ohno/` 状态和驾驶舱。页面只轮询本机
-只读状态接口；它不是 daemon，也不是第二份状态仓库。
+这些反复出现的问题被整理成一份公开事故审计：
+[**Codex 的十八宗罪**](./docs/CODEX-SINS.md)。
 
 ---
 
@@ -163,11 +87,34 @@ ohno cockpit stop
 
 ---
 
-<a id="install"></a>
+<a id="cockpit"></a>
 
-## 安装
+## 驾驶舱
 
-需要 Node.js **22.20 或更高版本**。
+<p align="center">
+  <img
+    src="./assets/brand/oh-no-cockpit.png"
+    width="960"
+    alt="Oh No, Codex! 驾驶舱 — 当前任务、计划板、证明、漂移与下一步"
+  >
+</p>
+
+<p align="center">
+  <sub>真实本机布局演示截图。cursor 3/14 表示计划进度，不是产品完成度。</sub>
+</p>
+
+驾驶舱是 CLI 同一份项目状态的只读视图。它显示当前任务和精确测试、证据
+新鲜度、阻塞原因、计划位置与唯一下一步，不会建立第二套真相。
+
+---
+
+<a id="install-use"></a>
+
+## 安装与使用
+
+需要 Node.js **22.20 或更高版本**。当前版本：**`0.1.10`**。
+
+### 新仓库或空仓库
 
 ```bash
 npm install -g oh-no-codex
@@ -178,8 +125,8 @@ ohno install
 ohno doctor
 ```
 
-`ohno install` 会添加项目 hooks，并安装 `oh-no-*` Codex skills。安装 skill
-后请新开一个 Codex 会话，让 skill discovery 重新加载。
+`ohno install` 会添加项目 hooks，并安装 `oh-no-*` Codex skills。安装后请
+新开一个 Codex 会话，让 skill discovery 重新加载。
 
 也可以单独刷新 skills：
 
@@ -187,11 +134,6 @@ ohno doctor
 ohno skill install
 ohno skill status
 ```
-
-### Windows
-
-把全局 npm bin 目录加入 `PATH`，然后在终端运行 `ohno` 或 `ohno.cmd`。
-不要双击 `dist\cli.js`；Windows Script Host 无法运行这个 ESM 入口。
 
 ### 已有代码或做到一半的仓库
 
@@ -215,16 +157,10 @@ ohno requirements note --text "本阶段仍然必须交付的结果"
 接入后若权威需求发生变化，使用 `ohno change`；不要手改
 `.ohno/state.json`，也不要静默替换计划。
 
----
-
-<a id="daily-use"></a>
-
-## 日常使用
-
-### 最小闭环
+### 日常闭环
 
 平时可以直接对 Codex 说“起草一份有边界的计划”。安装后的 `oh-no-plan`
-skill 会准备计划文件和审阅流程；想自己确定性执行时，使用下面同一套命令。
+skill 会准备计划文件和审阅流程。也可以直接执行同一套确定性命令：
 
 ```bash
 ohno requirements note --text "Owner 原话，勿改写"  # 真正作出决定时记录
@@ -239,11 +175,9 @@ ohno next
 
 - 精确测试以 0 退出，且作用域文件前后不变，才产生新鲜 PASS 并推进一次。
 - FAIL、超时、状态不可读或测试期间文件变化，都会把任务留在当前项。
-- `next` 只说明计划做到哪里，不授权 Agent 自己发明下一项工作。
+- `next` 只定位计划做到哪里，不授权 Agent 自己发明更多工作。
 
 ### 在 Codex 里直接说人话
-
-安装后的 skills 会把普通说法映射到正确流程：
 
 | 你怎么说 | Skill / 命令 |
 | --- | --- |
@@ -259,6 +193,61 @@ ohno next
 Owner 决定应该进入 `.ohno/REQUIREMENTS.md`，不能只留在聊天里。同一仓库
 里的所有 Codex 会话读取同一组项目文件，因此新会话不必相信旧聊天摘要。
 
+### 打开驾驶舱
+
+```bash
+ohno cockpit                       # 使用空闲本机端口启动
+ohno cockpit --port 13521          # 可选固定端口
+ohno cockpit --replace             # 替换本仓库正在运行的驾驶舱
+ohno cockpit stop
+```
+
+每个仓库或 worktree 都有自己的 `.ohno/` 状态和驾驶舱。
+
+### Windows
+
+把全局 npm bin 目录加入 `PATH`，然后在终端运行 `ohno` 或 `ohno.cmd`。
+不要双击 `dist\cli.js`；Windows Script Host 无法运行这个 ESM 入口。
+
+---
+
+<a id="how-control-works"></a>
+
+## Oh No 怎样控制开发流程
+
+安装以后，控制来自项目文件和明确检查点，而不是一条更长的提示词：
+
+1. **Owner 原话不会随聊天消失。** 重要目标、约束和决定原样追加到 `.ohno/REQUIREMENTS.md`。
+2. **一次只冻结一个任务。** 当前计划项固定期望行为、一条黑盒测试、允许文件、预算和停止条件。
+3. **受支持的写入会被约束。** Codex hooks 与 Git pre-commit 拒绝无任务、文档待审和可解析的越界修改。
+4. **只有证据能推进计划。** `ohno verify` 运行冻结命令；FAIL / UNKNOWN 留在当前项，新鲜 PASS 只推进一次。
+5. **所有界面读取同一状态。** `status`、`resume`、`next`、hooks 和驾驶舱对项目位置给出一致答案。
+6. **需求变化会暂停编码。** `ohno change` 按 Owner 维护的 Truth 清单工作，并要求审阅权威文档 diff 和替代计划。
+
+### Authority / 权威关系
+
+```text
+ohno CLI  ──原子替换──►  .ohno/state.json   （唯一运行时权威）
+                              │
+                              ├─ status / resume / next
+                              ├─ Codex hooks + Git pre-commit
+                              └─ GET /api/state  →  驾驶舱（只读）
+
+.ohno/truth.json  →  需求变化时哪些 Owner 文档适用
+```
+
+| 产物 | 作用 |
+| --- | --- |
+| `.ohno/state.json` | 当前目标、计划、cursor、活跃合同、证明和下一步 |
+| `.ohno/REQUIREMENTS.md` | 追加式 Owner 原话记录 |
+| `.ohno/truth.json` | Owner 维护的权威文档适用清单 |
+| PASS 收据 | 验证溯源与新鲜度证据；不是另一份当前权威 |
+| `PROGRESS.md` / resume 文案 / 驾驶舱 | 当前状态的只读投影 |
+| `.ohno/cockpit.runtime.json` | 本机驾驶舱 pid / URL 指针 |
+
+协作式 hooks 会注入 resume 胶囊并拒绝部分越界写入。同一用户进程仍然可以
+绕过它们；这是明确的非目标。
+
 ---
 
 <a id="limits-evidence"></a>
@@ -269,9 +258,9 @@ Oh No 是协作式本机护栏，不是自主 Agent OS 或安全边界。它无�
 `--no-verify`、同一用户直接写文件、不受支持的托管工具，或故意无视所有
 规则的 Agent。
 
-它也不会用 NLP 自动判断文案语义，不会自动重建半成品项目，更不保证所有
-仓库都绝对正确、绝对快速。驾驶舱进度是 `cursor / task_count`，不是产品
-完成百分比。
+它不会用 NLP 自动判断文案语义，不会自动重建半成品项目，也不保证所有仓库
+都绝对正确、绝对快速。驾驶舱进度是 `cursor / task_count`，不是产品完成
+百分比。
 
 | 公开事实 | 当前证据 |
 | --- | --- |

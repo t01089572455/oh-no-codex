@@ -30,11 +30,10 @@
 
 <p align="center">
   <a href="#why-oh-no">Why</a> ·
-  <a href="#how-control-works">How it controls Codex</a> ·
-  <a href="#cockpit">Cockpit</a> ·
   <a href="#eighteen-sins">The Eighteen Sins</a> ·
-  <a href="#install">Install</a> ·
-  <a href="#daily-use">Use</a> ·
+  <a href="#cockpit">Cockpit</a> ·
+  <a href="#install-use">Install & use</a> ·
+  <a href="#how-control-works">How control works</a> ·
   <a href="#limits-evidence">Limits & evidence</a>
 </p>
 
@@ -52,86 +51,8 @@ Oh No, Codex! adds a small local harness around that workflow. It keeps the
 Owner’s words, one bounded task, one exact black-box test, fresh evidence, and
 one next action readable across sessions.
 
-> **Owner goal → frozen task → bounded work → exact test → PASS or stop → one next action**
-
-The product grew from a public audit of [**The Eighteen Sins of
-Codex**](./docs/CODEX-SINS.md): recurring ways an agent can look productive
-while the project drifts.
-
-Package: [`oh-no-codex`](https://www.npmjs.com/package/oh-no-codex) · command:
-`ohno` · current release: **`0.1.10`**.
-
----
-
-<a id="how-control-works"></a>
-
-## How it controls Codex
-
-This is not one giant prompt and it does not try to read the Agent’s mind.
-Control happens at a few concrete points in the coding loop:
-
-| Moment | What Oh No does |
-| --- | --- |
-| Remember | Saves important Owner words verbatim in `.ohno/REQUIREMENTS.md` instead of trusting chat summaries |
-| Plan | Freezes the current task’s expected behavior, one exact test, allowed files, time budget, and stop condition |
-| Work | Codex hooks and Git pre-commit guard supported writes when there is no active task, document sync is pending, or a path is outside scope |
-| Prove | `ohno verify` runs the frozen black-box command; FAIL / UNKNOWN do not advance the task |
-| Resume | `status`, `resume`, `next`, hooks, and Cockpit read the same atomic project state |
-| Change | `ohno change` uses the Owner-maintained Truth list to select applicable governing documents, then blocks coding until their exact diff and replacement plan are reviewed |
-
-```text
-Owner words + reviewed plan
-            │
-            ▼
-       current task ──► exact black-box test ──► PASS / stay active
-            │
-            ▼
-   .ohno/state.json ──► resume / next / hooks / Cockpit
-
-.ohno/truth.json ──► documents that must change when requirements change
-```
-
-`.ohno/state.json` is the sole current runtime authority. Resume text,
-`PROGRESS.md`, receipts, and Cockpit are projections or evidence—not competing
-versions of the truth.
-
-The hooks are cooperative guardrails. A same-user process can bypass them; Oh
-No does not claim hostile-agent security or perfect semantic understanding.
-
----
-
-<a id="cockpit"></a>
-
-## Cockpit: current project state at a glance
-
-<p align="center">
-  <img
-    src="./assets/brand/oh-no-cockpit.png"
-    width="960"
-    alt="Oh No, Codex! Cockpit — current task, plan board, proof, drift, and next action"
-  >
-</p>
-
-<p align="center">
-  <sub>Real local layout-demo capture. Cursor 3/14 means plan progress, not product completion.</sub>
-</p>
-
-The Cockpit is read-only and shows the same data as `ohno status --json`:
-
-- **NOW** — the active task, expected user behavior, and exact test;
-- **PROOF / DRIFT** — whether evidence is fresh and what currently blocks work;
-- **NEXT / PLAN BOARD** — the one allowed next step and where the linear plan stands.
-
-```bash
-ohno cockpit                       # start on a free local port
-ohno cockpit --port 13521          # optional fixed port
-ohno cockpit --replace             # replace this repo's running Cockpit
-ohno cockpit stop
-```
-
-Each repository or worktree has its own `.ohno/` state and its own Cockpit.
-The page polls the local read-only state endpoint; it is not a daemon or a
-second state store.
+Those recurring failures are documented in a public incident audit called
+[**The Eighteen Sins of Codex**](./docs/CODEX-SINS.md).
 
 ---
 
@@ -163,16 +84,40 @@ patterns—not a claim that every Codex run fails.
 | 17 | Agree + overclaim | An apology is followed by another unmeasured promise |
 | 18 | Apology without constraint | The failure is explained, but no test or working rule changes |
 
-Read the complete incident audit and evidence boundary:
+Read the complete audit and evidence boundary:
 [`docs/CODEX-SINS.md`](./docs/CODEX-SINS.md).
 
 ---
 
-<a id="install"></a>
+<a id="cockpit"></a>
 
-## Install
+## Cockpit
 
-Requires Node.js **22.20 or newer**.
+<p align="center">
+  <img
+    src="./assets/brand/oh-no-cockpit.png"
+    width="960"
+    alt="Oh No, Codex! Cockpit — current task, plan board, proof, drift, and next action"
+  >
+</p>
+
+<p align="center">
+  <sub>Real local layout-demo capture. Cursor 3/14 means plan progress, not product completion.</sub>
+</p>
+
+The Cockpit is a read-only view of the same project state as the CLI. It shows
+the current task and exact test, proof freshness, blockers, plan position, and
+one next action without creating a second source of truth.
+
+---
+
+<a id="install-use"></a>
+
+## Install and use
+
+Requires Node.js **22.20 or newer**. Current release: **`0.1.10`**.
+
+### New or empty repository
 
 ```bash
 npm install -g oh-no-codex
@@ -184,7 +129,7 @@ ohno doctor
 ```
 
 `ohno install` adds the project hooks and installs the `oh-no-*` Codex skills.
-Start a new Codex session after skill installation so discovery reloads.
+Start a new Codex session after installation so skill discovery reloads.
 
 Skills can also be refreshed separately:
 
@@ -193,13 +138,7 @@ ohno skill install
 ohno skill status
 ```
 
-### Windows
-
-Put the global npm bin directory on `PATH` and run `ohno` or `ohno.cmd` in a
-terminal. Do not double-click `dist\cli.js`; Windows Script Host cannot run
-that ESM entry.
-
-### Existing or half-built repositories
+### Existing or half-built repository
 
 Oh No can be added beside existing code, but it does not automatically infer
 old truth, completed work, or the correct plan from Git history.
@@ -221,17 +160,11 @@ ohno requirements note --text "What this stage must still deliver"
 If governing requirements change after setup, use `ohno change`; do not edit
 `.ohno/state.json` by hand or silently replace the plan.
 
----
-
-<a id="daily-use"></a>
-
-## Daily use
-
-### The minimal loop
+### The daily loop
 
 Normally you can tell Codex, “Draft a bounded plan.” The installed
-`oh-no-plan` skill prepares the plan file and review flow; the commands below
-are the same deterministic loop when you want to run it directly.
+`oh-no-plan` skill prepares the plan file and review flow. The same deterministic
+loop is available directly:
 
 ```bash
 ohno requirements note --text "Owner words, verbatim"  # when a real decision is made
@@ -247,12 +180,10 @@ ohno next
 - A zero-exit exact test with unchanged scoped files creates a fresh PASS and
   advances once.
 - FAIL, timeout, unreadable state, or test-time mutation leaves the task active.
-- `next` tells you where the plan stands; it is not permission for the Agent to
-  invent another task.
+- `next` locates the current plan position; it does not authorize the Agent to
+  invent more work.
 
 ### Talk naturally in Codex
-
-The installed skills translate ordinary requests into the matching workflow:
 
 | What you say | Skill / command |
 | --- | --- |
@@ -265,9 +196,66 @@ The installed skills translate ordinary requests into the matching workflow:
 | “Open the board” | `oh-no-cockpit` → `ohno cockpit` |
 | “Check the installation” | `oh-no-doctor` |
 
-Owner decisions belong in `.ohno/REQUIREMENTS.md`, not only in chat. All Codex
-sessions opened in the same repository read the same project files, so a new
-session can recover without trusting an old conversation summary.
+Owner decisions belong in `.ohno/REQUIREMENTS.md`, not only in chat. Every
+Codex session opened in the same repository reads the same project files, so a
+new session can recover without trusting an old conversation summary.
+
+### Open the Cockpit
+
+```bash
+ohno cockpit                       # start on a free local port
+ohno cockpit --port 13521          # optional fixed port
+ohno cockpit --replace             # replace this repo's running Cockpit
+ohno cockpit stop
+```
+
+Each repository or worktree has its own `.ohno/` state and Cockpit.
+
+### Windows
+
+Put the global npm bin directory on `PATH` and run `ohno` or `ohno.cmd` in a
+terminal. Do not double-click `dist\cli.js`; Windows Script Host cannot run
+that ESM entry.
+
+---
+
+<a id="how-control-works"></a>
+
+## How Oh No controls the workflow
+
+After installation, control comes from project files and explicit checkpoints,
+not a larger prompt:
+
+1. **Owner words survive chat.** Important goals, constraints, and decisions are appended verbatim to `.ohno/REQUIREMENTS.md`.
+2. **One task is frozen.** The current plan item fixes expected behavior, one black-box test, allowed files, budget, and stop condition.
+3. **Supported writes are guarded.** Codex hooks and Git pre-commit reject no-task, pending-document, and parseable out-of-scope mutations.
+4. **Evidence advances the plan.** `ohno verify` runs the frozen command; FAIL / UNKNOWN stay active, while fresh PASS advances exactly once.
+5. **Every surface reads the same state.** `status`, `resume`, `next`, hooks, and Cockpit agree on the project position.
+6. **Requirement changes stop coding.** `ohno change` uses the Owner-maintained Truth list and requires a reviewed governing-document diff plus replacement plan.
+
+### Authority
+
+```text
+ohno CLI  ──atomic replace──►  .ohno/state.json   (sole runtime authority)
+                                    │
+                                    ├─ status / resume / next
+                                    ├─ Codex hooks + Git pre-commit
+                                    └─ GET /api/state  →  Cockpit (read-only)
+
+.ohno/truth.json  →  which Owner documents apply on requirement change
+```
+
+| Artifact | Role |
+| --- | --- |
+| `.ohno/state.json` | Current goal, plan, cursor, active contract, proof, and next action |
+| `.ohno/REQUIREMENTS.md` | Append-only log of the Owner’s original words |
+| `.ohno/truth.json` | Owner-maintained governing-document applicability list |
+| PASS receipt | Verification provenance and freshness evidence; not another current authority |
+| `PROGRESS.md` / resume text / Cockpit | Read-only projections of current state |
+| `.ohno/cockpit.runtime.json` | Local Cockpit pid / URL pointer only |
+
+Cooperative hooks inject the resume capsule and deny some out-of-scope writes.
+A same-user process can still bypass them; that is an explicit non-goal.
 
 ---
 
@@ -279,9 +267,9 @@ Oh No is a cooperative local harness, not an autonomous agent OS or security
 boundary. It does not prevent `--no-verify`, direct same-user file writes,
 unsupported hosted tools, or an Agent that deliberately ignores every rule.
 
-It also does not judge prose by NLP, reconstruct a half-built product
-automatically, or guarantee universal correctness and speed. Cockpit progress
-is `cursor / task_count`, never a product-completion percentage.
+It does not judge prose by NLP, reconstruct a half-built product automatically,
+or guarantee universal correctness and speed. Cockpit progress is
+`cursor / task_count`, never a product-completion percentage.
 
 | Public fact | Current evidence |
 | --- | --- |
@@ -290,7 +278,7 @@ is `cursor / task_count`, never a product-completion percentage.
 | Real-project trial | `TRIAL_PASS` on three small disposable project copies; not a universal large-repo claim |
 | Cockpit | Read-only equality with the CLI state plus browser and local reflection checks |
 
-Read the exact contracts and evidence:
+Exact contracts and evidence:
 
 - [Product contract](./docs/PRODUCT-CONTRACT.md)
 - [Design](./docs/DESIGN.md)
