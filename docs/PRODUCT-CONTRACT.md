@@ -134,10 +134,11 @@ V1 may not contain:
 - Claude integration;
 - npm publication or release automation.
 
-**Handoff exception (exact dirty/tree):** normal `status` / `resume` / Cockpit
-may run one ordinary `git status --porcelain` (and related rev-parse) so
-handoff reports exact dirty and tree identity. That is not a Truth inventory
-scan and not a test suite. Optional short process-local caching is allowed.
+**Handoff exception (exact dirty/tree):** normal `status` / `next` / `resume` /
+hooks / Cockpit (any path that builds the shared read model) may run one
+ordinary `git status --porcelain` (and related rev-parse) so handoff reports
+exact dirty and tree identity. That is not a Truth inventory scan and not a
+test suite. Optional short process-local caching is allowed.
 
 Runtime dependencies should remain zero unless a failing public acceptance test
 demonstrates that a Node built-in cannot meet the contract. Development

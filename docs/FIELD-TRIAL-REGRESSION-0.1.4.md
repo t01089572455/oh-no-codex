@@ -1,7 +1,9 @@
 # Field trial regression — oh-no-codex@0.1.4 (public, privacy-scrubbed)
 
-**Date:** 2026-08-01  
-**Package:** global `oh-no-codex@0.1.4` from registry.npmjs.org  
+**Date:** 2026-08-01
+
+**Package:** global `oh-no-codex@0.1.4` from registry.npmjs.org
+
 **Note:** CLI regression of session failure modes. Absolute paths and private
 project identity removed for public tree hygiene (`docs/CODEX-SINS.md`).
 
@@ -17,15 +19,15 @@ project identity removed for public tree hygiene (`docs/CODEX-SINS.md`).
 
 ## Known warnings (still educational)
 
-- Micro / docs-only plans make cockpit “100% of THIS plan” easy to misread.  
-- Untracked harness files mean authority may not travel with commits.  
+- Micro / docs-only plans make cockpit “100% of THIS plan” easy to misread.
+- Untracked harness files mean authority may not travel with commits.
 - Multiple worktrees each have their own `.ohno/state.json`.
 
 ## Not included
 
-- Live `HANDOFF_PATH` strings from the Owner machine  
-- Real branch/HEAD of private repositories  
-- Session identifiers  
+- Live `HANDOFF_PATH` strings from the Owner machine
+- Real branch/HEAD of private repositories
+- Session identifiers
 
 Product fixes after this trial landed on main in subsequent releases; this file
 is provenance, not a second acceptance ledger.

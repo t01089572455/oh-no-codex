@@ -1,7 +1,9 @@
 # Field trial issues (public, privacy-scrubbed)
 
-**Status:** Historical defect inventory from one real Codex product session  
-**Package under trial:** `oh-no-codex` ~0.1.3–0.1.4 era  
+**Status:** Historical defect inventory from one real Codex product session
+
+**Package under trial:** `oh-no-codex` ~0.1.3–0.1.4 era
+
 **Public boundary:** No absolute local paths, session IDs, email, private repo
 names, or verbatim private prompts (see `docs/CODEX-SINS.md`).
 
@@ -27,16 +29,16 @@ governance gaps when plans and UI were weak.
 
 ## Layers observed
 
-1. **Install / inject** — hooks and skills can enter a session.  
-2. **Control loop** — plan → task → verify works when used.  
-3. **Cockpit trust** — UI must project sole state, not invent trust %.  
-4. **Host ops** — PATH / Windows shim issues block CLI discovery.  
+1. **Install / inject** — hooks and skills can enter a session.
+2. **Control loop** — plan → task → verify works when used.
+3. **Cockpit trust** — UI must project sole state, not invent trust %.
+4. **Host ops** — PATH / Windows shim issues block CLI discovery.
 5. **Dual track** — competing skills or plans split authority.
 
 ## What is deliberately absent
 
-- Session JSONL paths and rollout IDs  
-- Machine-local worktree paths  
-- Prompt transcripts and proprietary source  
+- Session JSONL paths and rollout IDs
+- Machine-local worktree paths
+- Prompt transcripts and proprietary source
 
 For the failure-pattern product vocabulary, see `docs/CODEX-SINS.md`.
