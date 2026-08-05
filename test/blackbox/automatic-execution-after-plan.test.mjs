@@ -454,10 +454,11 @@ test("structural contract, acceptance basis, scope, and fresh-PASS protections r
   });
   assert.equal(runCli(hookProject, ["task", "start"]).status, 0);
   const denied = preToolUse(hookProject, "README.md");
-  assert.equal(denied.hookSpecificOutput?.permissionDecision, "deny");
+  // Prompt-only branch: advisory inject, not hard deny.
+  assert.notEqual(denied.hookSpecificOutput?.permissionDecision, "deny");
   assert.match(
-    denied.hookSpecificOutput?.permissionDecisionReason ?? "",
-    /outside active task scope.*README\.md/iu,
+    denied.hookSpecificOutput?.additionalContext ?? "",
+    /outside active task scope.*README\.md|PROMPT: outside/iu,
   );
 
   const notFresh = stop(hookProject, "OHNO_COMPLETE:hook-hard");

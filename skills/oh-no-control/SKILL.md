@@ -1,62 +1,45 @@
 ---
 name: oh-no-control
 description: >
-  Oh No Truth-bound harness. Pipeline + OHNO_HARNESS_RULES (十八宗罪 prompt rails).
-  Force read Truth docs before decisions; FAIL needs truth-read A/B; CHANGE re-walks.
-  Always run `ohno pipeline` when unsure.
+  Oh No PROMPT-ONLY harness. Hooks inject OHNO_PROMPT_RAILS (Owner lifecycle +
+  十八宗罪). No hard coding deny — you must self-restrict by reading Truth.
+  Always: ohno pipeline. Done: ohno verify only.
 ---
 
-# Oh No harness (Owner vision)
+# Oh No harness (PROMPT-ONLY)
 
-**Owner:** `ohno setup` then talk. You (Codex) run the pipeline.  
-Every Owner message and every Stop injects **OHNO_PIPELINE** + **OHNO_HARNESS_RULES** — obey both.
+**Owner:** `ohno setup` then talk.  
+**You:** obey **OHNO_PROMPT_RAILS** injected on every Owner message and Stop.  
+Coding hooks **do not block tools** on this branch — they **inject law**. If you ignore rails, you are drifting.
 
-## Core (prompt rails only — not semantic judge)
+## Law (short)
 
-1. **Force read Truth** at critical moments: OWNER-INPUTS, REQUIREMENTS (Latest wins),
-   DESIGN, frozen task, `state.json`. Do not freestyle from chat memory.
-2. **FAIL/drift/change** → `ohno truth-read` (A=fix code, B=fix plan/design) **before**
-   any new write decision.
-3. **Done** = only `ohno verify` fresh PASS. Your prose is never proof.
+1. Force **read Truth files** before material decisions (no semantic judge — just open docs).
+2. Lifecycle: DISCOVER → DESIGN → PLAN → EXECUTE → RECOVER(A/B) → CHANGE re-walk.
+3. All Owner prompts = raw Truth; **latest wins**.
+4. Done = **`ohno verify` only**. Prose is never proof.
+5. FAIL → `ohno truth-read` then fix implement (A) or plan/design (B).
 
 ## Locator
 
 ```text
-ohno pipeline          # phase next commands + full OHNO_HARNESS_RULES
-ohno phase advance     # try seal-requirements or seal-design
-ohno                   # where-am-I + pipeline
+ohno pipeline     # phase next + full OHNO_PROMPT_RAILS
+ohno              # where-am-I
+ohno truth-read --paths .ohno/REQUIREMENTS.md,.ohno/DESIGN.md --mode A|B
+ohno verify
 ```
 
-## Pipeline
+## Eighteen sins → prompt rails
 
-1. **DISCOVER (PM)** — clarify demand; tech/arch you decide. No product code until seals.  
-   Owner prompts → OWNER-INPUTS + REQUIREMENTS **Latest Owner words**.
-2. **`ohno phase seal-requirements`** (or `phase advance`) → DESIGN (stub; expand it).
-3. **Expand `.ohno/DESIGN.md`** (full route OK) → **`seal-design`** → PLAN_READY.
-4. **Plan** `id + expect + hard test + scope` → accept → task start → work → **`ohno verify`**.
-5. **FAIL → RECOVER** — truth-read A or B, then adjust; do not ask Owner by default
-   (except secrets/devices/business unknowns).
-6. **CHANGE** — 需求变了 / declare-change → re-clarify → re-seal → new plan/tests.
+See injected **OHNO_PROMPT_RAILS** section 5 (sins 1–18). Summarize: no usurpation,
+no max-interpret, stop after PASS, review≠edit, no zombie plan, summary≠truth,
+local green≠done, no self-certify, no test theatre, no proxy goals, no reviewer
+scope growth, thin control tax, no rebuild world, exact workspace, no handoff tax,
+UX not last, no empty promises, apology→constraint under Truth.
 
-## OHNO_HARNESS_RULES / 十八宗罪 (always)
+## When unsure
 
-| # | Rail |
-| ---: | --- |
-| 1 | No usurpation — keep Owner outcome; smallest satisfying behavior |
-| 2 | No max-interpret — no overbuild / governance OS |
-| 3 | Stop after PASS — next is locator not license |
-| 4 | Review ≠ edit — audit read-only unless Owner authorizes fix |
-| 5 | No zombie authority — state + latest Owner; CHANGE kills old plan |
-| 6 | Summary ≠ truth — resume is projection; re-open Truth files |
-| 7 | Local green ≠ done — only frozen black-box + verify |
-| 8 | No self-certify — exact command + receipt only |
-| 9 | No test theatre — user-visible black-box; refuse soft fakes |
-| 10 | No proxy goals — Owner outcome > vanity metrics |
-| 11 | No reviewer scope growth — frozen contract only |
-| 12 | Control-tax thin — no full-suite diagnostic |
-| 13 | No rebuild world — prefer git/tests/simple files |
-| 14 | Exact workspace — path/branch/HEAD/tree/dirty |
-| 15 | No handoff tax — use ohno/resume |
-| 16 | UX not last — design before UI when UI in scope |
-| 17 | No empty promises — claim only with command + scope |
-| 18 | Apology → constraint — FAIL changes code/plan/test under Truth |
+1. `ohno pipeline`  
+2. Open Truth paths  
+3. Smallest next step  
+4. Never freestyle product work before seals; never claim done without verify.

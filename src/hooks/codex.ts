@@ -9,6 +9,10 @@ import {
   requiredTruthReadPaths,
   truthReadSatisfiesRecover,
 } from "../harness.js";
+import {
+  formatOwnerPromptRails,
+  formatOwnerPromptRailsStamp,
+} from "../prompt-rails.js";
 import { needsAcceptanceBasisMigration } from "../state.js";
 import { readModel } from "../read-model.js";
 import type { ReadModel } from "../read-model.js";
@@ -72,12 +76,21 @@ export async function readHookInput(): Promise<HookInput> {
   return validateHookInput(parsed);
 }
 
-function denial(reason: string): HookOutput {
+/**
+ * Prompt-only branch: do not hard-deny mutations.
+ * Inject advanced rails so the model self-restricts.
+ */
+function advisory(reason: string): HookOutput {
   return {
     hookSpecificOutput: {
       hookEventName: "PreToolUse",
-      permissionDecision: "deny",
-      permissionDecisionReason: `COOPERATIVE_GUARDRAIL: ${reason}`,
+      additionalContext: [
+        "OHNO_PROMPT_ADVISORY  # PROMPT-ONLY harness: tool NOT denied",
+        "You SHOULD abort/self-correct to obey rails; coding will not block you.",
+        reason,
+        "",
+        formatOwnerPromptRailsStamp(),
+      ].join("\n"),
     },
   };
 }
@@ -86,8 +99,10 @@ function limitation(reason: string): HookOutput {
   return {
     hookSpecificOutput: {
       hookEventName: "PreToolUse",
-      additionalContext:
-        `COOPERATIVE_GUARDRAIL limitation: ${reason}; ambiguous call allowed.`,
+      additionalContext: [
+        `OHNO_PROMPT_ADVISORY limitation: ${reason}; call allowed.`,
+        formatOwnerPromptRailsStamp(),
+      ].join("\n"),
     },
   };
 }
@@ -167,7 +182,7 @@ async function handlePreToolUse(
       try {
         stateForBash = await readState(projectPath);
       } catch {
-        return denial(
+        return advisory(
           "current state is unavailable; repair .ohno/state.json or run ohno setup",
         );
       }
@@ -177,7 +192,7 @@ async function handlePreToolUse(
         : "";
       if (bashLooksLikeMutation(cmd)) {
         if (!phaseAllowsProductCode(stateForBash)) {
-          return denial(
+          return advisory(
             (productCodeBlockedReason(stateForBash)
               ?? "product mutations blocked")
             + "; shell write/mutation denied in this phase — use apply_patch "
@@ -189,7 +204,7 @@ async function handlePreToolUse(
           && !truthReadSatisfiesRecover(stateForBash)
         ) {
           const need = requiredTruthReadPaths(stateForBash).join(",");
-          return denial(
+          return advisory(
             "phase RECOVER: shell mutation denied until "
               + `ohno truth-read --paths ${need} `
               + "(must cover REQUIREMENTS+DESIGN)",
@@ -203,7 +218,7 @@ async function handlePreToolUse(
       || input.tool_name === "Edit"
       || input.tool_name === "Write"
     ) {
-      return denial("unsafe or unparseable apply_patch mutation target");
+      return advisory("unsafe or unparseable apply_patch mutation target");
     }
     return limitation("unsupported or unparseable mutation targeting");
   }
@@ -215,7 +230,7 @@ async function handlePreToolUse(
   try {
     state = await readState(projectPath);
   } catch {
-    return denial(
+    return advisory(
       "current state is unavailable; repair .ohno/state.json "
       + "or run ohno init",
     );
@@ -231,7 +246,7 @@ async function handlePreToolUse(
     if (outsidePlan.length === 0) {
       return {};
     }
-    return denial(
+    return advisory(
       "next is MIGRATE_ACCEPTANCE_BASIS; only .ohno maintenance files may be "
         + "written until: ohno migrate acceptance-basis --file "
         + "<structured-basis.json>. "
@@ -249,7 +264,7 @@ async function handlePreToolUse(
     if (outsideRequired.length === 0) {
       return {};
     }
-    return denial(
+    return advisory(
       "document sync pending; next is SYNC_GOVERNING_DOCUMENTS; "
       + `mutation outside required paths: ${displayPaths(outsideRequired)}; `
       + `required paths: ${requiredPaths.join(", ")}`,
@@ -262,7 +277,7 @@ async function handlePreToolUse(
       relativePath !== null && looksLikeProductPath(relativePath)
     );
     if (productHits.length > 0) {
-      return denial(
+      return advisory(
         (productCodeBlockedReason(state)
           ?? "product code blocked by harness phase")
         + `; blocked: ${displayPaths(productHits)}`,
@@ -284,7 +299,7 @@ async function handlePreToolUse(
       if (outside.length === 0) {
         return {};
       }
-      return denial(
+      return advisory(
         `PREPARE (next=${next}, phase=${effectiveHarness(state).phase}): `
         + "no product implementation yet. "
         + "Only Truth/requirements/design/.ohno plan files. "
@@ -292,7 +307,7 @@ async function handlePreToolUse(
         + "seal-requirements → seal-design → plan accept → task start.",
       );
     }
-    return denial(
+    return advisory(
       `no active task; next is ${next}. `
         + "Read Truth and freeze a plan before product code.",
     );
@@ -316,7 +331,7 @@ async function handlePreToolUse(
     if (productHits.length > 0) {
       if (!okRead || receipt?.mode !== "A") {
         const need = requiredTruthReadPaths(state).join(",");
-        return denial(
+        return advisory(
           "RECOVER PATH A (implement): run "
             + `\`ohno truth-read --paths ${need} --mode A\` `
             + "then edit only active scope. "
@@ -327,7 +342,7 @@ async function handlePreToolUse(
     if (planHits.length > 0 && productHits.length === 0) {
       if (!okRead || (receipt?.mode !== "B" && receipt?.mode !== "A")) {
         const need = requiredTruthReadPaths(state).join(",");
-        return denial(
+        return advisory(
           "RECOVER PATH B (plan/design): run "
             + `\`ohno truth-read --paths ${need} --mode B\` `
             + "then update design/plan/expects from Truth.",
@@ -341,7 +356,7 @@ async function handlePreToolUse(
     state.active_task.allowed_files,
   );
   if (outside.length > 0) {
-    return denial(
+    return advisory(
       `outside active task scope: ${displayPaths(outside)}; allowed: `
       + state.active_task.allowed_files.join(", "),
     );
@@ -573,6 +588,8 @@ function automaticContinuation(
   ];
   if (pipelineBlock !== undefined && pipelineBlock.trim() !== "") {
     lines.push("", pipelineBlock.trimEnd());
+  } else {
+    lines.push("", formatOwnerPromptRails());
   }
   if (mode === "REPAIR" || mode === "VERIFY" || mode === "STUCK") {
     const hint = topTruthHint(model);
@@ -747,8 +764,7 @@ async function handleStop(
 }
 
 async function capsule(projectPath: string): Promise<string> {
-  // DESIGN: SessionStart/PostCompact are read-only; keep resume under 4KiB.
-  // HARNESS_PHASE is in the capsule; full OHNO_PIPELINE on Stop / UserPromptSubmit / `ohno pipeline`.
+  // Resume (≤4KiB) includes PROMPT_RAILS stamp; full rails on Stop / UserPromptSubmit.
   return serializeResumeWithWorktrees(
     await readModel(projectPath),
     projectPath,

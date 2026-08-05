@@ -151,22 +151,24 @@ function stopHook(projectPath, lastAssistantMessage) {
   }));
 }
 
+/** Prompt-only branch: harness injects advisory context, does not deny. */
 function assertDenied(output, expectedReason) {
-  assert.deepEqual(
-    {
-      hookEventName: output.hookSpecificOutput?.hookEventName,
-      permissionDecision:
-        output.hookSpecificOutput?.permissionDecision,
-    },
-    {
-      hookEventName: "PreToolUse",
-      permissionDecision: "deny",
-    },
+  assert.equal(
+    output.hookSpecificOutput?.hookEventName,
+    "PreToolUse",
   );
-  assert.match(
-    output.hookSpecificOutput.permissionDecisionReason,
-    expectedReason,
+  assert.notEqual(
+    output.hookSpecificOutput?.permissionDecision,
+    "deny",
+    "prompt-only harness must not hard-deny tools",
   );
+  const ctx = String(
+    output.hookSpecificOutput?.additionalContext
+      ?? output.hookSpecificOutput?.permissionDecisionReason
+      ?? "",
+  );
+  assert.match(ctx, /OHNO_PROMPT_ADVISORY|PROMPT/i);
+  assert.match(ctx, expectedReason);
 }
 
 async function setPendingDocumentSync(projectPath) {
@@ -492,7 +494,7 @@ test("ambiguous shell targeting is allowed with an honest limitation", async (t)
   assert.equal(output.hookSpecificOutput?.hookEventName, "PreToolUse");
   assert.match(
     output.hookSpecificOutput?.additionalContext ?? "",
-    /COOPERATIVE_GUARDRAIL.*cannot parse arbitrary shell|ambiguous.*allowed/i,
+    /OHNO_PROMPT_ADVISORY.*cannot parse arbitrary shell|call allowed/i,
   );
 });
 
@@ -561,10 +563,10 @@ test("UserPromptSubmit injects OHNO_PIPELINE and SessionStart names phase", asyn
   assert.match(ctx, /OHNO_PIPELINE/);
   assert.match(ctx, /phase:\s*DISCOVER/i);
   assert.match(ctx, /seal-requirements|phase advance/i);
-  // Prompt-only harness rails (十八宗罪) ride with every pipeline inject.
-  assert.match(ctx, /OHNO_HARNESS_RULES/);
-  assert.match(ctx, /force_read|truth-read/i);
-  assert.match(ctx, /no self-certify|no test theatre|zombie/i);
+  // Full Owner prompt rails (lifecycle + 十八宗罪) ride with every pipeline inject.
+  assert.match(ctx, /OHNO_PROMPT_RAILS/);
+  assert.match(ctx, /force.?read|truth-read|READ Truth/i);
+  assert.match(ctx, /自证闭环|test theatre|zombie|越俎代庖/i);
 });
 
 test("Stop continues on an exact marker with the wrong task id", async (t) => {

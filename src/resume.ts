@@ -1,4 +1,5 @@
 import { effectiveHarness } from "./harness.js";
+import { formatOwnerPromptRailsStamp } from "./prompt-rails.js";
 import type { ReadModel } from "./read-model.js";
 import { readState } from "./state.js";
 import {
@@ -267,6 +268,8 @@ export async function serializeResumeWithWorktrees(
     const state = await readState(projectPath);
     const phase = effectiveHarness(state).phase;
     extras.push(`HARNESS_PHASE: ${phase} | agent: ohno pipeline`);
+    // Prompt-only branch: stamp points at full OHNO_PROMPT_RAILS on Stop/Owner turns.
+    extras.push(formatOwnerPromptRailsStamp());
   } catch {
     // state unreadable — omit phase line
   }
