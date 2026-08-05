@@ -19,12 +19,14 @@ description: >
 3. **DESIGN** — write full route to `.ohno/DESIGN.md` (one-shot full plan OK).  
    `ohno phase seal-design` → PLAN_READY  
 4. **PLAN + EXECUTE** — plan propose/accept (id+expect+hard test+scope), task start, work in scope, `ohno verify`.  
-5. **RECOVER on FAIL** — hooks clear truth-read; **must**  
-   `ohno truth-read --paths .ohno/REQUIREMENTS.md,.ohno/DESIGN.md,…`  
-   then fix **implement** OR **plan/design**. Do not freestyle.  
-6. **CHANGE** — new Owner demand:  
+5. **RECOVER on FAIL** — hooks clear truth-read; **must** cover required paths:  
+   `ohno truth-read --paths .ohno/REQUIREMENTS.md,.ohno/DESIGN.md`  
+   (receipt must include both when design was sealed). Then fix **implement** OR **plan/design**.  
+   Shell write mutations also denied until then.  
+6. **CHANGE** — Owner says 需求变了 / new requirements: hook may **auto**  
+   `declare-change`. Or run  
    `ohno phase declare-change --summary "…"`  
-   then re-seal requirements+design+new plan/tests.
+   then re-seal + new plan/tests. Old plan no longer authorizes code.
 
 ## Truth
 

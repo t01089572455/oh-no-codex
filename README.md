@@ -66,7 +66,7 @@ patterns—not a claim that every Codex run fails.
 | # | Pattern | What you see |
 | ---: | --- | --- |
 | 1 | Semantic usurpation | A narrow request quietly becomes a larger product or architecture |
-| 2 | Maximum interpretation | Words such as “control” or “robust” are interpreted at the highest imaginable level |
+| 2 | Maximum interpretation | Words such as “control�?or “robust�?are interpreted at the highest imaginable level |
 | 3 | Never stopping | Acceptance already passed, but the Agent keeps editing or opens another phase |
 | 4 | Review as edit rights | An inspect or audit request turns into unapproved edits and commits |
 | 5 | Zombie authority | An old plan or summary overrides the Owner’s latest decision |
@@ -97,7 +97,7 @@ Read the complete audit and evidence boundary:
   <img
     src="./assets/brand/oh-no-cockpit.png"
     width="960"
-    alt="Oh No, Codex! Cockpit — current task, plan board, proof, drift, and next action"
+    alt="Oh No, Codex! Cockpit �?current task, plan board, proof, drift, and next action"
   >
 </p>
 
@@ -115,7 +115,7 @@ one next action without creating a second source of truth.
 
 ## Install and use
 
-Requires Node.js **22.20 or newer**. Current release: **`0.3.0`**.
+Requires Node.js **22.20 or newer**. Current release: **`0.3.1`**.
 
 ### New or empty repository
 
@@ -125,8 +125,8 @@ npm install -g oh-no-codex
 cd your-git-repo
 ohno setup    # init + hooks + skills (starts phase DISCOVER)
 # Talk to Codex only. Pipeline (usually agent-run):
-#   seal-requirements → seal-design → plan accept → task/verify
-#   FAIL → truth-read → fix; change → declare-change → re-seal
+#   seal-requirements �?seal-design �?plan accept �?task/verify
+#   FAIL �?truth-read �?fix; change �?declare-change �?re-seal
 ```
 
 `ohno install` adds the project hooks and installs the `oh-no-*` Codex skills.
@@ -163,7 +163,7 @@ If governing requirements change after setup, use `ohno change`; do not edit
 
 ### The daily loop
 
-Normally you can tell Codex, “Draft a bounded plan and finish it.” The installed
+Normally you can tell Codex, “Draft a bounded plan and finish it.�?The installed
 `oh-no-plan` skill resolves material ambiguity during PREPARE and reviews the
 plan. Once accepted, Codex runs the deterministic loop without asking again at
 ordinary task boundaries. The primitives remain available directly:
@@ -190,14 +190,14 @@ ohno next | ohno task start | ohno verify
 
 | What you say | Skill / command |
 | --- | --- |
-| “Consolidate this current requirement” | `oh-no-requirements` → `ohno requirements note` |
-| “Draft or review the bounded plan” | `oh-no-plan` |
-| “Start the current task” | `oh-no-task` → `ohno task start` (automatic after plan acceptance) |
-| “I think this task is done” | `oh-no-verify` → `ohno verify` (automatic proof loop) |
-| “Where are we?” | `oh-no-resume` / `ohno status` |
-| “The requirements changed” | `oh-no-change` |
-| “Open the board” | `oh-no-cockpit` → `ohno cockpit` |
-| “Check the installation” | `oh-no-doctor` |
+| “Consolidate this current requirement�?| `oh-no-requirements` �?`ohno requirements note` |
+| “Draft or review the bounded plan�?| `oh-no-plan` |
+| “Start the current task�?| `oh-no-task` �?`ohno task start` (automatic after plan acceptance) |
+| “I think this task is done�?| `oh-no-verify` �?`ohno verify` (automatic proof loop) |
+| “Where are we?�?| `oh-no-resume` / `ohno status` |
+| “The requirements changed�?| `oh-no-change` |
+| “Open the board�?| `oh-no-cockpit` �?`ohno cockpit` |
+| “Check the installation�?| `oh-no-doctor` |
 
 Trusted `UserPromptSubmit` hooks append exact new prompts to the local/private
 `.ohno/OWNER-INPUTS.md`; `.ohno/REQUIREMENTS.md` holds Codex's current
@@ -242,13 +242,12 @@ not a larger prompt:
 ### Authority
 
 ```text
-ohno CLI  ──atomic replace──►  .ohno/state.json   (sole runtime authority)
-                                    │
-                                    ├─ status / resume / next
+ohno CLI  ──atomic replace──�? .ohno/state.json   (sole runtime authority)
+                                    �?                                    ├─ status / resume / next
                                     ├─ Codex hooks + Git pre-commit
-                                    └─ GET /api/state  →  Cockpit (read-only)
+                                    └─ GET /api/state  �? Cockpit (read-only)
 
-.ohno/truth.json  →  which Owner documents apply on requirement change
+.ohno/truth.json  �? which Owner documents apply on requirement change
 ```
 
 | Artifact | Role |
@@ -282,7 +281,7 @@ it cannot suppress Codex or operating-system approval prompts.
 
 | Public fact | Current evidence |
 | --- | --- |
-| Package | [`oh-no-codex@0.3.0`](https://www.npmjs.com/package/oh-no-codex) is published |
+| Package | [`oh-no-codex@0.3.1`](https://www.npmjs.com/package/oh-no-codex) is published |
 | Core loop | `ANTI_DRIFT_CORE_WORKS` with local public black-box coverage |
 | Harness surface | `0.2.0+`: id+expect+test+scope, scope hook, hard black box, short `OHNO_CONTINUE`; plan **length unrestricted** (no task-count cap); raised authoring limits; optional acceptance_source |
 | Real-project trial | The current local Correction 5 package subject earned same-batch LIVE `TRIAL_PASS` on three named disposable copies (`live-20260805T064039Z-834bc92`); this is not a universal speed or published-package claim |
@@ -303,4 +302,4 @@ Exact contracts and evidence:
   <sub>MIT · Independent community project · Not affiliated with OpenAI</sub>
 </p>
 
-<p align="center"><a href="#readme-top">↑ top</a></p>
+<p align="center"><a href="#readme-top">�?top</a></p>

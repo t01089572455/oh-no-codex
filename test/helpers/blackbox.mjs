@@ -156,17 +156,20 @@ export function sealHarnessForTests(cwd) {
   writeFileSync(
     reqPath,
     `${prior}\n\n## Owner intent (test seal)\n\n`
-      + "Ship the bounded black-box behavior for this disposable fixture. "
-      + "Clarify acceptance as the frozen expect/test on the plan tasks. "
-      + "Non-goals: expand scope outside allowed_files.\n",
+      + "Goal: ship the bounded black-box behavior for this disposable fixture. "
+      + "Acceptance: frozen expect/test on plan tasks must pass (user-visible). "
+      + "Non-goals: expand scope outside allowed_files. "
+      + "Constraints: must use exact test_command; forbid soft echo tests.\n",
     "utf8",
   );
   writeFileSync(
     resolve(cwd, ".ohno", "DESIGN.md"),
     "# Design (test seal)\n\n"
-      + "Route: implement the frozen task contract only. "
-      + "Full plan may list multiple tasks; execute cursor-first with hard tests.\n"
-      + "Components: subject under allowed_files; verify via exact test_command.\n",
+      + "Goal: implement the frozen task contract only. "
+      + "Acceptance: hard black-box test_command. "
+      + "Route: multi-task plan OK; execute cursor-first. "
+      + "Non-goals: redesign outside allowed_files. "
+      + "Components: subject under allowed_files.\n",
     "utf8",
   );
   const sealedReq = runCli(cwd, ["phase", "seal-requirements"]);

@@ -1,9 +1,12 @@
 import {
+  bashLooksLikeMutation,
   effectiveHarness,
   looksLikeProductPath,
+  maybeAutoDeclareChangeFromPrompt,
   phaseAllowsProductCode,
   productCodeBlockedReason,
-  truthReadIsFresh,
+  requiredTruthReadPaths,
+  truthReadSatisfiesRecover,
 } from "../harness.js";
 import { needsAcceptanceBasisMigration } from "../state.js";
 import { readModel } from "../read-model.js";
@@ -158,7 +161,40 @@ async function handlePreToolUse(
 ): Promise<HookOutput> {
   const rawTargets = applyPatchTargets(input);
   if (rawTargets === null) {
-    if (input.tool_name === "Bash") {
+    if (input.tool_name === "Bash" || input.tool_name === "Shell") {
+      let stateForBash;
+      try {
+        stateForBash = await readState(projectPath);
+      } catch {
+        return denial(
+          "current state is unavailable; repair .ohno/state.json or run ohno setup",
+        );
+      }
+      const cmd = isRecord(input.tool_input)
+        && typeof input.tool_input.command === "string"
+        ? input.tool_input.command
+        : "";
+      if (bashLooksLikeMutation(cmd)) {
+        if (!phaseAllowsProductCode(stateForBash)) {
+          return denial(
+            (productCodeBlockedReason(stateForBash)
+              ?? "product mutations blocked")
+            + "; shell write/mutation denied in this phase — use apply_patch "
+            + "on Truth/design/.ohno only, or seal first",
+          );
+        }
+        if (
+          stateForBash.harness?.phase === "RECOVER"
+          && !truthReadSatisfiesRecover(stateForBash)
+        ) {
+          const need = requiredTruthReadPaths(stateForBash).join(",");
+          return denial(
+            "phase RECOVER: shell mutation denied until "
+              + `ohno truth-read --paths ${need} `
+              + "(must cover REQUIREMENTS+DESIGN)",
+          );
+        }
+      }
       return limitation("cannot parse arbitrary shell targeting");
     }
     if (
@@ -261,19 +297,21 @@ async function handlePreToolUse(
     );
   }
 
-  // RECOVER: must re-read Truth before mutating product again.
+  // RECOVER: must re-read required Truth paths before mutating product again.
   if (
     state.harness?.phase === "RECOVER"
-    && !truthReadIsFresh(state)
+    && !truthReadSatisfiesRecover(state)
   ) {
     const productHits = targets.filter(({ relativePath }) =>
       relativePath !== null && looksLikeProductPath(relativePath)
     );
     if (productHits.length > 0) {
+      const need = requiredTruthReadPaths(state).join(",");
       return denial(
-        "phase RECOVER: run `ohno truth-read --paths <Truth files>` "
-          + "before changing product code (must re-read Truth after FAIL). "
-          + "Then fix implement (scope) OR plan/design.",
+        "phase RECOVER: run "
+          + `\`ohno truth-read --paths ${need}\` `
+          + "before product code (receipt must cover REQUIREMENTS+DESIGN). "
+          + "Then fix implement (scope) OR plan/design from Truth.",
       );
     }
   }
@@ -452,13 +490,14 @@ function oneLineDo(mode: string, model: ReadModel): string {
       return "implement in scope; ohno verify";
     case "VERIFY":
     case "REPAIR":
-      return "READ Truth+design+contract first; fix implement OR plan; ohno verify";
+      return "ohno truth-read --paths .ohno/REQUIREMENTS.md,.ohno/DESIGN.md; "
+        + "then fix implement OR plan; ohno verify";
     case "STUCK":
-      return "stop freestyle code; re-read Truth; fix contract/test or change path";
+      return "truth-read required paths; fix contract/test or declare-change";
     case "DONE":
       return "this linear plan is complete (not whole product)";
     case "PREPARE":
-      return "clarify requirements → Truth/design → plan expect+test+scope → accept";
+      return "clarify → ohno phase seal-requirements → write DESIGN → seal-design → plan";
     default:
       return `execute ${model.next_action}`;
   }
@@ -697,6 +736,18 @@ export async function handleCodexHook(
         turnId: input.turn_id,
         prompt: input.prompt,
       });
+      const autoChange = await maybeAutoDeclareChangeFromPrompt(
+        projectPath,
+        input.prompt,
+      );
+      if (autoChange !== null) {
+        return {
+          hookSpecificOutput: {
+            hookEventName: "UserPromptSubmit",
+            additionalContext: autoChange,
+          },
+        };
+      }
     }
     return {};
   }

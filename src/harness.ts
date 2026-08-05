@@ -136,8 +136,111 @@ function nonTrivialMarkdown(text: string): boolean {
     .replace(/^#.*$/gmu, "")
     .replace(/Project initialized/giu, "")
     .replace(/Default working method/giu, "")
+    .replace(/Owner intent \(test seal\)/giu, "")
     .trim();
-  return Buffer.byteLength(body, "utf8") >= 80;
+  if (Buffer.byteLength(body, "utf8") < 120) {
+    return false;
+  }
+  // Require at least two intent signals so seal is not empty padding.
+  const signals = [
+    /目标|goal|intent|需求|requirement/iu,
+    /验收|accept|expect|用户可见|user-visible|black.?box|测试/iu,
+    /非目标|non-?goal|不做|out of scope|不包含/iu,
+    /约束|constraint|必须|must|禁止|forbid/iu,
+  ];
+  const hits = signals.filter((re) => re.test(body)).length;
+  return hits >= 2;
+}
+
+/**
+ * Owner prompt likely means requirements changed (auto-enter CHANGE).
+ * Conservative: only clear pivot language, not ordinary "continue".
+ */
+export function looksLikeRequirementChangePrompt(prompt: string): boolean {
+  const text = prompt.trim();
+  if (text.length < 4) {
+    return false;
+  }
+  if (
+    /^(继续|go on|continue|接着|往下|verify|验收|测一下|ohno\b)/iu.test(text)
+  ) {
+    return false;
+  }
+  return (
+    /需求\s*(变了|变更|改了|调整|更新)|改(一?下)?需求|新需求|需求变更/u.test(text)
+    || /requirements?\s+(changed|change|update)|change\s+the\s+requirements?/iu
+      .test(text)
+    || /不要\s*.{0,40}了|取消(这个|该)?(功能|需求)|推翻|推倒重来|重新来过/u
+      .test(text)
+    || /\bpivot\b|\bscrap\b|\bfrom\s+scratch\b|\brestart\s+the\s+plan\b/iu
+      .test(text)
+    || /换成|改为|改成|instead\s+we\s+(need|want)|不再(做|要)/iu.test(text)
+  );
+}
+
+/** Paths that RECOVER truth-read must cover (subset match). */
+export function requiredTruthReadPaths(state: ProjectState): string[] {
+  const required = [REQUIREMENTS_PATH];
+  if (effectiveHarness(state).design_digest != null) {
+    required.push(DESIGN_PATH);
+  }
+  const truth = state.truth_inventory.classification
+    .filter((entry) => entry.truth_target)
+    .map((entry) => entry.path)
+    .filter((path) =>
+      /REQUIREMENTS|DESIGN|playbook|matrix|ACCEPT|PRODUCT|PLAN/iu.test(path)
+    )
+    .slice(0, 4);
+  for (const path of truth) {
+    if (!required.includes(path)) {
+      required.push(path);
+    }
+  }
+  return required;
+}
+
+/**
+ * Fresh receipt must include every required path (or a parent path prefix).
+ */
+export function truthReadSatisfiesRecover(state: ProjectState): boolean {
+  if (!truthReadIsFresh(state)) {
+    return false;
+  }
+  const receipt = effectiveHarness(state).truth_read;
+  if (receipt == null) {
+    return false;
+  }
+  const read = new Set(receipt.paths.map((path) => path.replaceAll("\\", "/")));
+  for (const need of requiredTruthReadPaths(state)) {
+    const ok = [...read].some(
+      (path) => path === need || path.endsWith(`/${need}`) || need.endsWith(`/${path}`),
+    );
+    if (!ok) {
+      return false;
+    }
+  }
+  return true;
+}
+
+export function bashLooksLikeMutation(command: string): boolean {
+  const cmd = command.trim();
+  if (cmd === "") {
+    return false;
+  }
+  // Read-only / status-ish: allow under DISCOVER.
+  if (
+    /^(git\s+(status|log|diff|show|branch|rev-parse)|ls|dir|type|cat|Get-Content|rg|findstr|ohno\s+)/iu
+      .test(cmd)
+    && !/(>|>>|Out-File|Set-Content|Remove-Item|rm\s|del\s)/iu.test(cmd)
+  ) {
+    return false;
+  }
+  return (
+    /(^|[;&|\n]\s*)(rm\s|del\s|Remove-Item|mv\s|move\s|cp\s|copy\s|tee\s|sed\s+-i)/iu
+      .test(cmd)
+    || /(>|\bOut-File\b|\bSet-Content\b|\bAdd-Content\b|\bNew-Item\b)/iu.test(cmd)
+    || /\bnpm\s+(install|i|uninstall)\b|\bpnpm\s+add\b|\byarn\s+add\b/iu.test(cmd)
+  );
 }
 
 /**
@@ -307,6 +410,47 @@ export function truthReadIsFresh(
     return false;
   }
   return Date.now() - at <= maxAgeMs;
+}
+
+/**
+ * Auto-revoke EXECUTE when Owner prompt signals requirement change.
+ * Returns message if phase flipped; null if no-op.
+ */
+export async function maybeAutoDeclareChangeFromPrompt(
+  projectPath: string,
+  prompt: string,
+): Promise<string | null> {
+  if (!looksLikeRequirementChangePrompt(prompt)) {
+    return null;
+  }
+  let state: ProjectState;
+  try {
+    state = await readState(projectPath);
+  } catch {
+    return null;
+  }
+  if (state.harness == null || state.harness.phase === "OPEN") {
+    return null;
+  }
+  const phase = state.harness.phase;
+  if (
+    phase !== "EXECUTE"
+    && phase !== "RECOVER"
+    && phase !== "PLAN_READY"
+  ) {
+    return null;
+  }
+  // Only revoke when there is something to revoke (plan or active work).
+  if (state.plan_revision == null && state.active_task == null) {
+    return null;
+  }
+  const summary = prompt.trim().slice(0, 200);
+  await declareHarnessChange(projectPath, summary);
+  return (
+    "AUTO_CHANGE: Owner prompt looks like a requirement change. "
+    + "Execution revoked (phase CHANGE). Re-clarify, seal-requirements, "
+    + "seal-design, then new plan/tests."
+  );
 }
 
 /**
