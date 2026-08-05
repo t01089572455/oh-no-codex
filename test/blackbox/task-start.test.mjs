@@ -93,7 +93,8 @@ test("init needs no project goal and refuses silent re-initialization", async (t
   const projectPath = await createProject(t);
   const withLegacyFlag = runCli(projectPath, ["init", "--goal", "unused"]);
   assert.notEqual(withLegacyFlag.status, 0);
-  assert.match(withLegacyFlag.stderr, /usage: ohno init/i);
+  assert.match(withLegacyFlag.stderr, /usage:/i);
+  assert.match(withLegacyFlag.stderr, /ohno init/i);
 
   const first = runInit(projectPath);
   assert.equal((await readState(projectPath)).goal, "");

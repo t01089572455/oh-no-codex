@@ -1,94 +1,75 @@
 ---
 name: oh-no-control
 description: >
-  Hub skill for Oh No, Codex! (oh-no-codex / ohno) anti-drift harness. Use when
-  the user mentions ohno, oh-no, oh no codex, harness, bounded task, plan board,
-  .ohno, anti-drift, vibe coding control, or asks which ohno skill to use.
-  Prefer specific oh-no-* skills when intent is clear (verify, resume, change,
-  task, plan, doctor, cockpit). Setup (ohno init / install) is terminal-only,
-  not a skill.
+  Hub skill for Oh No, Codex! (oh-no-codex / ohno) simple anti-drift harness.
+  Use when the user mentions ohno, harness, bounded task, .ohno, anti-drift,
+  or which oh-no skill to use. Prefer specific oh-no-* skills when intent is
+  clear. Setup (ohno init / install) is terminal-only, not a skill.
 ---
 
-# Oh No — control hub
+# Oh No — simple harness (reins)
 
-## What this is
+Oh No is a **small local harness**, not a second product or project manager.
 
-Oh No is a **local CLI** (`ohno`). Day-to-day skills tell Codex **when** to run
-which command. Humans should not paste long CLI into chat.
+**Daily loop only:**
 
-## One workflow
+```text
+ohno status / ohno next   → where am I?
+ohno task start           → open the frozen cursor task (if needed)
+work inside allowed_files
+ohno verify               → only claim done after PASS
+```
 
-There is no guided mode or mode switch.
+Bare `ohno` prints a one-screen view. Full capsule: `ohno resume`.
 
-1. **PREPARE:** preserve trusted raw prompts in `.ohno/OWNER-INPUTS.md`,
-   consolidate the current interpretation in `.ohno/REQUIREMENTS.md`, resolve
-   material ambiguity, and review the exact acceptance basis and plan diff.
-2. If the Owner already authorized “plan and finish,” accept the reviewed plan
-   without asking for the same authorization again. If the Owner asked for
-   planning only, leave the proposal unaccepted.
-3. **After acceptance:** start, work, repair, verify, advance, and start the
-   next task automatically. Stop only at `PROJECT_COMPLETE` or a real
-   condition. On failure/confusion under an accepted plan: re-read Truth docs
-   (playbook/matrix), re-approach inside the contract — do **not** stop to ask
-   the Owner. `OHNO_NEEDS_INPUT` is not a handoff stop.
-
-Real input means a missing account/secret/device/business fact, an unapproved
-destructive/paid/publish/external-message action, no honest acceptance path,
-or a state/platform blocker. Ordinary failure and task transition are not
-confirmation points. Once the missing input arrives, resume the same accepted
-workflow without re-accepting the plan.
-
-**One-time setup (human / terminal — not skills):**
+## Setup (human / terminal)
 
 ```bash
 npm install -g oh-no-codex
 cd <git-repo>
 ohno init
-ohno install          # hooks + day-to-day oh-no-* skills
+ohno install
 ```
 
-## Day-to-day skills (user speaks → you act)
+## When stuck / FAIL
 
-| Skill | When user means |
+Under an **accepted plan**: do **not** stop to ask the Owner.
+
+1. `ohno status` / `ohno next`
+2. Re-open Truth-listed docs (playbook / verification matrix when listed)
+3. Re-read the frozen task contract
+4. Fix inside `allowed_files` (no inventing secrets, no mock if forbidden)
+5. `ohno verify` again
+
+`OHNO_AUTO_CONTINUE` means keep going; it is not Owner prose.
+`OHNO_NEEDS_INPUT` is recovery guidance, not a handoff stop.
+
+## Skills map (keep small)
+
+| Need | Skill / command |
 | --- | --- |
-| `oh-no-plan` | 排计划 / 接受计划 |
-| `oh-no-task` | 开工 / reopen STALE slice |
-| `oh-no-verify` | 做完了 / 验收 |
-| `oh-no-resume` | 卡在哪 |
-| `oh-no-status` | 状态 |
-| `oh-no-next` | 下一步是什么 |
-| `oh-no-change` | 需求变了 |
-| `oh-no-requirements` | 记下来 |
-| `oh-no-preferences` | 改规矩 |
-| `oh-no-doctor` | 体检 |
-| `oh-no-cockpit` | 打开看板 |
-| `oh-no-projectors` | 刷新 PROGRESS / AGENTS |
+| 卡在哪 | `oh-no-resume` / `ohno resume` or bare `ohno` |
+| 下一步 | `oh-no-next` |
+| 开工 | `oh-no-task` → `ohno task start` |
+| 做完了 | `oh-no-verify` → **only** `ohno verify` |
+| 排计划 | `oh-no-plan` (advanced) |
+| 需求变了 | `oh-no-change` (advanced) |
+| 看板 | `oh-no-cockpit` |
 
-Exact shell lines live **inside each skill file** (for you), not in the user chat.
+## Hard rules (few)
 
-## Hard rules
+1. Never claim done without **`ohno verify` PASS**.
+2. `next` is a locator, not new scope permission.
+3. Authority is **this cwd** `.ohno/state.json` only.
+4. Plan % / `PROJECT_COMPLETE` = **this linear plan**, not whole product.
+5. Prefer **short plans** (one vertical). Do not freeze mega roadmaps as one board.
+6. Soft black boxes (`echo` + exit 3 / “go read playbook”) are **refused** on accept unless Owner passes `--allow-weak-plan`.
 
-1. Never claim done without **`ohno verify` PASS**.  
-2. `next` is a locator, not new permission; the accepted plan already
-   authorizes executing its canonical next action.
-3. `.ohno/state.json` is sole runtime authority **for this cwd** (worktrees differ).  
-4. Live board in `AGENTS.md` managed block — procedure in these skills.  
-5. `PROJECT_COMPLETE` / plan progress % = **this linear plan**, not product done.  
-6. Prefer one independently provable user outcome per task. Weak-size and
-   micro-plan findings are PREPARE warnings, not Owner override gates.
-7. After PASS-then-STALE: `ohno task reopen` (not a fake new plan).  
-8. Raw trusted prompts belong in `.ohno/OWNER-INPUTS.md`; Codex's current
-   interpretation and decision history belong in `.ohno/REQUIREMENTS.md` with
-   material input ids. Oh No cannot reliably classify the final decision.
-9. Multi-agent (Codex spawn) is outside Oh No — root still runs plan/task/verify.
-10. Every Stop-generated continuation begins `OHNO_AUTO_CONTINUE` and is not
-    Owner prose.
+## Advanced (ignore unless needed)
+
+plan propose/accept, change begin/diff/accept, truth.json applicability,
+requirements/OWNER-INPUTS, preferences, migrate, doctor, projectors.
 
 ## Windows
 
-- Install: `npm install -g oh-no-codex` then ensure npm global bin is on PATH  
-  (often `…\nodejs\node_global`).  
-- Run `ohno` via the npm shim (`ohno.cmd`), never double-click `dist\cli.js`  
-  (Windows Script Host cannot run ESM — “无效字符”).  
-- PowerShell: prefer simple commands; avoid over-quoted multi-step pipelines  
-  for `ohno verify` subject tests when possible.
+Use `ohno.cmd` on PATH; never double-click `dist/cli.js`.

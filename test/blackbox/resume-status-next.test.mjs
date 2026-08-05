@@ -869,3 +869,27 @@ test("missing or corrupt state reports UNAVAILABLE and is never overwritten", as
     corruptBytes,
   );
 });
+
+test("bare ohno prints one-screen harness brief; help puts daily loop first", async (t) => {
+  const projectPath = await createProject(t);
+  await initialize(projectPath);
+
+  const bare = runCli(projectPath, []);
+  assert.equal(bare.status, 0, bare.stderr);
+  assert.match(bare.stdout, /Oh No harness/i);
+  assert.match(bare.stdout, /status:\s+IDLE/i);
+  assert.match(bare.stdout, /next:\s+PROPOSE_PLAN/i);
+  assert.match(bare.stdout, /daily:/i);
+  assert.doesNotMatch(bare.stdout, /^GOAL:/m);
+
+  const missing = runCli(await createProject(t), []);
+  assert.notEqual(missing.status, 0);
+  assert.match(missing.stdout, /ohno init/i);
+
+  const help = runCli(projectPath, ["--help"]);
+  assert.equal(help.status, 0, help.stderr);
+  assert.match(help.stdout, /daily loop first/i);
+  const dailyIdx = help.stdout.indexOf("ohno status");
+  const advancedIdx = help.stdout.indexOf("advanced:");
+  assert.ok(dailyIdx >= 0 && advancedIdx > dailyIdx);
+});

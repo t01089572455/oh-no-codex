@@ -70,34 +70,39 @@ import {
   serializeResume,
   serializeResumeWithWorktrees,
 } from "./resume.js";
-import { serializeStatus } from "./status.js";
+import {
+  serializeHarnessBrief,
+  serializeStatus,
+} from "./status.js";
 import { startTask } from "./task-start.js";
 import { reopenLastCompletedTask } from "./task-reopen.js";
 import { verifyTask } from "./verify.js";
 import { migrateAcceptanceBasis } from "./migrate-acceptance.js";
 
 const usageText = [
-  "usage:",
-  "  ohno init",
+  "usage: (daily loop first)",
+  "  ohno                              # one-screen harness brief",
+  "  ohno status [--json] | ohno next | ohno resume",
+  "  ohno task start | ohno task reopen",
+  "  ohno verify",
+  "  ohno init | ohno install | ohno doctor [--json]",
+  "  ohno skill install | ohno skill status",
+  "  ohno cockpit [--port <n>] [--replace] | ohno cockpit stop",
+  "",
+  "advanced:",
   "  ohno plan propose --file <review.json>",
   "  ohno plan accept --revision <sha256> --diff <sha256>",
-  "  ohno task start | ohno task reopen",
-  "  ohno verify | ohno status [--json] | ohno resume | ohno next",
-  "  ohno cockpit [--port <n>] [--replace]",
-  "  ohno cockpit stop",
   "  ohno projectors refresh [--no-agents]",
-  "  ohno requirements note --text <owner words>",
-  "  ohno requirements show",
-  "  ohno preferences show",
-  "  ohno preferences set --id <rule-id> [--enabled true|false] [--text <one line>]",
-  "  ohno preferences reset",
-  "  ohno doctor [--json]",
+  "  ohno requirements note --text <owner words> | ohno requirements show",
+  "  ohno preferences show | set | reset",
   "  ohno change begin --summary <owner words> [--concerns <labels>] [--candidates <Truth paths>]",
   "  ohno change diff | ohno change accept --change <id> --diff <displayed digest>",
   "  ohno install | ohno hooks status --json",
-  "  ohno skill install | ohno skill status",
   "  ohno migrate acceptance-basis --file <structured-basis.json> [--diff <sha256> --head <git-head>]",
   "  ohno hook | ohno git pre-commit",
+  "",
+  "Fail under an accepted plan → re-read Truth docs and retry verify;",
+  "do not stop only to ask the Owner. Soft black boxes are refused on accept.",
   "",
   "Hook classification: COOPERATIVE_GUARDRAIL.",
   "Primary agent UX: Codex skill suite oh-no-* (ohno skill install).",
@@ -261,6 +266,20 @@ async function main(): Promise<void> {
     && subcommand === undefined
   ) {
     process.stdout.write(usageText);
+    return;
+  }
+
+  // Bare `ohno`: one-screen simple harness (Owner-first), not the long capsule.
+  if (command === undefined) {
+    try {
+      const model = await readModel(projectPath);
+      process.stdout.write(serializeHarnessBrief(model));
+      if (model.availability === "UNAVAILABLE") {
+        process.exitCode = 1;
+      }
+    } catch {
+      process.stdout.write(usageText);
+    }
     return;
   }
 
