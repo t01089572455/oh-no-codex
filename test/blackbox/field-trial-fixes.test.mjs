@@ -13,7 +13,7 @@ import {
   syncTruthInventoryForBasis,
 } from "../helpers/blackbox.mjs";
 
-test("field trial: plan propose warns but accept does not block a heuristic micro-plan", async (t) => {
+test("field trial: weak blackbox warns on propose and requires --allow-weak-plan to accept", async (t) => {
   const projectPath = await createProject(t);
   assert.equal(runInit(projectPath).status, 0);
   const tasks = [
@@ -54,7 +54,7 @@ test("field trial: plan propose warns but accept does not block a heuristic micr
   const rev = /PLAN_REVISION: ([a-f0-9]+)/.exec(propose.stdout)?.[1];
   const dig = /DIFF_DIGEST: ([a-f0-9]+)/.exec(propose.stdout)?.[1];
   assert.ok(rev && dig);
-  const accepted = runCli(projectPath, [
+  const refused = runCli(projectPath, [
     "plan",
     "accept",
     "--revision",
@@ -62,8 +62,22 @@ test("field trial: plan propose warns but accept does not block a heuristic micr
     "--diff",
     dig,
   ]);
+  assert.notEqual(refused.status, 0);
+  assert.match(
+    `${refused.stderr}\n${refused.stdout}`,
+    /Refuse accept|WEAK_BLACKBOX|format only|trivial/i,
+  );
+  const accepted = runCli(projectPath, [
+    "plan",
+    "accept",
+    "--revision",
+    rev,
+    "--diff",
+    dig,
+    "--allow-weak-plan",
+  ]);
   assert.equal(accepted.status, 0, accepted.stderr + accepted.stdout);
-  assert.match(accepted.stdout, /LOCAL_REVIEW_RECORDED/);
+  assert.match(accepted.stdout, /LOCAL_REVIEW_RECORDED|WEAK_PLAN_OVERRIDE/);
 });
 
 test("field trial: resume frames plan progress and authority cwd", async (t) => {
@@ -127,6 +141,7 @@ test("field trial: doctor warns on an accepted weak blackbox", async (t) => {
       rev,
       "--diff",
       dig,
+      "--allow-weak-plan",
     ]).status,
     0,
   );

@@ -162,7 +162,9 @@ export function renderAgentsManagedBlock(
       : "",
     model.next_action.startsWith("RUN_EXACT_TEST:")
       ? "\n**Proof is FAIL/UNKNOWN/STALE.** Re-run `ohno verify` on the "
-        + "active contract; do not advance the plan cursor by hand."
+        + "active contract; do not advance the plan cursor by hand. "
+        + "**Do not stop to ask the Owner:** re-open Truth-listed playbook/"
+        + "matrix, re-read the frozen contract, adjust inside allowed_files."
       : "",
     "",
     "### Plan board (done / half / ready / outline)",

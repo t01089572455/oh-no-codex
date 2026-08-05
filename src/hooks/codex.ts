@@ -320,12 +320,38 @@ function continuation(reason: string): HookOutput {
   };
 }
 
+function truthRecoveryLines(model: ReadModel): string[] {
+  const targets = model.truth_targets ?? [];
+  const listed = targets.length === 0
+    ? ".ohno/truth.json (and project playbook/matrix when present)"
+    : targets.slice(0, 16).join(", ")
+      + (targets.length > 16 ? `, …(+${targets.length - 16})` : "");
+  return [
+    "STOP_TO_ASK_OWNER_IS_FORBIDDEN under an accepted plan.",
+    "On failure, UNKNOWN, STALE, missing env, or confusion: do NOT stop to ask "
+      + "the Owner. Re-open Truth governing docs, adjust the approach inside "
+      + "the frozen contract, then continue.",
+    `TRUTH_TARGETS: ${listed}`,
+    "Required recovery order:",
+    "1) ohno status / ohno next",
+    "2) Open Truth-listed docs — especially testing playbook and verification "
+      + "matrix when listed — and copy literal commands (do not invent a "
+      + "softer procedure)",
+    "3) Re-read the active task contract (expected_behavior, test_command, "
+      + "stop_condition, allowed_files)",
+    "4) Change approach inside allowed_files; no mocks that the contract "
+      + "forbids; do not invent secret values",
+    "5) Re-run the exact black box with ohno verify",
+  ];
+}
+
 function automaticContinuation(
   model: ReadModel,
   note?: string,
 ): HookOutput {
   return continuation([
     ...(note === undefined ? [] : [`NOTE: ${note}`]),
+    ...truthRecoveryLines(model),
     `PROOF: ${model.proof_freshness}`,
     `BLOCKER: ${model.blocker}`,
     `CANONICAL_NEXT: ${model.next_action}`,
@@ -357,12 +383,15 @@ async function handleStop(
   const completedId = state.completed.at(-1)?.id;
   const model = await readModel(projectPath);
 
+  // NEEDS_INPUT is not an Owner-handoff stop. Under an accepted plan it only
+  // adds recovery guidance; the turn must continue (re-read Truth, re-approach).
   if (inputMarkers.length > 0) {
     if (
       inputMarkers.some(({ hasExactStartBoundary }) => !hasExactStartBoundary)
     ) {
-      const note = "Exact NEEDS_INPUT marker required; it must be token-bounded: "
-        + "OHNO_NEEDS_INPUT:<active-task-id>.";
+      const note = "OHNO_NEEDS_INPUT is not a stop hatch; marker must be "
+        + "token-bounded as OHNO_NEEDS_INPUT:<active-task-id>. Re-read Truth "
+        + "docs and continue inside the contract.";
       return state.plan_revision === null
         ? continuation(note)
         : automaticContinuation(model, note);
@@ -371,13 +400,25 @@ async function handleStop(
       .map(({ id }) => id)
       .find((id) => id !== currentId);
     if (currentId === undefined || wrongInputId !== undefined) {
-      const note = `Wrong NEEDS_INPUT task id ${wrongInputId ?? inputMarkers[0]?.id}; `
-        + `expected active task ${currentId ?? "NONE"}.`;
+      const note = `OHNO_NEEDS_INPUT id ${wrongInputId ?? inputMarkers[0]?.id} `
+        + `does not match active ${currentId ?? "NONE"}; re-read Truth docs `
+        + "and continue — do not stop to ask the Owner.";
       return state.plan_revision === null
         ? continuation(note)
         : automaticContinuation(model, note);
     }
-    return {};
+    return state.plan_revision === null
+      ? continuation(
+        "OHNO_NEEDS_INPUT is ignored as a stop. No accepted plan yet — "
+          + "finish PREPARE from Truth docs; do not block on Owner chat.",
+      )
+      : automaticContinuation(
+        model,
+        "OHNO_NEEDS_INPUT does not end the turn. Treat missing input as a "
+          + "recovery signal: re-read Truth-listed playbook/matrix/contracts, "
+          + "use only documented env key names (never invent values), adjust "
+          + "approach inside the frozen task, then ohno verify.",
+      );
   }
 
   if (markers.some(({ hasExactStartBoundary }) => !hasExactStartBoundary)) {

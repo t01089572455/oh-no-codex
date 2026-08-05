@@ -20,19 +20,22 @@ export function renderControlProtocolMarkdown(): string {
     "",
     "### Field-trial hard rules (must follow)",
     "",
-    "1. Before product coding: preserve raw Owner prompts in `OWNER-INPUTS.md`,",
+    "1. Under an accepted plan: never stop to ask the Owner on FAIL/confusion — "
+      + "re-open Truth-listed playbook/matrix/contracts, re-approach inside the "
+      + "frozen task, then `ohno verify`. Soft black boxes (echo+exit 3 / "
+      + "playbook deferral) are refused on plan accept without --allow-weak-plan.",
+    "2. Before product coding: preserve raw Owner prompts in `OWNER-INPUTS.md`,",
     "   consolidate `.ohno/REQUIREMENTS.md`, then review `ohno plan propose`.",
-    "2. Weak-size, docs-only, and trivial-test findings are PREPARE warnings.",
-    "   Structure, acceptance basis, scope, and fresh PASS remain hard gates.",
-    "3. After PASS then quality fix: `ohno task reopen` (not a new micro-plan).",
-    "4. `PROJECT_COMPLETE` / plan % = **this linear plan only**, not product done.",
-    "5. Multi-agent (Codex spawn): only **root** runs ohno plan/task/verify;",
+    "3. Weak-size / docs-only findings may warn in PREPARE; weak black boxes "
+      + "hard-refuse accept unless Owner passes --allow-weak-plan.",
+    "4. After PASS then quality fix: `ohno task reopen` (not a new micro-plan).",
+    "5. `PROJECT_COMPLETE` / plan % = **this linear plan only**, not product done.",
+    "6. Multi-agent (Codex spawn): only **root** runs ohno plan/task/verify;",
     "   review agents cannot invent PASS. Oh No does not schedule agents.",
-    "6. Prefer committing `.ohno/` + `AGENTS.md` with the product (authority travel).",
-    "7. Windows: use `ohno.cmd` on PATH; never double-click `dist/cli.js`.",
-    "8. Stop only at PROJECT_COMPLETE or real NEEDS_INPUT (missing account/secret/",
-    "   device/business fact, unapproved destructive/paid/publish/message action,",
-    "   no honest acceptance, or state/platform blocker).",
+    "7. Prefer committing `.ohno/` + `AGENTS.md` with the product (authority travel).",
+    "8. Windows: use `ohno.cmd` on PATH; never double-click `dist/cli.js`.",
+    "9. Stop only at PROJECT_COMPLETE under an accepted plan. OHNO_NEEDS_INPUT "
+      + "is recovery guidance (re-read Truth), not an Owner handoff.",
     "",
   ].join("\n");
 }

@@ -4,6 +4,9 @@
  * plan/state validators, not these heuristic shape checks.
  */
 
+const realRunner =
+  /\b(npm|npx|node|pnpm|yarn|pytest|cargo|go\s+test|vitest|jest|playwright|mocha)\b/iu;
+
 export function looksLikeTrivialBlackbox(testCommand: string): boolean {
   const cmd = testCommand.trim();
   if (cmd.length < 8) {
@@ -15,17 +18,34 @@ export function looksLikeTrivialBlackbox(testCommand: string): boolean {
   // Entire command is only git format/ignore probes (FT-02).
   if (/^git\s+diff\b/iu.test(cmd) && /--check\b/u.test(cmd)) {
     // Allow if also runs a real test runner in the same command.
-    if (!/\b(npm|node|pnpm|yarn|pytest|cargo|go\s+test|vitest|jest)\b/iu.test(cmd)) {
+    if (!realRunner.test(cmd)) {
       return true;
     }
   }
-  if (/^git\s+check-ignore\b/iu.test(cmd) && !/\b(npm|node|pnpm|yarn)\b/iu.test(cmd)) {
+  if (/^git\s+check-ignore\b/iu.test(cmd) && !realRunner.test(cmd)) {
     return true;
   }
   if (/^(cmd\.exe\s+\/c\s+)?(echo|rem|::)\b/iu.test(cmd)) {
     return true;
   }
   if (/^npm\s+(?:run\s+)?(?:noop|true)\b/iu.test(cmd)) {
+    return true;
+  }
+  // Soft handoff: print "go read playbook/docs" then non-zero exit — not a black box.
+  if (
+    !realRunner.test(cmd)
+    && /\bexit\s*\(?\s*[1-9]\d*\s*\)?/iu.test(cmd)
+    && (/\b(echo|Write-Output|Write-Host|printf|print\s*\()\b/iu.test(cmd)
+      || /\b(playbook|verification.?matrix|read the docs?|see docs?|OWNER must|go read)\b/iu
+        .test(cmd))
+  ) {
+    return true;
+  }
+  if (
+    !realRunner.test(cmd)
+    && /\bexit\s+3\b/iu.test(cmd)
+    && /\b(playbook|matrix|preflight|Owner|docs\/|\.md)\b/iu.test(cmd)
+  ) {
     return true;
   }
   return false;
@@ -114,6 +134,14 @@ export function weakBlackboxSummary(testCommand: string): string | null {
   }
   if (testCommand.trim().length < 8) {
     return "test_command is too short to be a meaningful black box";
+  }
+  if (
+    /\bexit\s*\(?\s*[1-9]/iu.test(testCommand)
+    && /\b(playbook|matrix|read the docs?|see docs?|OWNER must|go read)\b/iu
+      .test(testCommand)
+  ) {
+    return "test_command only defers to docs/playbook then exits non-zero "
+      + "(not an executable black box; bind literal verify commands instead)";
   }
   return "test_command looks trivial (always-pass / non-behavioral)";
 }
@@ -303,9 +331,20 @@ export function assertPlanDiscipline(
   }>,
   options: { allowWeakPlan: boolean },
 ): void {
-  // Accepted-plan autonomy must not turn a size or prose-quality heuristic
-  // into recurring Owner ceremony. Propose and doctor still surface these
-  // findings; exact structure, basis, scope, and proof remain hard elsewhere.
-  void tasks;
-  void options;
+  // Soft handoff black boxes (echo+exit 3 / playbook deferral) hard-fail accept
+  // so agents cannot freeze "go read the docs" as the only public proof.
+  // Docs-only micro-plan shape still warns only (propose/doctor); override with
+  // --allow-weak-plan when the Owner explicitly accepts a weak black box.
+  if (options.allowWeakPlan) {
+    return;
+  }
+  const weak = planDisciplineViolations(tasks)
+    .filter((entry) => entry.code === "WEAK_BLACKBOX");
+  if (weak.length > 0) {
+    throw new Error(
+      weak.map((entry) => entry.message).join("\n")
+        + "\nRefuse accept: bind an executable black box, or pass "
+        + "--allow-weak-plan after Owner review.",
+    );
+  }
 }

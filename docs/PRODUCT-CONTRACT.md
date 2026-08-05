@@ -60,8 +60,11 @@ acceptance basis are reviewed before implementation. Once a plan is accepted,
 the supported workflow is `ACTIVE_AUTO`: start, work, verify, repair, advance,
 and start the next task without asking again at ordinary task boundaries. If
 the Owner's initial instruction already authorized “plan and finish,” plan
-acceptance does not require a second conversational confirmation. After a real
-`NEEDS_INPUT`, the supplied input resumes the same accepted workflow.
+acceptance does not require a second conversational confirmation. Under an
+accepted plan, Codex must not stop to ask the Owner on failure or confusion:
+re-open Truth-listed governing docs (playbook/matrix when listed), adjust
+inside the frozen contract, and continue. `OHNO_NEEDS_INPUT` is recovery
+guidance only, not a handoff stop.
 
 ### O2 — Evidence-bound finish
 

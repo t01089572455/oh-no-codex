@@ -112,7 +112,7 @@ async function proposePlan(cwd, tasks, basisTasks = tasks) {
   ]);
 }
 
-function acceptProposal(cwd, proposal) {
+function acceptProposal(cwd, proposal, options = {}) {
   const revision = /^PLAN_REVISION: ([a-f0-9]{64})$/mu.exec(
     proposal.stdout,
   )?.[1];
@@ -120,14 +120,18 @@ function acceptProposal(cwd, proposal) {
     proposal.stdout,
   )?.[1];
   assert.ok(revision && diff, proposal.stdout);
-  return runCli(cwd, [
+  const args = [
     "plan",
     "accept",
     "--revision",
     revision,
     "--diff",
     diff,
-  ]);
+  ];
+  if (options.allowWeakPlan === true) {
+    args.push("--allow-weak-plan");
+  }
+  return runCli(cwd, args);
 }
 
 function spawnPrompt(cwd, index) {
@@ -328,13 +332,13 @@ test("an accepted plan automatically continues through start, failure, stale pro
   assert.match(premature.reason, /^OHNO_AUTO_CONTINUE(?:\r?\n|$)/u);
   assert.match(premature.reason, /fresh PASS.*ohno verify/iu);
 
-  assert.deepEqual(
-    stop(
-      projectPath,
-      "OHNO_NEEDS_INPUT:auto-2\nA paid service credential is unavailable.",
-    ),
-    {},
+  const needsInput = stop(
+    projectPath,
+    "OHNO_NEEDS_INPUT:auto-2\nA paid service credential is unavailable.",
   );
+  assertAutomatic(needsInput, "CONTINUE_ACTIVE:auto-2", "NONE");
+  assert.match(needsInput.reason, /STOP_TO_ASK_OWNER_IS_FORBIDDEN/i);
+  assert.match(needsInput.reason, /TRUTH_TARGETS:|Re-read Truth|playbook/i);
   assertAutomatic(
     stop(projectPath, "OHNO_NEEDS_INPUT:wrong-task\nMissing input."),
     "CONTINUE_ACTIVE:auto-2",
@@ -352,7 +356,7 @@ test("an accepted plan automatically continues through start, failure, stale pro
   assert.deepEqual(stop(projectPath, "The accepted plan is complete."), {});
 });
 
-test("heuristic weak-plan findings warn in PREPARE but do not require an override", async (t) => {
+test("weak blackbox warns on propose and hard-refuses accept without --allow-weak-plan", async (t) => {
   const projectPath = await createProject(t);
   runInit(projectPath, "Keep plan sizing heuristic and non-blocking");
   const task = frozenPlanTask({
@@ -369,10 +373,16 @@ test("heuristic weak-plan findings warn in PREPARE but do not require an overrid
   assert.equal(proposal.status, 0, proposal.stderr);
   assert.match(proposal.stdout, /WARN:.*micro-plan|WARN:.*format only/iu);
 
-  const accepted = acceptProposal(projectPath, proposal);
+  const refused = acceptProposal(projectPath, proposal);
+  assert.notEqual(refused.status, 0);
+  assert.match(
+    `${refused.stderr}\n${refused.stdout}`,
+    /WEAK_BLACKBOX|trivial|format only|Refuse accept/iu,
+  );
+
+  const accepted = acceptProposal(projectPath, proposal, { allowWeakPlan: true });
   assert.equal(accepted.status, 0, accepted.stderr);
-  assert.match(accepted.stdout, /LOCAL_REVIEW_RECORDED/);
-  assert.doesNotMatch(accepted.stdout, /OWNER_AUTHORIZED|OWNER_CONFIRMED/iu);
+  assert.match(accepted.stdout, /LOCAL_REVIEW_RECORDED|WEAK_PLAN_OVERRIDE/iu);
 });
 
 test("structural contract, acceptance basis, scope, and fresh-PASS protections remain hard", async (t) => {

@@ -28,7 +28,9 @@ There is no guided mode or mode switch.
    planning only, leave the proposal unaccepted.
 3. **After acceptance:** start, work, repair, verify, advance, and start the
    next task automatically. Stop only at `PROJECT_COMPLETE` or a real
-   `OHNO_NEEDS_INPUT:<active-task-id>` condition.
+   condition. On failure/confusion under an accepted plan: re-read Truth docs
+   (playbook/matrix), re-approach inside the contract — do **not** stop to ask
+   the Owner. `OHNO_NEEDS_INPUT` is not a handoff stop.
 
 Real input means a missing account/secret/device/business fact, an unapproved
 destructive/paid/publish/external-message action, no honest acceptance path,

@@ -265,8 +265,6 @@ field:
 
 ```text
 PREPARE -> ACTIVE_AUTO -> COMPLETE
-                    |
-                    `-> NEEDS_INPUT -> ACTIVE_AUTO
 ```
 
 PREPARE resolves material ambiguity, consolidates requirements, and reviews
@@ -274,8 +272,10 @@ the exact plan/basis. If the initial Owner request says to plan and finish,
 Codex accepts a ready plan without asking the same question again. A request
 for planning only still ends after the plan is presented. Once accepted,
 Codex automatically starts, works, verifies, repairs, advances, and starts the
-next canonical task. This automation uses the existing state/read-model/next
-action; there is no daemon, scheduler, or alternate mode.
+next canonical task. On failure or confusion it must re-open Truth-listed
+docs and re-approach inside the frozen contract rather than stop to ask the
+Owner. This automation uses the existing state/read-model/next action; there
+is no daemon, scheduler, or alternate mode.
 
 Task sizing is PREPARE guidance: prefer one independently user-visible outcome
 with one closing black box, while mechanical implementation steps remain an
@@ -373,7 +373,7 @@ entrypoint. They read only the small state file on the normal path.
 | `PostCompact` | Re-inject the current capsule so compaction cannot make stale prose authoritative. |
 | `UserPromptSubmit` | Append the exact newly observed Owner prompt to local/private `.ohno/OWNER-INPUTS.md`; retry-deduplicate it and exclude `OHNO_AUTO_CONTINUE` prompts. |
 | `PreToolUse` | For supported mutation tools, deny when no task is active, document sync is pending, or a parseable target is outside scope. Ambiguous command targeting fails closed only when the hook can do so without pretending to understand arbitrary shell semantics. |
-| `Stop` | For an accepted non-terminal plan, return an `OHNO_AUTO_CONTINUE` prompt containing proof, blocker, and canonical next action. Stop only at `PROJECT_COMPLETE` or an exact task-bound `OHNO_NEEDS_INPUT:<active-task-id>`. A completion marker without fresh PASS continues into repair/verify. |
+| `Stop` | For an accepted non-terminal plan, return an `OHNO_AUTO_CONTINUE` prompt containing Truth recovery order, proof, blocker, and canonical next action. Stop only at `PROJECT_COMPLETE`. `OHNO_NEEDS_INPUT` is not a handoff stop—continue with re-read Truth docs / re-approach. A completion marker without fresh PASS continues into repair/verify. |
 
 The cooperative completion marker is `OHNO_COMPLETE:<active-task-id>` and the
 input marker is `OHNO_NEEDS_INPUT:<active-task-id>`. Repository agent
@@ -452,8 +452,8 @@ implementation, then browser acceptance. `ui-ux-pro-max` is catalog-only.
   may display `NONE`; never accept caller-supplied free-text next authority.
 - Accepted non-terminal plan: Stop hook continues with the read model's one
   canonical action; failed/stale proof routes back through repair/verify.
-- Exact task-bound `NEEDS_INPUT`: stop for Owner input without changing
-  `.ohno/state.json`; resume from the same authority after the input arrives.
+- Stuck / missing-input signals: do not hand off to the Owner; Stop continues
+  with Truth-target recovery guidance (re-read playbook/matrix/contracts).
 - Hook unavailable: display the limitation and keep CLI/Git controls usable.
 
 ## Security and privacy

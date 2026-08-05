@@ -58,6 +58,22 @@ function honestyLines(model: ReadModel): string[] {
       "PROOF_NOTE: re-run ohno verify for the active contract "
         + "(FAIL/UNKNOWN/STALE proof)",
     );
+    lines.push(
+      "RECOVERY: do not stop to ask the Owner — re-open Truth paths "
+        + "(playbook/matrix when listed), re-read the frozen contract, "
+        + "adjust inside allowed_files, then ohno verify",
+    );
+  }
+  if (
+    model.next_action.startsWith("CONTINUE_ACTIVE:")
+    && (model.proof_freshness === "FAIL"
+      || model.proof_freshness === "UNKNOWN"
+      || model.proof_freshness === "STALE")
+  ) {
+    lines.push(
+      "RECOVERY: stuck under accepted plan — re-bind Truth docs + contract, "
+        + "do not hand off to Owner chat",
+    );
   }
   if (model.next_action.startsWith("REOPEN_TASK:")) {
     lines.push(
