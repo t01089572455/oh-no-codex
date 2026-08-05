@@ -7,10 +7,10 @@
   "measurement_note": "Same-batch LIVE measurement_batch_id=live-20260805T064039Z-834bc92. Samples bind to runtime_subject_sha256 (packed package excluding README projections) so post-measure exact p95 documentation does not rebind samples. Not a universal speed claim. package_subject_sha256 was refreshed after the exact README evidence projection; runtime subject and measured samples are unchanged.",
   "implementation": {
     "dist_cli_sha256": "93bf55b9418956f2d512e748655d37695808a703f7ae0830bbf2ea1d3883d8fc",
-    "package_subject_sha256": "0ca5c178afe18ebaa1ed1f30c04c6358c2449fd9a123b7f92e0a9696948f2a73",
-    "runtime_subject_sha256": "5f0e1e431b53bf3767c21b3efbe2a848f32184c0a579ab0ba2b7f7e6ef645ec8",
-    "head": "834bc92b1cbcafaaedab3a1d3d0451872f00ea69",
-    "tree": "3a3be06c42dd4040d13f928c8b0683f286d3ad2d"
+    "package_subject_sha256": "b96600d888d55159828d8083ecdf2912a39f25bc3ccaf9d533143a1bfcaf7ef4",
+    "runtime_subject_sha256": "a04c4a94e98007f1075cb4af6d6eba03b6745b9401e93a7a75c53eecffa873e1",
+    "head": "239f55f4b5c123813810bd4d4b99fa497d8c559d",
+    "tree": "a117cc1e88497184a42925a2d09f7792459c6b8e"
   },
   "machine": {
     "arch": "x64",
@@ -571,10 +571,10 @@
     },
     "implementation": {
       "dist_cli_sha256": "93bf55b9418956f2d512e748655d37695808a703f7ae0830bbf2ea1d3883d8fc",
-      "package_subject_sha256": "0ca5c178afe18ebaa1ed1f30c04c6358c2449fd9a123b7f92e0a9696948f2a73",
-      "runtime_subject_sha256": "5f0e1e431b53bf3767c21b3efbe2a848f32184c0a579ab0ba2b7f7e6ef645ec8",
-      "head": "834bc92b1cbcafaaedab3a1d3d0451872f00ea69",
-      "tree": "3a3be06c42dd4040d13f928c8b0683f286d3ad2d"
+      "package_subject_sha256": "b96600d888d55159828d8083ecdf2912a39f25bc3ccaf9d533143a1bfcaf7ef4",
+      "runtime_subject_sha256": "a04c4a94e98007f1075cb4af6d6eba03b6745b9401e93a7a75c53eecffa873e1",
+      "head": "239f55f4b5c123813810bd4d4b99fa497d8c559d",
+      "tree": "a117cc1e88497184a42925a2d09f7792459c6b8e"
     },
     "result": "TRIAL_PASS",
     "trials": [

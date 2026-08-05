@@ -115,7 +115,7 @@ one next action without creating a second source of truth.
 
 ## Install and use
 
-Requires Node.js **22.20 or newer**. Current release: **`0.1.10`**.
+Requires Node.js **22.20 or newer**. Current release: **`0.1.11`**.
 
 ### New or empty repository
 
@@ -285,9 +285,9 @@ it cannot suppress Codex or operating-system approval prompts.
 
 | Public fact | Current evidence |
 | --- | --- |
-| Package | [`oh-no-codex@0.1.10`](https://www.npmjs.com/package/oh-no-codex) is published |
+| Package | [`oh-no-codex@0.1.11`](https://www.npmjs.com/package/oh-no-codex) is published |
 | Core loop | `ANTI_DRIFT_CORE_WORKS` with local public black-box coverage |
-| Accepted-plan automation | `AUTO_AFTER_PLAN_LOCAL_PASS` on this local branch; the published `0.1.10` package does not contain this correction |
+| Accepted-plan automation | Included in `0.1.11`: after plan accept, Stop continues with `OHNO_AUTO_CONTINUE` (cooperative, not a daemon) |
 | Real-project trial | The current local Correction 5 package subject earned same-batch LIVE `TRIAL_PASS` on three named disposable copies (`live-20260805T064039Z-834bc92`); this is not a universal speed or published-package claim |
 | Cockpit | Read-only equality with the CLI state plus browser and local reflection checks |
 

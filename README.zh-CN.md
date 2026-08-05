@@ -112,7 +112,7 @@ Oh No, Codex! 在现有开发流程外加一层很小的本机护栏。它让 Ow
 
 ## 安装与使用
 
-需要 Node.js **22.20 或更高版本**。当前版本：**`0.1.10`**。
+需要 Node.js **22.20 或更高版本**。当前版本：**`0.1.11`**。
 
 ### 新仓库或空仓库
 
@@ -271,9 +271,9 @@ Oh No 是协作式本机护栏，不是自主 Agent OS 或安全边界。它无�
 
 | 公开事实 | 当前证据 |
 | --- | --- |
-| npm 包 | [`oh-no-codex@0.1.10`](https://www.npmjs.com/package/oh-no-codex) 已发布 |
+| npm 包 | [`oh-no-codex@0.1.11`](https://www.npmjs.com/package/oh-no-codex) 已发布 |
 | 核心闭环 | `ANTI_DRIFT_CORE_WORKS`，有本机公开黑盒覆盖 |
-| 计划后自动执行 | 当前本地分支为 `AUTO_AFTER_PLAN_LOCAL_PASS`；已发布的 `0.1.10` 不含本次修正 |
+| 计划后自动执行 | 已纳入 `0.1.11`：plan 接受后 Stop 以 `OHNO_AUTO_CONTINUE` 续跑（协作式，非 daemon） |
 | 真实项目试验 | 当前本地 Correction 5 package subject 已在三个具名一次性副本上获得同批次 LIVE `TRIAL_PASS`（`live-20260805T064039Z-834bc92`）；这不是普遍速度或已发布包声明 |
 | 驾驶舱 | 与 CLI 状态同源，并经过浏览器和本机状态反射检查 |
 
