@@ -561,6 +561,10 @@ test("UserPromptSubmit injects OHNO_PIPELINE and SessionStart names phase", asyn
   assert.match(ctx, /OHNO_PIPELINE/);
   assert.match(ctx, /phase:\s*DISCOVER/i);
   assert.match(ctx, /seal-requirements|phase advance/i);
+  // Prompt-only harness rails (十八宗罪) ride with every pipeline inject.
+  assert.match(ctx, /OHNO_HARNESS_RULES/);
+  assert.match(ctx, /force_read|truth-read/i);
+  assert.match(ctx, /no self-certify|no test theatre|zombie/i);
 });
 
 test("Stop continues on an exact marker with the wrong task id", async (t) => {

@@ -717,6 +717,44 @@ export function harnessBriefLines(state: ProjectState): string[] {
 }
 
 /**
+ * Embedded harness prompt constraints (Owner: prompt-only layer, not new architecture).
+ * Injected with every OHNO_PIPELINE so Codex always sees Truth-bind + eighteen-sins rails.
+ * Not OS security — cooperative Agent instructions.
+ */
+export function formatHarnessRulesPrompt(): string {
+  return [
+    "OHNO_HARNESS_RULES  # cooperative prompts; force READ Truth docs — no semantic judge",
+    "core: every material decision binds to Truth (OWNER-INPUTS, REQUIREMENTS Latest,",
+    "  DESIGN, frozen task expect/test/scope, state.json). Freestyle without read = forbidden.",
+    "force_read: FAIL/drift/change → ohno truth-read (mode A=fix code, B=fix plan/design)",
+    "  BEFORE any new write decision. Read path bytes; do not guess from chat memory.",
+    "latest_wins: all Owner prompts are raw Truth; conflict → newest Owner words.",
+    "done: only ohno verify (fresh PASS). Agent prose is never proof.",
+    "pipeline: DISCOVER(clarify,tech you decide)→seal-req→DESIGN(full route OK)→seal-design",
+    "  →plan(id+expect+hard test+scope)→EXECUTE one task→verify; CHANGE re-walks all.",
+    "sins (obey as prompt rails — 十八宗罪):",
+    "  1 no usurpation: keep Owner outcome; smallest satisfying behavior",
+    "  2 no max-interpret: no overbuild / governance OS / extra abstractions",
+    "  3 stop after PASS: next is locator not license; only authorized plan slices",
+    "  4 review≠edit: audit/diagnose is read-only unless Owner authorizes mutation",
+    "  5 no zombie authority: state.json + latest Owner; CHANGE kills old plan power",
+    "  6 summary≠truth: resume/capsule is projection only; re-open Truth files",
+    "  7 local green≠done: unit/mock green is not feature/product complete",
+    "  8 no self-certify: exact command + receipt only; not your own report",
+    "  9 no test theatre: user-visible black-box; no soft/fake acceptance",
+    " 10 no proxy goals: Owner outcome > coverage/architecture vanity",
+    " 11 no reviewer scope growth: frozen contract only; new ideals need Owner change",
+    " 12 control-tax: no full-suite as diagnostic; keep harness thin",
+    " 13 no rebuild world: prefer git/tests/simple files over new platforms",
+    " 14 exact workspace: path/branch/HEAD/tree/dirty before claiming location",
+    " 15 no handoff tax: use ohno / resume capsule; do not make Owner re-archaeology",
+    " 16 UX not last: if UI in scope, design contract before UI code",
+    " 17 no empty promises: claim only with named command + exact scope",
+    " 18 apology→constraint: after FAIL change code/plan/test under Truth; no empty sorry",
+  ].join("\n");
+}
+
+/**
  * Exact next commands for Agent (and SessionStart/Stop injection).
  * This is the "internal autopilot script" surface.
  */
@@ -779,6 +817,7 @@ export function formatPipelineNext(
     default:
       lines.push(`run: ohno pipeline`);
   }
+  lines.push("", formatHarnessRulesPrompt());
   return `${lines.join("\n")}\n`;
 }
 
