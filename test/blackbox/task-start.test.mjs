@@ -89,26 +89,26 @@ function activeStateBytes(state, task) {
   }, null, 2)}\n`);
 }
 
-test("init requires Owner goal and refuses silent re-initialization", async (t) => {
+test("init needs no project goal and refuses silent re-initialization", async (t) => {
   const projectPath = await createProject(t);
-  const missingGoal = runCli(projectPath, ["init"]);
-  assert.notEqual(missingGoal.status, 0);
-  assert.match(missingGoal.stderr, /usage: ohno init --goal/i);
+  const withLegacyFlag = runCli(projectPath, ["init", "--goal", "unused"]);
+  assert.notEqual(withLegacyFlag.status, 0);
+  assert.match(withLegacyFlag.stderr, /usage: ohno init/i);
 
-  const first = runInit(projectPath, "Ship one bounded change");
-  assert.equal((await readState(projectPath)).goal, "Ship one bounded change");
+  const first = runInit(projectPath);
+  assert.equal((await readState(projectPath)).goal, "");
   assert.match(first.stdout, /Initialized/i);
-  assert.match(first.stdout, /GOAL: Ship one bounded change/);
+  assert.match(first.stdout, /GOAL: \(none/i);
   assert.match(first.stdout, /cockpit/i);
 
-  const secondInit = runCli(projectPath, ["init", "--goal", "another slogan"]);
+  const secondInit = runCli(projectPath, ["init"]);
   assert.notEqual(secondInit.status, 0);
   assert.match(secondInit.stderr, /already initialized/i);
 
   const projectPath2 = await createProject(t);
-  await initialize(projectPath2, "Preserve re-init refusal");
+  await initialize(projectPath2);
   const before = await readStateBytes(projectPath2);
-  const repeated = runCli(projectPath2, ["init", "--goal", "must fail"]);
+  const repeated = runCli(projectPath2, ["init"]);
   assert.notEqual(repeated.status, 0);
   assert.match(repeated.stderr, /already initialized/i);
   assert.deepEqual(await readStateBytes(projectPath2), before);
@@ -162,7 +162,7 @@ test("a complete reviewed bounded contract creates exactly one active task", asy
   const state = await readState(projectPath);
   assert.equal(state.schema_version, 3);
   assert.equal(state.status, "ACTIVE");
-  assert.equal(state.goal, "Ship one bounded change");
+  assert.equal(state.goal, "");
   assert.equal(state.plan_revision, review.revision);
   assert.deepEqual(state.active_task, {
     id: "task-001",

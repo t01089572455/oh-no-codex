@@ -1,13 +1,15 @@
 # Product contract
 
-Frozen by the Owner on 2026-07-30.
+Frozen by the Owner on 2026-07-30; automatic-execution correction authorized
+on 2026-08-04.
 
 ## One-sentence product
 
 Oh No, Codex! is a fast, cooperative harness that keeps a Codex vibe-coding
 project aligned by requiring one bounded task, one user-visible black-box test,
 fresh completion evidence, accurate requirement-document synchronization, and
-one next action.
+one next action, then carrying an accepted plan through that evidence loop
+without repeated Owner confirmation.
 
 ## User problem
 
@@ -53,6 +55,14 @@ the cursor cannot start; its only next action is `FREEZE_TASK:<id>`. `task
 start` takes no caller-supplied contract fields and activates only the frozen
 cursor contract.
 
+Planning is `PREPARE`: material ambiguity is resolved and the exact plan and
+acceptance basis are reviewed before implementation. Once a plan is accepted,
+the supported workflow is `ACTIVE_AUTO`: start, work, verify, repair, advance,
+and start the next task without asking again at ordinary task boundaries. If
+the Owner's initial instruction already authorized “plan and finish,” plan
+acceptance does not require a second conversational confirmation. After a real
+`NEEDS_INPUT`, the supplied input resumes the same accepted workflow.
+
 ### O2 — Evidence-bound finish
 
 The exact black-box command decides the task:
@@ -82,6 +92,13 @@ non-goal.
 The harness coordinates and verifies coverage; Codex still performs semantic
 writing. V1 does not claim that an LLM can autonomously prove document meaning.
 
+A trusted project `UserPromptSubmit` hook appends each newly observed exact
+Owner prompt to local/private `.ohno/OWNER-INPUTS.md`. That file is raw evidence,
+not requirement classification. `.ohno/REQUIREMENTS.md` is Codex's current
+interpretation and visible supersession history and should cite material input
+ids. Oh No cannot recover earlier prompts, observe bypassed clients/hooks, or
+reliably decide which prompt is the Owner's final decision.
+
 ### O4 — Instant recovery
 
 `status`, `resume`, `next`, session hooks, and Cockpit read the same atomic
@@ -102,7 +119,8 @@ eighteen subsystems:
 
 1. Owner semantics win; ambiguity cannot silently broaden scope.
 2. Every task has one bounded contract before mutation.
-3. Acceptance ends the task; a next action is not new permission.
+3. An accepted plan authorizes its canonical task transitions, never work
+   outside that plan.
 4. Review is read-only unless fixes are explicitly authorized.
 5. Current canonical state outranks summaries and historical plans.
 6. Completion requires fresh exact evidence, never agent prose.
@@ -119,12 +137,15 @@ V1 may contain:
 - one `ohno` executable;
 - `.ohno/state.json` as sole current runtime state;
 - `.ohno/truth.json` as Owner-maintained document applicability;
+- local/private `.ohno/OWNER-INPUTS.md` as raw prompt evidence and
+  `.ohno/REQUIREMENTS.md` as Codex interpretation, neither as runtime state;
 - project-local Codex hooks and one Git `pre-commit` hook;
 - one local HTTP server for a read-only vanilla web Cockpit.
 
 V1 may not contain:
 
-- a database, background daemon, hosted service, queue, or second event store;
+- a database, background daemon, hosted service, queue, or second runtime
+  authority/event store;
 - a policy DSL, plugin/provider framework, multi-agent scheduler, or generic
   effect gateway;
 - autonomous production identity or CI/Owner trust claims;
@@ -175,11 +196,14 @@ ready` unless a later Owner-approved contract defines and earns that term.
 - state-to-Cockpit reflection: below 250 ms.
 - normal paths read bounded state and named files only.
 
-Task 7 recorded measurements on three disposable project copies. Public status
-is split: core harness `ANTI_DRIFT_CORE_WORKS` vs release
-`RELEASE_CHANGES_REQUIRED` until every A/P row and public surface is honest.
-Exact p95 values live in the implementation ledger and README evidence table.
-Those remain local trial results, not a universal speed guarantee.
+Task 7 recorded measurements on three disposable project copies for the
+published `0.1.10` package subject. Correction 5 changed that subject, so those
+original receipts remain `HISTORICAL`: their hashes and values are evidence of
+what was measured, but not current performance or release proof. The local
+Correction 5 package subject subsequently earned P01–P06 `TRIAL_PASS` on three
+named disposable copies in one LIVE batch,
+`live-20260805T064039Z-834bc92`. Published `0.1.10` still does not contain the
+correction, and no trial is a universal speed guarantee.
 
 ## Authority order
 

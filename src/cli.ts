@@ -78,9 +78,9 @@ import { migrateAcceptanceBasis } from "./migrate-acceptance.js";
 
 const usageText = [
   "usage:",
-  "  ohno init --goal <owner-authored project goal>",
+  "  ohno init",
   "  ohno plan propose --file <review.json>",
-  "  ohno plan accept --revision <sha256> --diff <sha256> [--allow-weak-plan]",
+  "  ohno plan accept --revision <sha256> --diff <sha256>",
   "  ohno task start | ohno task reopen",
   "  ohno verify | ohno status [--json] | ohno resume | ohno next",
   "  ohno cockpit [--port <n>] [--replace]",
@@ -156,32 +156,10 @@ async function ensureAgentsShell(projectPath: string): Promise<"created" | "pres
 }
 
 async function initialize(projectPath: string, args: string[]): Promise<void> {
-  // A01 / DESIGN: one Owner-authored project goal is required at init.
-  // Task goals stay on plan tasks and are never substituted for this field.
-  let goalRaw: string;
-  try {
-    goalRaw = requiredValue(args, "--goal");
-  } catch {
-    throw new Error(
-      "usage: ohno init --goal <owner-authored project goal>",
-    );
-  }
-  const goal = boundedDisplayValue(
-    goalRaw,
-    "--goal",
-    displayFieldByteLimits.goal,
-  );
-  const leftover = args.filter((arg, index) => {
-    if (arg === "--goal") {
-      return false;
-    }
-    if (index > 0 && args[index - 1] === "--goal") {
-      return false;
-    }
-    return true;
-  });
-  if (leftover.length > 0) {
-    throw new Error("usage: ohno init --goal <owner-authored project goal>");
+  // Project-level goal is optional and unused at install: real intent lives in
+  // plan task goals, OWNER-INPUTS, and REQUIREMENTS. Keep state.goal="" .
+  if (args.length > 0) {
+    throw new Error("usage: ohno init");
   }
   if (await stateExists(projectPath)) {
     throw new Error("project is already initialized");
@@ -192,11 +170,12 @@ async function initialize(projectPath: string, args: string[]): Promise<void> {
   await ensureOhnoRuntimeGitignore(projectPath);
   const truthSeeded = await ensureDefaultTruth(projectPath);
   const truthInventory = await classifyTruthAtInit(projectPath);
-  await writeStateAtomic(projectPath, initialState(goal, truthInventory));
+  await writeStateAtomic(projectPath, initialState("", truthInventory));
   await ensurePreferences(projectPath);
   await appendRequirementsNote(
     projectPath,
-    `Project initialized with Owner goal: ${goal}`,
+    "Project initialized (no project-level goal; capture Owner intent with "
+      + "requirements notes and plan tasks).",
     "init",
   ).catch(() => undefined);
   await appendRequirementsNote(
@@ -209,7 +188,7 @@ async function initialize(projectPath: string, args: string[]): Promise<void> {
   await refreshProjectors(projectPath).catch(() => undefined);
   process.stdout.write(
     "Initialized\n"
-    + `GOAL: ${goal}\n`
+    + "GOAL: (none — use plan task goals and requirements notes)\n"
     + `AGENTS: ${agentsMode === "preserved" ? "preserved existing file; " : ""}`
     + `managed block ${agentsBeginMarker} … ${agentsEndMarker}\n`
     + "REQUIREMENTS: .ohno/REQUIREMENTS.md\n"

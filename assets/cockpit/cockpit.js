@@ -80,7 +80,7 @@ const RING_CIRCUMFERENCE = 2 * Math.PI * 148;
 /** UI language only (presentation). Not a second authority store. */
 const I18N = Object.freeze({
   en: Object.freeze({
-    brandSub: "Fast, cooperative vibe-coding harness",
+    brandSub: "Prepare together; accepted plans run automatically under exact proof",
     localReadOnly: "Local · Read Only",
     currentStage: "CURRENT STAGE",
     planCursorNote: "PLAN CURSOR — not product completion",
@@ -127,7 +127,7 @@ const I18N = Object.freeze({
     review: "REVIEW",
     ready: "READY",
     footerCopy:
-      "Cooperative local guardrail. This view cannot authorize work or stop a same-user process.",
+      "Accepted plans run automatically under this cooperative local guardrail. This view cannot authorize new scope or stop a same-user process.",
     stateUnavailableTitle: "LOCAL STATE UNAVAILABLE",
     stateUnavailableBody:
       "The local state is missing, corrupt, or unsupported. Repair .ohno/state.json, then refresh.",
@@ -162,7 +162,7 @@ const I18N = Object.freeze({
       "Cockpit reads only this path's .ohno/state.json. Other git worktrees may differ.",
     projectCompleteNext:
       "PROJECT_COMPLETE (this plan only — propose next phase)",
-    continueActiveHint: (a) => `${a} (stay on this task — then ohno verify)`,
+    continueActiveHint: (a) => `${a} (automatic work → repair → ohno verify)`,
     runExactHint: (a) => `${a} (re-run frozen black box)`,
     offline: "OFFLINE",
     stateUnavailable: "State unavailable",
@@ -183,7 +183,7 @@ const I18N = Object.freeze({
     badgeClear: "CLEAR",
   }),
   zh: Object.freeze({
-    brandSub: "快速、协作的 vibe coding 护栏",
+    brandSub: "前期共同确认；计划接受后在精确证据下自动执行",
     localReadOnly: "本地 · 只读",
     currentStage: "当前阶段",
     planCursorNote: "计划游标 — 不是产品完成度",
@@ -230,7 +230,7 @@ const I18N = Object.freeze({
     review: "审阅",
     ready: "就绪",
     footerCopy:
-      "协作式本地护栏。本视图不能授权工作，也不能阻止同一用户进程。",
+      "计划接受后由协作式本地护栏自动推进。本视图不能授权新范围，也不能阻止同一用户进程。",
     stateUnavailableTitle: "本地状态不可用",
     stateUnavailableBody:
       "本地状态缺失、损坏或不支持。请修复 .ohno/state.json 后刷新。",
@@ -261,7 +261,7 @@ const I18N = Object.freeze({
     handoffTitle:
       "驾驶舱只读取该路径下的 .ohno/state.json。其他 git worktree 可能不同。",
     projectCompleteNext: "PROJECT_COMPLETE（仅本计划 — 请提议下一阶段）",
-    continueActiveHint: (a) => `${a}（留在本任务 — 然后 ohno verify）`,
+    continueActiveHint: (a) => `${a}（自动工作 → 修复 → ohno verify）`,
     runExactHint: (a) => `${a}（重跑冻结黑盒）`,
     offline: "离线",
     stateUnavailable: "状态不可用",

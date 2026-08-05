@@ -13,7 +13,7 @@ import {
   syncTruthInventoryForBasis,
 } from "../helpers/blackbox.mjs";
 
-test("field trial: plan propose warns and accept refuses micro-plan without override", async (t) => {
+test("field trial: plan propose warns but accept does not block a heuristic micro-plan", async (t) => {
   const projectPath = await createProject(t);
   assert.equal(runInit(projectPath).status, 0);
   const tasks = [
@@ -54,7 +54,7 @@ test("field trial: plan propose warns and accept refuses micro-plan without over
   const rev = /PLAN_REVISION: ([a-f0-9]+)/.exec(propose.stdout)?.[1];
   const dig = /DIFF_DIGEST: ([a-f0-9]+)/.exec(propose.stdout)?.[1];
   assert.ok(rev && dig);
-  const refused = runCli(projectPath, [
+  const accepted = runCli(projectPath, [
     "plan",
     "accept",
     "--revision",
@@ -62,22 +62,8 @@ test("field trial: plan propose warns and accept refuses micro-plan without over
     "--diff",
     dig,
   ]);
-  assert.notEqual(refused.status, 0, "accept must refuse weak micro-plan");
-  assert.match(
-    refused.stderr + refused.stdout,
-    /plan discipline refused|COMMIT_LICENSE|WEAK_BLACKBOX|allow-weak-plan/i,
-  );
-  const forced = runCli(projectPath, [
-    "plan",
-    "accept",
-    "--revision",
-    rev,
-    "--diff",
-    dig,
-    "--allow-weak-plan",
-  ]);
-  assert.equal(forced.status, 0, forced.stderr + forced.stdout);
-  assert.match(forced.stdout, /WEAK_PLAN_OVERRIDE|LOCAL_REVIEW_RECORDED/);
+  assert.equal(accepted.status, 0, accepted.stderr + accepted.stdout);
+  assert.match(accepted.stdout, /LOCAL_REVIEW_RECORDED/);
 });
 
 test("field trial: resume frames plan progress and authority cwd", async (t) => {
@@ -99,7 +85,7 @@ test("field trial: resume frames plan progress and authority cwd", async (t) => 
   assert.match(resume.stdout, /of THIS plan|plan-tasks/i);
 });
 
-test("field trial: doctor warns on weak blackbox when weak plan forced", async (t) => {
+test("field trial: doctor warns on an accepted weak blackbox", async (t) => {
   const projectPath = await createProject(t);
   assert.equal(runInit(projectPath).status, 0);
   const tasks = [
@@ -141,7 +127,6 @@ test("field trial: doctor warns on weak blackbox when weak plan forced", async (
       rev,
       "--diff",
       dig,
-      "--allow-weak-plan",
     ]).status,
     0,
   );

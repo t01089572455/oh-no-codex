@@ -46,13 +46,18 @@ export function runCli(cwd, args, options = {}) {
   });
 }
 
-/** A01: init requires Owner project goal. */
-export function runInit(
-  cwd,
-  goal = "Disposable Owner goal for black-box tests",
-  options = {},
-) {
-  const result = runCli(cwd, ["init", "--goal", goal], options);
+/**
+ * A01: init has no project-level goal flag.
+ * Second string arg is ignored for call-site compatibility (legacy tests).
+ */
+export function runInit(cwd, _goalOrOptions = {}, options = {}) {
+  const opts =
+    typeof _goalOrOptions === "object"
+    && _goalOrOptions !== null
+    && !Array.isArray(_goalOrOptions)
+      ? _goalOrOptions
+      : options;
+  const result = runCli(cwd, ["init"], opts);
   assert.equal(result.status, 0, result.stderr);
   return result;
 }

@@ -30,6 +30,19 @@
         ]
       }
     ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{OHNO_HOOK_COMMAND}}",
+            "commandWindows": "{{OHNO_HOOK_COMMAND_WINDOWS}}",
+            "timeout": 5,
+            "statusMessage": "Recording trusted Owner input locally"
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "^(?:apply_patch|Edit|Write)$",

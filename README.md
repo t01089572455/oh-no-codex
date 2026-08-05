@@ -123,7 +123,7 @@ Requires Node.js **22.20 or newer**. Current release: **`0.1.10`**.
 npm install -g oh-no-codex
 
 cd your-git-repo
-ohno init --goal "Owner project goal"
+ohno init
 ohno install
 ohno doctor
 ```
@@ -144,13 +144,13 @@ Oh No can be added beside existing code, but it does not automatically infer
 old truth, completed work, or the correct plan from Git history.
 
 1. Initialize with the **current stage** goal—not the entire historical vision.
-2. Record what is already true, what must ship now, non-goals, and hard constraints in the Owner’s original words.
+2. Let the trusted prompt hook preserve new Owner words in `.ohno/OWNER-INPUTS.md`, then consolidate what is already true, what must ship now, non-goals, and hard constraints in `.ohno/REQUIREMENTS.md`.
 3. Review which PRD, design, acceptance, plan, README, and Agent files are current governing documents; keep one winning set in Truth.
 4. Plan only work that still needs a user-visible black-box proof. Do not invent historical PASS receipts.
-5. Start the cursor task, work inside its file boundary, and let `ohno verify` decide whether it advances.
+5. Accept the reviewed plan; Codex then starts the cursor, works inside its boundary, repairs proof, verifies, and advances automatically.
 
 ```bash
-ohno init --goal "Current-stage Owner goal"
+ohno init
 ohno install
 ohno doctor
 ohno requirements note --text "What is already true in this repository"
@@ -162,12 +162,13 @@ If governing requirements change after setup, use `ohno change`; do not edit
 
 ### The daily loop
 
-Normally you can tell Codex, “Draft a bounded plan.” The installed
-`oh-no-plan` skill prepares the plan file and review flow. The same deterministic
-loop is available directly:
+Normally you can tell Codex, “Draft a bounded plan and finish it.” The installed
+`oh-no-plan` skill resolves material ambiguity during PREPARE and reviews the
+plan. Once accepted, Codex runs the deterministic loop without asking again at
+ordinary task boundaries. The primitives remain available directly:
 
 ```bash
-ohno requirements note --text "Owner words, verbatim"  # when a real decision is made
+ohno requirements note --text "Current interpreted decision"  # optional one-line manual note
 ohno plan propose --file plan.json
 ohno plan accept --revision <rev> --diff <digest>
 ohno task start
@@ -181,24 +182,31 @@ ohno next
   advances once.
 - FAIL, timeout, unreadable state, or test-time mutation leaves the task active.
 - `next` locates the current plan position; it does not authorize the Agent to
-  invent more work.
+  invent more work. The already accepted plan authorizes Codex to execute that
+  canonical action automatically.
+- Oh No stops only at `PROJECT_COMPLETE` or a real task-bound `NEEDS_INPUT`
+  condition such as a missing secret/device/business fact, unapproved paid or
+  destructive action, absent honest acceptance path, or state/platform blocker.
+  Supplying that input resumes the same accepted workflow.
 
 ### Talk naturally in Codex
 
 | What you say | Skill / command |
 | --- | --- |
-| “Remember this requirement exactly” | `oh-no-requirements` → `ohno requirements note` |
+| “Consolidate this current requirement” | `oh-no-requirements` → `ohno requirements note` |
 | “Draft or review the bounded plan” | `oh-no-plan` |
-| “Start the current task” | `oh-no-task` → `ohno task start` |
-| “I think this task is done” | `oh-no-verify` → `ohno verify` |
+| “Start the current task” | `oh-no-task` → `ohno task start` (automatic after plan acceptance) |
+| “I think this task is done” | `oh-no-verify` → `ohno verify` (automatic proof loop) |
 | “Where are we?” | `oh-no-resume` / `ohno status` |
 | “The requirements changed” | `oh-no-change` |
 | “Open the board” | `oh-no-cockpit` → `ohno cockpit` |
 | “Check the installation” | `oh-no-doctor` |
 
-Owner decisions belong in `.ohno/REQUIREMENTS.md`, not only in chat. Every
-Codex session opened in the same repository reads the same project files, so a
-new session can recover without trusting an old conversation summary.
+Trusted `UserPromptSubmit` hooks append exact new prompts to the local/private
+`.ohno/OWNER-INPUTS.md`; `.ohno/REQUIREMENTS.md` holds Codex's current
+interpretation and visible history with material input ids. Oh No cannot
+reliably decide which prompt is the final decision, recover older prompts, or
+capture another client or a bypassed/untrusted hook.
 
 ### Open the Cockpit
 
@@ -226,12 +234,13 @@ that ESM entry.
 After installation, control comes from project files and explicit checkpoints,
 not a larger prompt:
 
-1. **Owner words survive chat.** Important goals, constraints, and decisions are appended verbatim to `.ohno/REQUIREMENTS.md`.
+1. **Owner words and interpretations stay distinct.** Trusted exact prompts append to local/private `.ohno/OWNER-INPUTS.md`; Codex consolidates current meaning and visible history in `.ohno/REQUIREMENTS.md`.
 2. **One task is frozen.** The current plan item fixes expected behavior, one black-box test, allowed files, budget, and stop condition.
 3. **Supported writes are guarded.** Codex hooks and Git pre-commit reject no-task, pending-document, and parseable out-of-scope mutations.
 4. **Evidence advances the plan.** `ohno verify` runs the frozen command; FAIL / UNKNOWN stay active, while fresh PASS advances exactly once.
 5. **Every surface reads the same state.** `status`, `resume`, `next`, hooks, and Cockpit agree on the project position.
-6. **Requirement changes stop coding.** `ohno change` uses the Owner-maintained Truth list and requires a reviewed governing-document diff plus replacement plan.
+6. **Accepted plans run automatically.** The Stop hook returns an `OHNO_AUTO_CONTINUE` prompt with the canonical next action; Codex—not the hook—starts, repairs, verifies, and advances.
+7. **Requirement changes stop coding.** `ohno change` uses the Owner-maintained Truth list and requires a reviewed governing-document diff plus replacement plan; clear new Owner intent does not need a second conversational confirmation.
 
 ### Authority
 
@@ -248,7 +257,8 @@ ohno CLI  ──atomic replace──►  .ohno/state.json   (sole runtime author
 | Artifact | Role |
 | --- | --- |
 | `.ohno/state.json` | Current goal, plan, cursor, active contract, proof, and next action |
-| `.ohno/REQUIREMENTS.md` | Append-only log of the Owner’s original words |
+| `.ohno/OWNER-INPUTS.md` | Local/private append-only exact prompts from the trusted hook; evidence, not final-requirement classification |
+| `.ohno/REQUIREMENTS.md` | Codex's current interpretation and visible supersession history, with material Owner-input ids |
 | `.ohno/truth.json` | Owner-maintained governing-document applicability list |
 | PASS receipt | Verification provenance and freshness evidence; not another current authority |
 | `PROGRESS.md` / resume text / Cockpit | Read-only projections of current state |
@@ -270,12 +280,15 @@ unsupported hosted tools, or an Agent that deliberately ignores every rule.
 It does not judge prose by NLP, reconstruct a half-built product automatically,
 or guarantee universal correctness and speed. Cockpit progress is
 `cursor / task_count`, never a product-completion percentage.
+Automatic execution removes Oh No's own conversational confirmation ceremony;
+it cannot suppress Codex or operating-system approval prompts.
 
 | Public fact | Current evidence |
 | --- | --- |
 | Package | [`oh-no-codex@0.1.10`](https://www.npmjs.com/package/oh-no-codex) is published |
 | Core loop | `ANTI_DRIFT_CORE_WORKS` with local public black-box coverage |
-| Real-project trial | `TRIAL_PASS` on three small disposable project copies; not a universal large-repo claim |
+| Accepted-plan automation | `AUTO_AFTER_PLAN_LOCAL_PASS` on this local branch; the published `0.1.10` package does not contain this correction |
+| Real-project trial | The current local Correction 5 package subject earned same-batch LIVE `TRIAL_PASS` on three named disposable copies (`live-20260805T064039Z-834bc92`); this is not a universal speed or published-package claim |
 | Cockpit | Read-only equality with the CLI state plus browser and local reflection checks |
 
 Exact contracts and evidence:

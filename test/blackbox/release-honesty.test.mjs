@@ -11,6 +11,7 @@ import test from "node:test";
 import {
   createProject,
   frozenPlanTask,
+  readState,
   reviewPlan,
   runCli,
   runInit,
@@ -20,7 +21,7 @@ import { selectRequiredPaths } from "../../dist/truth.js";
 const ownerGoal =
   "Help the Owner stop procrastinating and avoid underestimating effort";
 
-test("init requires Owner goal, preserves AGENTS, seeds multi-path Truth and runtime ignore", async (t) => {
+test("init needs no goal, preserves AGENTS, seeds multi-path Truth and runtime ignore", async (t) => {
   const projectPath = await createProject(t);
   const ownerProse = [
     "# Owner agents",
@@ -37,14 +38,11 @@ test("init requires Owner goal, preserves AGENTS, seeds multi-path Truth and run
     "utf8",
   );
 
-  const missing = runCli(projectPath, ["init"]);
-  assert.notEqual(missing.status, 0);
-  assert.match(missing.stderr, /usage: ohno init --goal/i);
-
-  const init = runInit(projectPath, ownerGoal);
+  const init = runInit(projectPath);
   assert.match(init.stdout, /preserved existing file/i);
   assert.match(init.stdout, /seeded \.ohno\/truth\.json/i);
-  assert.match(init.stdout, new RegExp(`GOAL: ${ownerGoal}`));
+  assert.match(init.stdout, /GOAL: \(none/i);
+  assert.equal((await readState(projectPath)).goal, "");
 
   const agents = await readFile(resolve(projectPath, "AGENTS.md"), "utf8");
   assert.match(agents, /ALWAYS_ASK_BEFORE_DEPLOY/);
@@ -87,11 +85,11 @@ test("init requires Owner goal, preserves AGENTS, seeds multi-path Truth and run
   const status = runCli(projectPath, ["status", "--json"]);
   assert.equal(status.status, 0, status.stderr);
   const model = JSON.parse(status.stdout);
-  assert.equal(model.goal, ownerGoal);
+  assert.equal(model.goal, null);
   assert.ok(model.truth_target_count >= 3);
 });
 
-test("ACTIVE projects CONTINUE_ACTIVE and keep Owner project goal stable", async (t) => {
+test("ACTIVE projects CONTINUE_ACTIVE and do not substitute task goal for project goal", async (t) => {
   const projectPath = await createProject(t);
   runInit(projectPath, ownerGoal);
   await writeFile(
@@ -134,14 +132,13 @@ test("ACTIVE projects CONTINUE_ACTIVE and keep Owner project goal stable", async
   const model = JSON.parse(runCli(projectPath, ["status", "--json"]).stdout);
   assert.equal(model.status, "ACTIVE");
   assert.equal(model.next_action, "CONTINUE_ACTIVE:slice-a");
-  // Project goal must not follow the cursor/task goal (#10).
-  assert.equal(model.goal, ownerGoal);
-  assert.notEqual(model.goal, "Slice A task goal (not project goal)");
+  // Project goal stays empty; never follows cursor/task goal (#10).
+  assert.equal(model.goal, null);
 
   const next = runCli(projectPath, ["next"]);
   assert.equal(next.stdout, "CONTINUE_ACTIVE:slice-a\n");
   const resume = runCli(projectPath, ["resume"]);
-  assert.match(resume.stdout, new RegExp(`^GOAL: ${ownerGoal}$`, "m"));
+  assert.match(resume.stdout, /^GOAL: NONE$/m);
   assert.match(resume.stdout, /ACTIVE_NOTE:/);
 });
 

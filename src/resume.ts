@@ -76,8 +76,8 @@ function honestyLines(model: ReadModel): string[] {
   }
   if (model.goal === null) {
     lines.push(
-      "GOAL_NOTE: project Owner goal is empty; "
-        + "new projects require ohno init --goal (A01)",
+      "GOAL_NOTE: no project-level slogan; use plan task goals, "
+        + "OWNER-INPUTS, and requirements notes for Owner intent",
     );
   }
   if (model.next_action === "MIGRATE_ACCEPTANCE_BASIS") {

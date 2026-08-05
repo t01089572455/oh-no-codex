@@ -323,45 +323,44 @@ async function handoffIdentity(projectPath: string): Promise<ReadModel["handoff"
     dirty: true,
   };
   try {
-    const [branch, head, tree, dirty] = await Promise.all([
-      execFileAsync("git", ["-C", resolvedPath, "branch", "--show-current"], {
-        windowsHide: true,
-        maxBuffer: 64 * 1024,
-      }).then((r) => r.stdout.trim() || null).catch(() => null),
-      execFileAsync("git", ["-C", resolvedPath, "rev-parse", "HEAD"], {
-        windowsHide: true,
-        maxBuffer: 64 * 1024,
-      }).then((r) => r.stdout.trim() || null).catch(async () => {
-        // Unborn repository: report symbolic HEAD rather than lying about a commit.
-        try {
-          const symbolic = await execFileAsync(
-            "git",
-            ["-C", resolvedPath, "rev-parse", "--symbolic-full-name", "HEAD"],
-            { windowsHide: true, maxBuffer: 64 * 1024 },
-          );
-          return symbolic.stdout.trim() || "UNBORN";
-        } catch {
-          return "UNBORN";
+    const [statusIdentity, tree] = await Promise.all([
+      execFileAsync(
+        "git",
+        ["-C", resolvedPath, "status", "--porcelain=v2", "--branch"],
+        { windowsHide: true, maxBuffer: 1024 * 1024 },
+      ).then((result) => {
+        let branch: string | null = null;
+        let head: string | null = null;
+        let dirty = false;
+        for (const line of result.stdout.split(/\r?\n/u)) {
+          if (line.startsWith("# branch.oid ")) {
+            const oid = line.slice("# branch.oid ".length).trim();
+            head = oid === "(initial)" ? "UNBORN" : oid || null;
+          } else if (line.startsWith("# branch.head ")) {
+            const name = line.slice("# branch.head ".length).trim();
+            branch = name === "(detached)" ? null : name || null;
+          } else if (line !== "" && !line.startsWith("# ")) {
+            // Include untracked: clean means no pending work of any kind.
+            dirty = true;
+          }
         }
-      }),
+        return { branch, head, dirty };
+      }).catch(() => null),
       execFileAsync(
         "git",
         ["-C", resolvedPath, "rev-parse", "HEAD^{tree}"],
         { windowsHide: true, maxBuffer: 64 * 1024 },
       ).then((r) => r.stdout.trim() || null).catch(() => null),
-      // Include untracked: clean must mean no pending work of any kind.
-      execFileAsync(
-        "git",
-        ["-C", resolvedPath, "status", "--porcelain"],
-        { windowsHide: true, maxBuffer: 1024 * 1024 },
-      ).then((r) => r.stdout.trim().length > 0).catch(() => true),
     ]);
+    if (statusIdentity === null) {
+      return base;
+    }
     const value = {
       path: resolvedPath,
-      branch,
-      head,
+      branch: statusIdentity.branch,
+      head: statusIdentity.head,
       tree,
-      dirty: Boolean(dirty),
+      dirty: statusIdentity.dirty,
     };
     handoffCache.set(resolvedPath, {
       expires: Date.now() + handoffCacheTtlMs,

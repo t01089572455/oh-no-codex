@@ -627,7 +627,10 @@ async function exerciseRealProject(cwd, label, stack, identity) {
     stop_hook_active: false,
     last_assistant_message: "Evidence: OHNO_COMPLETE:trial-task-1",
   });
-  assert.deepEqual(stopped, {});
+  assert.equal(stopped.decision, "block");
+  assert.match(stopped.reason, /^OHNO_AUTO_CONTINUE\r?\n/u);
+  assert.match(stopped.reason, /^CANONICAL_NEXT: START_TASK:trial-task-2$/mu);
+  flows.automatic_continuation_after_pass = true;
 
   runGit(cwd, ["add", "--", "ohno-trial/subject-1.txt"]);
   requireSuccess(
@@ -785,14 +788,13 @@ async function measureLargestAcceptedCapsule() {
   const projectPath = await mkdtemp(resolve(tmpdir(), "ohno-task7-p04-"));
   try {
     runGit(projectPath, ["init", "--quiet"]);
-    const maximumGoal = asciiValueAtLimit(256, "Goal ");
     const maximumId = asciiValueAtLimit(96, "active-");
     const maximumExpected = asciiValueAtLimit(512, "Expected ");
     const maximumNextId = asciiValueAtLimit(96, "next-");
     await writeFile(resolve(projectPath, "subject.txt"), "bounded\n", "utf8");
     await writeFile(resolve(projectPath, "fail.mjs"), "process.exit(9);\n", "utf8");
     requireSuccess(
-      runInit(projectPath, maximumGoal),
+      runInit(projectPath),
       "P04 ohno init",
     );
     const maximumTest = paddedCommand(

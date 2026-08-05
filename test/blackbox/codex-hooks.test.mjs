@@ -487,17 +487,26 @@ test("ambiguous shell targeting is allowed with an honest limitation", async (t)
   );
 });
 
-test("Stop ignores missing or paraphrased completion markers", async (t) => {
+test("Stop automatically continues accepted active work without requiring a completion marker", async (t) => {
   const projectPath = await createProject(t);
   await initialize(projectPath);
   await startTask(projectPath);
 
-  assert.deepEqual(stopHook(projectPath, "Work is still in progress."), {});
-  assert.deepEqual(
-    stopHook(projectPath, `OHNO COMPLETE ${taskId}`),
-    {},
-    "a paraphrase must not be treated as the cooperative marker",
-  );
+  for (const message of [
+    "Work is still in progress.",
+    `OHNO COMPLETE ${taskId}`,
+  ]) {
+    const output = stopHook(projectPath, message);
+    assert.equal(output.decision, "block");
+    assert.match(output.reason, /^OHNO_AUTO_CONTINUE/m);
+    assert.match(output.reason, /CANONICAL_NEXT: CONTINUE_ACTIVE:hooks-001/);
+  }
+});
+
+test("Stop still allows PREPARE to stop when no plan is accepted", async (t) => {
+  const projectPath = await createProject(t);
+  await initialize(projectPath);
+  assert.deepEqual(stopHook(projectPath, "Planning is not accepted."), {});
 });
 
 test("Stop continues on an exact marker with the wrong task id", async (t) => {

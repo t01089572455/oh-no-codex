@@ -8,14 +8,14 @@ named user-visible behavior.
 
 | ID | Required user-visible evidence |
 | --- | --- |
-| A01 | In a disposable Git repository, `ohno init` requires and preserves one Owner goal. Plan proposal requires a Truth-listed structured `acceptance_source` whose FROZEN task contracts match plan fields by exact string equality; `plan_revision` binds that path and content digest; propose/accept re-read the basis; unknown FROZEN fields hard-refuse. Proposal/acceptance records only `LOCAL_REVIEW_RECORDED` bound to exact revision/diff/HEAD/time/basis. The accepted state contains one `plan_revision`, `ordered_tasks`, cursor, unique stable ids, and acceptance basis provenance; only the cursor's frozen behavior/test/files/stop/budget can be activated by argument-free `ohno task start`. An `OUTLINE` cursor cannot start and reports only `FREEZE_TASK:<id>`. Schema 2 plans (including empty Truth) stay readable with next `MIGRATE_ACCEPTANCE_BASIS`; migrate registers basis, records fresh re-review evidence, preserves cursor/completed; verify/hooks/pre-commit block until migrate. |
+| A01 | In a disposable Git repository, `ohno init` takes no project-goal flag and stores an empty project-level goal (Owner intent lives in plan task goals, OWNER-INPUTS, and requirements notes). Plan proposal requires a Truth-listed structured `acceptance_source` whose FROZEN task contracts match plan fields by exact string equality; `plan_revision` binds that path and content digest; propose/accept re-read the basis; unknown FROZEN fields hard-refuse. Proposal/acceptance records only `LOCAL_REVIEW_RECORDED` bound to exact revision/diff/HEAD/time/basis. The accepted state contains one `plan_revision`, `ordered_tasks`, cursor, unique stable ids, and acceptance basis provenance; only the cursor's frozen behavior/test/files/stop/budget can be activated by argument-free `ohno task start`. An `OUTLINE` cursor cannot start and reports only `FREEZE_TASK:<id>`. Schema 2 plans (including empty Truth) stay readable with next `MIGRATE_ACCEPTANCE_BASIS`; migrate registers basis, records fresh re-review evidence, preserves cursor/completed; verify/hooks/pre-commit block until migrate. |
 | A02 | Starting a second task while one is active exits non-zero and preserves the original task byte-for-byte. |
 | A03 | A failing exact black-box command leaves the current task active, records FAIL for that command, and returns non-zero. |
 | A04 | A passing exact command with unchanged subject creates a fresh receipt, closes that task, advances the plan cursor exactly once, and derives the next action from `ordered_tasks`; the end is `PROJECT_COMPLETE`. |
 | A05 | A HEAD change during verify is `UNKNOWN`. After PASS, an ordinary commit alone leaves proof `FRESH`; changing the task contract, plan revision, or matched allowed-file subject makes it `STALE` and prevents changed-subject completion without re-verification. |
 | A06 | `status`, `resume`, and `next` agree on goal, plan revision/cursor, active/completed state, proof freshness, blocker, and the same derived next action. They never accept or invent free-text next authority. |
 | A07 | A new session and a post-compaction hook receive a capsule below 4 KiB that agrees with direct `resume` output on all canonical fields. |
-| A08 | With no active task, pending document sync, or a clearly out-of-scope file target, supported `PreToolUse` mutation calls are denied with an actionable reason. In-scope calls are allowed. `Stop` recognizes only the explicit `OHNO_COMPLETE:<task-id>` marker and fresh proof. Hook status honestly exposes untrusted or unavailable integration. |
+| A08 | With no active task, pending document sync, or a clearly out-of-scope file target, supported `PreToolUse` mutation calls are denied with an actionable reason; in-scope calls are allowed. A trusted `UserPromptSubmit` preserves each newly observed exact prompt once in local/private, Git-ignored `.ohno/OWNER-INPUTS.md`, remains safe under concurrent submissions, and excludes `OHNO_AUTO_CONTINUE` synthetic prompts. `.ohno/REQUIREMENTS.md` states that it is Codex interpretation and that Oh No cannot recover all prompts or decide the final Owner requirement. For an accepted non-terminal plan, `Stop` returns proof/blocker/canonical-next continuation for start, work, FAIL repair, verify, stale reopen, advance, and next-task start without ordinary Owner confirmation; it stops only at `PROJECT_COMPLETE` or exact task-bound `OHNO_NEEDS_INPUT:<active-task-id>`. Exact acceptance-basis, scope, document-sync, and fresh-PASS boundaries remain hard. Hook status honestly exposes untrusted or unavailable integration. |
 | A09 | The Git `pre-commit` integration rejects pending doc sync, out-of-scope staged paths, stale completion proof, and a staged-subject digest different from the verified worktree-subject digest; it accepts an exact fresh in-scope subject. Existing hooks are preserved or installation refuses safely. |
 | A10 | Init persists a classified high-risk Truth inventory and digest. Only `change begin` rescans: an unchanged digest reuses classification, while a new unclassified high-risk entry or deleted/renamed governing target fails closed. Requirement paths still derive from Owner-maintained Truth concerns; unknown/empty concerns include all targets, exact diff coverage is displayed, and acceptance rejects an undisplayed digest or missing replacement plan. |
 | A11 | While change sync is pending, the only reported next action is `SYNC_GOVERNING_DOCUMENTS`; unrelated implementation mutation is blocked on supported paths. Reorder/delete/edit/freeze creates a new plan revision, and active work or receipts from an old revision cannot complete it. After exact local review, the replacement plan resumes normal task start without an Owner-identity claim. |
@@ -53,6 +53,7 @@ test/blackbox/verify-finish.test.mjs
 test/blackbox/resume-status-next.test.mjs
 test/blackbox/requirement-change.test.mjs
 test/blackbox/acceptance-denominator.test.mjs
+test/blackbox/automatic-execution-after-plan.test.mjs
 test/blackbox/codex-hooks.test.mjs
 test/blackbox/git-precommit.test.mjs
 test/blackbox/cockpit.test.mjs
@@ -125,10 +126,18 @@ harness label cannot paper over unfinished release evidence (#17).
 > real multi-slice sessions. Not a coverage score over the eighteen sins.
 
 > **Release / public status:** `0.1.10` is **published** on the public npm
-> registry with cooperative harness evidence (`ANTI_DRIFT_CORE_WORKS`, local
-> LIVE `TRIAL_PASS` on three small disposable copies). That is **not**
+> registry with cooperative harness evidence (`ANTI_DRIFT_CORE_WORKS`). Its
+> original three-copy `TRIAL_PASS` receipts are `HISTORICAL` after the local
+> Correction 5 package-subject change. The current local subject subsequently
+> earned same-batch LIVE `TRIAL_PASS` on three named disposable copies, but the
+> correction is still absent from published `0.1.10`. That is **not**
 > `V1_TRIAL_ACCEPTED` (no absolute Codex control, no universal speed claim,
 > incomplete premium A14 matrix).
+
+> **Correction 5 local status:** `AUTO_AFTER_PLAN_LOCAL_PASS`. The accepted-plan
+> automation correction is not present in published `0.1.10`; its current local
+> package subject has same-batch LIVE P01–P06 `TRIAL_PASS` evidence in
+> `live-20260805T064039Z-834bc92`.
 
 If any A/P row later fails or is withdrawn, keep or return to
 `RELEASE_CHANGES_REQUIRED` with the exact failing rows. Do not use older

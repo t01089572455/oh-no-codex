@@ -296,13 +296,16 @@ test("normal read surfaces and every supported hook avoid Truth and project-test
     },
   });
   assert.equal(preTool.hookSpecificOutput?.permissionDecision, undefined);
-  assert.deepEqual(
-    runHook(projectPath, "Stop", {
-      turn_id: "task7-a15",
-      stop_hook_active: false,
-      last_assistant_message: "Work remains in progress.",
-    }),
-    {},
+  const stopped = runHook(projectPath, "Stop", {
+    turn_id: "task7-a15",
+    stop_hook_active: false,
+    last_assistant_message: "Work remains in progress.",
+  });
+  assert.equal(stopped.decision, "block");
+  assert.match(stopped.reason, /^OHNO_AUTO_CONTINUE\r?\n/u);
+  assert.match(
+    stopped.reason,
+    /^CANONICAL_NEXT: CONTINUE_ACTIVE:a15-read-isolation$/mu,
   );
 
   const cockpit = await startReadOnlyCockpit(projectPath);

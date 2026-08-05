@@ -200,8 +200,10 @@ export async function installGuardrails(
   if (states.every(({ status }) => status === "INSTALLED_TEMPLATE")) {
     return [
       "COOPERATIVE_GUARDRAIL already installed (idempotent).",
-      "  .codex/hooks.json: SessionStart, PostCompact, PreToolUse, Stop",
+      "  .codex/hooks.json: SessionStart, PostCompact, UserPromptSubmit, PreToolUse, Stop",
       "  .git/hooks/pre-commit",
+      "Prompt capture: new UserPromptSubmit events only; OWNER-INPUTS.md stays local/private.",
+      "Automatic continuation: accepted non-terminal plans; cooperative hook only.",
       "Codex hook feature and trust: UNVERIFIED; review with /hooks.",
       ...windowsTips,
       ...skillLines,
@@ -234,8 +236,10 @@ export async function installGuardrails(
 
   return [
     "Installed COOPERATIVE_GUARDRAIL templates.",
-    "  .codex/hooks.json: SessionStart, PostCompact, PreToolUse, Stop",
+    "  .codex/hooks.json: SessionStart, PostCompact, UserPromptSubmit, PreToolUse, Stop",
     "  .git/hooks/pre-commit",
+    "Prompt capture: new UserPromptSubmit events only; OWNER-INPUTS.md stays local/private.",
+    "Automatic continuation: accepted non-terminal plans; cooperative hook only.",
     "Codex hook feature and trust: UNVERIFIED; review with /hooks.",
     "Coverage is limited to supported local hook paths and ordinary Git.",
     ...windowsTips,

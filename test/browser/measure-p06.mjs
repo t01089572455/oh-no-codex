@@ -271,9 +271,9 @@ function waitForSaveObservation(projectPath, taskId) {
           blockerEn: "NONE",
           blockerZh: "无",
           nextEn:
-            `CONTINUE_ACTIVE:${taskId} (stay on this task — then ohno verify)`,
+            `CONTINUE_ACTIVE:${taskId} (automatic work → repair → ohno verify)`,
           nextZh:
-            `CONTINUE_ACTIVE:${taskId}（留在本任务 — 然后 ohno verify）`,
+            `CONTINUE_ACTIVE:${taskId}（自动工作 → 修复 → ohno verify）`,
           taskId,
         };
         finish({ startWallMs, expected, state });
