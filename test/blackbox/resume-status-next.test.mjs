@@ -878,7 +878,7 @@ test("missing or corrupt state reports UNAVAILABLE and is never overwritten", as
   );
 });
 
-test("bare ohno prints one-screen harness brief; help puts daily loop first", async (t) => {
+test("bare ohno prints one-screen harness brief; help puts Owner setup first", async (t) => {
   const projectPath = await createProject(t);
   await initialize(projectPath);
 
@@ -896,8 +896,8 @@ test("bare ohno prints one-screen harness brief; help puts daily loop first", as
 
   const help = runCli(projectPath, ["--help"]);
   assert.equal(help.status, 0, help.stderr);
-  assert.match(help.stdout, /daily loop first/i);
-  const dailyIdx = help.stdout.indexOf("ohno status");
+  assert.match(help.stdout, /ohno setup|Owner/i);
+  const setupIdx = help.stdout.indexOf("ohno setup");
   const advancedIdx = help.stdout.indexOf("advanced:");
-  assert.ok(dailyIdx >= 0 && advancedIdx > dailyIdx);
+  assert.ok(setupIdx >= 0 && advancedIdx > setupIdx);
 });

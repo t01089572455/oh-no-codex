@@ -215,27 +215,28 @@ async function handlePreToolUse(
   if (state.active_task === null) {
     const model = await readModel(projectPath);
     const next = model.next_action;
-    // Field trial / 0.1.6: FREEZE_TASK and plan propose need to write review
-    // JSON under .ohno/ before task start. Blanket deny created a deadlock
-    // (plan propose requires a file; apply_patch was always refused).
+    // PREPARE (no active task): allow Truth / requirements / design / .ohno
+    // plan files. Deny product code so Codex cannot skip clarify→design.
     if (isPlanMaintenanceNextAction(next)) {
-      const outsidePlan = targets.filter(({ relativePath }) =>
+      const allowed = prepareAllowedRelativePaths(state);
+      const outside = targets.filter(({ relativePath }) =>
         relativePath === null
-        || !isOhnoPlanMaintenancePath(relativePath)
+        || !isPrepareAllowedPath(relativePath, allowed)
       );
-      if (outsidePlan.length === 0) {
+      if (outside.length === 0) {
         return {};
       }
       return denial(
-        `no active task; next is ${next}; only .ohno plan/maintenance files `
-        + `(not state.json) may be written before task start. `
-        + `Outside: ${displayPaths(outsidePlan)}. `
-        + "Write .ohno/*plan*.json then: ohno plan propose --file … "
-        + "&& ohno plan accept --revision … --diff …",
+        `PREPARE (next=${next}): no product implementation yet. `
+        + "Only Truth/requirements/design/.ohno plan files. "
+        + `Blocked: ${displayPaths(outside)}. `
+        + "Clarify requirements → design → plan (id+expect+test+scope) → "
+        + "ohno plan propose/accept → ohno task start.",
       );
     }
     return denial(
-      `no active task; next is ${next}`,
+      `no active task; next is ${next}. `
+        + "Read Truth and freeze a plan before product code.",
     );
   }
 
@@ -252,7 +253,7 @@ async function handlePreToolUse(
   return {};
 }
 
-/** Next actions where agents must author a plan file without an ACTIVE task. */
+/** Next actions where agents prepare Truth/plan without an ACTIVE task. */
 function isPlanMaintenanceNextAction(nextAction: string): boolean {
   return nextAction === "PROPOSE_PLAN"
     || nextAction === "PROJECT_COMPLETE"
@@ -260,8 +261,7 @@ function isPlanMaintenanceNextAction(nextAction: string): boolean {
 }
 
 /**
- * Cooperative allowance: plan review JSON and related maintenance under
- * `.ohno/`, never the sole authority `state.json`.
+ * Cooperative allowance under `.ohno/` (never sole authority state.json).
  */
 function isOhnoPlanMaintenancePath(relativePath: string): boolean {
   if (relativePath === ".ohno/state.json") {
@@ -270,12 +270,60 @@ function isOhnoPlanMaintenancePath(relativePath: string): boolean {
   if (!relativePath.startsWith(".ohno/")) {
     return false;
   }
-  // Runtime pointer only — agents should use ohno cockpit, not hand-edit.
   if (relativePath === ".ohno/cockpit.runtime.json") {
     return false;
   }
   return relativePath.endsWith(".json")
     || relativePath.endsWith(".md");
+}
+
+/**
+ * PREPARE writes: Truth-listed paths + common governing docs + .ohno plans.
+ * Product source trees stay denied until an active frozen task exists.
+ */
+function prepareAllowedRelativePaths(state: {
+  truth_inventory?: {
+    classification?: ReadonlyArray<{ path?: string; truth_target?: boolean }>;
+  };
+}): Set<string> {
+  const allowed = new Set<string>();
+  for (const entry of state.truth_inventory?.classification ?? []) {
+    if (entry.truth_target === true && typeof entry.path === "string") {
+      allowed.add(entry.path.replaceAll("\\", "/"));
+    }
+  }
+  for (const path of [
+    "AGENTS.md",
+    "README.md",
+    "README.zh-CN.md",
+    "docs/PRODUCT-CONTRACT.md",
+    "docs/DESIGN.md",
+    "docs/ACCEPTANCE.md",
+    "docs/IMPLEMENTATION-PLAN.md",
+  ]) {
+    allowed.add(path);
+  }
+  return allowed;
+}
+
+function isPrepareAllowedPath(
+  relativePath: string,
+  truthPaths: ReadonlySet<string>,
+): boolean {
+  if (isOhnoPlanMaintenancePath(relativePath)) {
+    return true;
+  }
+  if (truthPaths.has(relativePath)) {
+    return true;
+  }
+  // Governing prose under docs/ (design dump during DISCOVER/DESIGN).
+  if (
+    relativePath.startsWith("docs/")
+    && (relativePath.endsWith(".md") || relativePath.endsWith(".json"))
+  ) {
+    return true;
+  }
+  return false;
 }
 
 interface TaskMarker {
@@ -361,18 +409,18 @@ function continueMode(model: ReadModel, failCount: number): string {
 function oneLineDo(mode: string, model: ReadModel): string {
   switch (mode) {
     case "START":
-      return "ohno task start → implement inside scope → ohno verify";
+      return "ohno task start; implement in scope; ohno verify";
     case "WORK":
-      return "implement inside scope → ohno verify";
+      return "implement in scope; ohno verify";
     case "VERIFY":
     case "REPAIR":
-      return "re-read expect+test+scope → fix in scope → ohno verify";
+      return "READ Truth+design+contract first; fix implement OR plan; ohno verify";
     case "STUCK":
-      return "stop spinning code; fix test/contract or short new plan / ohno change";
+      return "stop freestyle code; re-read Truth; fix contract/test or change path";
     case "DONE":
       return "this linear plan is complete (not whole product)";
     case "PREPARE":
-      return "plan with id+expect+test+scope per task; then plan accept";
+      return "clarify requirements → Truth/design → plan expect+test+scope → accept";
     default:
       return `execute ${model.next_action}`;
   }
@@ -411,9 +459,23 @@ function automaticContinuation(
   ];
   if (mode === "REPAIR" || mode === "VERIFY" || mode === "STUCK") {
     const hint = topTruthHint(model);
+    lines.push(
+      "rule: MUST read Truth before any new decision "
+        + "(no freestyle without Truth)",
+    );
+    lines.push(
+      "branch: (A) implementation wrong → fix in scope  "
+        + "(B) plan/design wrong → update plan/design from Truth then continue",
+    );
     if (hint !== undefined) {
-      lines.push(`hint: re-read ${hint}`);
+      lines.push(`truth: ${hint}`);
     }
+  }
+  if (mode === "PREPARE") {
+    lines.push(
+      "rule: clarify ALL demand details before product code; "
+        + "Owner prompts are Truth (latest wins)",
+    );
   }
   if (failCount > 0) {
     lines.push(`fails: ${failCount}`);
@@ -423,12 +485,13 @@ function automaticContinuation(
   }
   if (mode === "STUCK") {
     lines.push(
-      "STUCK: same contract failed repeatedly — do not invent softer tests; "
-        + "narrow expect/test or Owner change.",
+      "STUCK: repeated FAIL — re-read Truth; fix contract/test or re-walk change; "
+        + "do not invent softer tests.",
     );
-  } else if (mode !== "DONE" && mode !== "PREPARE") {
+  } else if (mode !== "DONE") {
     lines.push(
-      "no Owner ask under accepted plan; stay in scope; only ohno verify closes.",
+      "auto-adjust under harness; ask Owner only for secrets/devices/business facts; "
+        + "only ohno verify proves done.",
     );
   }
   return continuation(lines.join("\n"));

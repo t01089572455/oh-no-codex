@@ -1,85 +1,43 @@
 ---
 name: oh-no-control
 description: >
-  Hub skill for Oh No, Codex! (oh-no-codex / ohno) anti-drift harness.
-  Use when the user mentions ohno, harness, bounded task, .ohno, anti-drift,
-  or which oh-no skill to use. Prefer specific oh-no-* skills when intent is clear.
-  Setup (ohno init / install) is terminal-only, not a skill.
+  Hub for Oh No, Codex! anti-drift harness. Use when user mentions ohno, harness,
+  .ohno, anti-drift, or which oh-no skill. Prefer specific oh-no-* skills when clear.
 ---
 
-# Oh No — harness (reins)
+# Oh No — harness core
 
-Not a second product. **Do not limit model capability by plan length.**
-Anti-drift is four fences, not a task quota:
+**Job:** keep Codex bound to **Truth**. Read before deciding. No freestyle without Truth.
 
-1. **Task contract** — `id` + `expect` + `test` + `scope`  
-2. **Scope fence** — only touch allowed files  
-3. **Hard black box** — real executable proof, not soft deferral  
-4. **`ohno verify`** — only PASS proves done  
+Owner talks to you. Oh No only hands on at critical moments (hooks + verify).
 
-Plan may be as long as the Owner needs. Prefer clear vertical slices when useful;
-never refuse a plan only because it has many tasks.
+## Pipeline (always)
 
-## Daily
+1. **DISCOVER** — clarify ALL demand details (you are PM). Tech/arch: you decide.  
+2. **DESIGN** — detailed design + full route from Truth (full roadmap OK).  
+3. **EXECUTE** — one frozen task: `expect` + hard `test` + `scope`.  
+4. **RECOVER** — black-box fail / drift: **read Truth first**, then fix implement **or** plan/design. Auto-adjust. Ask Owner only for secrets/devices/business facts.  
+5. **CHANGE** — new/changed requirements: re-clarify → update design → plan → expected tests → execute. Old plan is not authority.
 
-```text
-ohno / ohno next
-ohno task start
-work inside scope
-ohno verify
-```
+## Truth
 
-Bare `ohno` = one-screen brief. Full capsule: `ohno resume`.
+- Every Owner prompt = raw Truth (verbatim). Latest wins on conflict.  
+- Confirmed conclusions + design docs on Truth list govern work.  
+- Never invent direction without reading Truth.
 
-## Minimal plan task (author this)
+## Critical controls (automatic)
 
-```json
-{
-  "id": "login-redirect",
-  "status": "FROZEN",
-  "expect": "unauthenticated /app redirects to login",
-  "test": "node scripts/bb-login-redirect.mjs",
-  "scope": ["src/auth/**", "scripts/bb-login-redirect.mjs"]
-}
-```
+- PREPARE: product code blocked; Truth/docs/.ohno plan allowed.  
+- ACTIVE: scope fence.  
+- FAIL: Stop card forces Truth re-read.  
+- Done: only `ohno verify` PASS (real function, not soft echo).
 
-Aliases ok: `expected_behavior`/`test_command`/`allowed_files`.  
-`title`/`goal`/`stop`/`budget` default.  
-`acceptance_source` optional (harness writes `.ohno/acceptance-basis.json`).
+## Owner commands (almost none)
 
 ```bash
-ohno plan propose --file .ohno/review-plan.json
-ohno plan accept --revision <sha> --diff <sha>
+ohno setup    # once per repo
+ohno          # where am I
+ohno verify   # when proving a slice (or you run it automatically)
 ```
 
-## FAIL under accepted plan
-
-Do **not** stop to ask the Owner.
-
-1. `ohno` / `ohno next`  
-2. Re-read expect + test + scope  
-3. Open top Truth paths if listed  
-4. Fix inside scope → `ohno verify`  
-5. Many FAILs → STUCK: fix contract/test or `ohno change` / new plan  
-
-`OHNO_CONTINUE` / Stop `decision: block` = **continue**, not “work blocked”.
-
-## Skills map
-
-| Need | Skill |
-| --- | --- |
-| 卡在哪 | `oh-no-resume` / bare `ohno` |
-| 下一步 | `oh-no-next` |
-| 开工 | `oh-no-task` |
-| 验收 | `oh-no-verify` only |
-| 计划 | `oh-no-plan` |
-| 需求变了 | `oh-no-change` |
-| 看板 | `oh-no-cockpit` |
-
-## Hard rules
-
-1. Never claim done without **`ohno verify` PASS**.  
-2. Soft black boxes refused without `--allow-weak-plan`.  
-3. **No plan task-count cap** — length is Owner/model choice.  
-4. Authority = this cwd `.ohno/state.json`.  
-5. `PROJECT_COMPLETE` = this plan only.  
+Plan/task internals: use `oh-no-plan` / `oh-no-task` / `oh-no-verify` as needed; Owner should not need a museum.

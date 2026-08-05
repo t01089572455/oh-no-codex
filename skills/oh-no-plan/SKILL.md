@@ -1,66 +1,31 @@
 ---
 name: oh-no-plan
 description: >
-  Propose or accept an Oh No linear plan. Use when user says make a plan, 排计划,
-  plan propose, plan accept, freeze tasks, ordered_tasks, or ohno plan.
+  Propose or accept an Oh No plan after requirements/design are on Truth.
+  Use for plan propose/accept, freeze tasks, ordered_tasks.
 ---
 
 # oh-no-plan
 
-## Shape
+**Only after DISCOVER** (requirements clear) and **DESIGN** (route from Truth).
 
-**Plan length is unrestricted.** Do not shrink a plan only to satisfy a harness
-quota. Anti-drift comes from hard black boxes and scope, not fewer tasks.
-
-Each **FROZEN** task needs only:
+Plan length unrestricted. Each FROZEN task needs:
 
 | Key | Meaning |
 | --- | --- |
 | `id` | stable token |
-| `expect` | user-visible done line |
-| `test` | one exact black-box command |
-| `scope` | allowed path globs |
-| `status` | `FROZEN` |
+| `expect` | user-visible function done-line |
+| `test` | exact black-box command (real function) |
+| `scope` | allowed paths |
 
-Optional aliases: `expected_behavior`, `test_command`, `allowed_files`.  
-Defaults: `title`=`id`, `goal`=`expect`, `stop`=when test passes, `budget`=60.
-
-**OUTLINE:** `{ "id", "status": "OUTLINE" }` is enough.
-
-## Plan file
-
-```json
-{
-  "cursor": 0,
-  "ordered_tasks": [
-    {
-      "id": "t1",
-      "status": "FROZEN",
-      "expect": "…",
-      "test": "node scripts/bb-t1.mjs",
-      "scope": ["src/**", "scripts/bb-t1.mjs"]
-    }
-  ]
-}
-```
-
-`acceptance_source` is **optional**. If omitted, harness writes
-`.ohno/acceptance-basis.json` from frozen expect/test/stop.
+Aliases: `expected_behavior` / `test_command` / `allowed_files`. Other fields default.  
+`acceptance_source` optional (auto `.ohno/acceptance-basis.json`).
 
 ```bash
 ohno plan propose --file .ohno/review-plan.json
-ohno plan accept --revision <sha256> --diff <sha256>
+ohno plan accept --revision <sha> --diff <sha>
 ```
 
-- Soft / playbook-deferral `test` → refuse accept unless `--allow-weak-plan`.  
-- When `next` is `MIGRATE_ACCEPTANCE_BASIS`, run migrate first.
+Soft/playbook-only tests → refuse unless Owner `--allow-weak-plan`.
 
-## After accept
-
-If Owner said plan-and-finish: `task start` → work in scope → `ohno verify` →
-advance automatically. Do not ask again at ordinary boundaries.
-
-## FREEZE path
-
-When `ohno next` is `PROPOSE_PLAN` / `FREEZE_TASK` / `PROJECT_COMPLETE`, writing
-`.ohno/*.json` is allowed; product code is denied until `task start`.
+On **requirement change**: re-clarify, update design, then new plan + new expected tests — do not keep zombie plan authority.

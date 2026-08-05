@@ -80,34 +80,32 @@ import { verifyTask } from "./verify.js";
 import { migrateAcceptanceBasis } from "./migrate-acceptance.js";
 
 const usageText = [
-  "usage: (daily loop first)",
-  "  ohno                              # one-screen harness brief",
+  "usage: (Owner — almost none)",
+  "  ohno setup                        # once per repo: init + install + skills",
+  "  ohno                              # one-screen where-am-I",
+  "  ohno verify                       # prove active slice (or let Codex run it)",
+  "",
+  "agent/daily:",
   "  ohno status [--json] | ohno next | ohno resume",
   "  ohno task start | ohno task reopen",
-  "  ohno verify",
-  "  ohno init | ohno install | ohno doctor [--json]",
-  "  ohno skill install | ohno skill status",
-  "  ohno cockpit [--port <n>] [--replace] | ohno cockpit stop",
-  "",
-  "advanced:",
   "  ohno plan propose --file <review.json>",
   "  ohno plan accept --revision <sha256> --diff <sha256> [--allow-weak-plan]",
+  "  ohno doctor [--json] | ohno cockpit [--port <n>] [--replace] | ohno cockpit stop",
+  "",
+  "advanced:",
+  "  ohno init | ohno install | ohno skill install | ohno skill status",
   "  ohno projectors refresh [--no-agents]",
   "  ohno requirements note --text <owner words> | ohno requirements show",
   "  ohno preferences show | set | reset",
   "  ohno change begin --summary <owner words> [--concerns <labels>] [--candidates <Truth paths>]",
   "  ohno change diff | ohno change accept --change <id> --diff <displayed digest>",
-  "  ohno install | ohno hooks status --json",
+  "  ohno hooks status --json",
   "  ohno migrate acceptance-basis --file <structured-basis.json> [--diff <sha256> --head <git-head>]",
   "  ohno hook | ohno git pre-commit",
   "",
-  "Fail under an accepted plan → re-read Truth docs and retry verify;",
-  "do not stop only to ask the Owner. Soft black boxes are refused on accept.",
-  "",
-  "Hook classification: COOPERATIVE_GUARDRAIL.",
-  "Primary agent UX: Codex skill suite oh-no-* (ohno skill install).",
-  "Codex hook feature and trust: UNVERIFIED until reviewed in Codex.",
-  "Hosted and specialized mutation paths are outside complete hook coverage.",
+  "Harness: bind Codex to Truth. PREPARE blocks product code; ACTIVE scopes files;",
+  "FAIL → must re-read Truth then fix implement or plan. Soft boxes refused on accept.",
+  "Hook classification: COOPERATIVE_GUARDRAIL (not a hostile security boundary).",
   "",
 ].join("\n");
 
@@ -302,6 +300,32 @@ async function main(): Promise<void> {
     process.stdout.write(
       `${JSON.stringify(await hooksIntegrationStatus(projectPath))}\n`,
     );
+    return;
+  }
+
+  if (
+    command === "setup"
+    && subcommand === undefined
+    && args.length === 0
+  ) {
+    const chunks: string[] = [];
+    if (!(await stateExists(projectPath))) {
+      await initialize(projectPath, []);
+      chunks.push("setup: initialized .ohno");
+    } else {
+      chunks.push("setup: already initialized (skipped init)");
+    }
+    chunks.push((await installGuardrails(projectPath)).trimEnd());
+    chunks.push(
+      serializeSkillInstallResult(await installOhNoSkill()).trimEnd(),
+    );
+    chunks.push(
+      "",
+      "SETUP_OK: talk to Codex under Oh No (clarify → design → plan → execute).",
+      "Glance: ohno   Prove slice: ohno verify",
+      "",
+    );
+    process.stdout.write(`${chunks.join("\n")}\n`);
     return;
   }
 

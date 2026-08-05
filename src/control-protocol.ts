@@ -1,31 +1,24 @@
 /**
- * Short AGENTS pointer. Full procedure lives in Codex skills oh-no-*
- * (installed by `ohno install` / `ohno skill install`).
+ * Short AGENTS pointer. Skills + hooks do the rest.
  */
 export function renderControlProtocolMarkdown(): string {
   return [
-    "### Oh No harness (reins)",
+    "### Oh No harness (critical moments only)",
     "",
-    "Setup (terminal): `ohno init` then `ohno install`. Refresh: `ohno skill install`.",
-    "Daily: bare `ohno` | `ohno next` | `ohno task start` | `ohno verify`.",
-    "Skills: hub `oh-no-control`, plus `oh-no-verify` / `oh-no-task` / `oh-no-plan` / `oh-no-resume`.",
-    "Authority: **this cwd** `.ohno/state.json` only. Done => **ohno verify** PASS only.",
+    "Setup once: `ohno setup` (or `ohno init` + `ohno install`). Then talk to Codex.",
+    "Glance: bare `ohno`. Done proof: **ohno verify** only. Skills: `oh-no-control`.",
+    "Authority: this cwd `.ohno/state.json`.",
     "",
-    "### Anti-drift (eighteen sins -> four fences)",
+    "### Pipeline",
     "",
-    "1. **Plan length unrestricted** - do not cap model capability; anti-drift is",
-    "   hard boxes + scope + verify, not fewer tasks.",
-    "2. **Task shape** - only `id`, `expect`, `test`, `scope` (aliases: expected_behavior,",
-    "   test_command, allowed_files). title/goal/stop/budget default.",
-    "3. **Scope fence** - PreToolUse/pre-commit; no product code outside scope.",
-    "4. **Hard black box** - soft/playbook-deferral tests refused without `--allow-weak-plan`.",
+    "1. **DISCOVER** — clarify ALL demand details; tech/arch Codex decides.",
+    "2. **DESIGN** — detailed design + full route from Truth (length free).",
+    "3. **EXECUTE** — one task: expect + hard test + scope; real function pass.",
+    "4. **RECOVER** — FAIL/drift: MUST read Truth first; fix implement OR plan.",
+    "5. **CHANGE** — new requirements: re-clarify → design → plan → expected tests.",
     "",
-    "Accepted plan => cooperative auto continue (`OHNO_CONTINUE`; Codex `block` = continue).",
-    "FAIL => REPAIR in scope + re-read Truth top paths; do **not** stop to ask Owner.",
-    "Repeated FAIL => STUCK (fix contract/test or new short plan / `ohno change`).",
-    "`PROJECT_COMPLETE` = this linear plan only, not the whole product.",
-    "",
-    "Windows: `ohno.cmd` on PATH; never double-click `dist/cli.js`.",
+    "Owner prompts = raw Truth (latest wins). Do not freestyle without reading Truth.",
+    "Hooks block product code in PREPARE; scope fence when ACTIVE; soft boxes refused.",
     "",
   ].join("\n");
 }

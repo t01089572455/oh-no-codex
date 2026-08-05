@@ -259,7 +259,7 @@ test("PreToolUse denies a parseable mutation when no task is active", async (t) 
   const output = preToolUse(projectPath, "apply_patch", {
     command: applyPatchCommand("src/new-file.ts"),
   });
-  assertDenied(output, /no active task.*next.*PROPOSE_PLAN/i);
+  assertDenied(output, /PREPARE|PROPOSE_PLAN|product implementation|Truth/i);
 });
 
 test("PreToolUse allows .ohno plan JSON when next is PROPOSE_PLAN (freeze path)", async (t) => {
@@ -275,15 +275,24 @@ test("PreToolUse allows .ohno plan JSON when next is PROPOSE_PLAN (freeze path)"
     "plan draft under .ohno must be allowed before task start",
   );
 
+  const docsOk = preToolUse(projectPath, "apply_patch", {
+    command: applyPatchCommand("docs/DESIGN.md"),
+  });
+  assert.equal(
+    docsOk.hookSpecificOutput?.permissionDecision,
+    undefined,
+    "governing docs may be written in PREPARE",
+  );
+
   const stateDenied = preToolUse(projectPath, "apply_patch", {
     command: applyPatchCommand(".ohno/state.json"),
   });
-  assertDenied(stateDenied, /state\.json|only \.ohno plan/i);
+  assertDenied(stateDenied, /state\.json|PREPARE|product/i);
 
   const productDenied = preToolUse(projectPath, "apply_patch", {
     command: applyPatchCommand("src/app.js"),
   });
-  assertDenied(productDenied, /no active task.*PROPOSE_PLAN|only \.ohno plan/i);
+  assertDenied(productDenied, /PREPARE|product|PROPOSE_PLAN|Blocked/i);
 });
 
 test("PreToolUse allows .ohno plan JSON when next is FREEZE_TASK", async (t) => {
@@ -583,8 +592,8 @@ test("CLI help names cooperative coverage without authority claims", async (t) =
   assert.equal(result.status, 0, result.stderr);
   assert.equal(result.stderr, "");
   assert.match(result.stdout, /COOPERATIVE_GUARDRAIL/);
-  assert.match(result.stdout, /Codex.*trust.*UNVERIFIED/i);
-  assert.match(result.stdout, /hosted|specialized.*outside.*coverage/i);
+  assert.match(result.stdout, /ohno setup|Harness.*Truth/i);
+  assert.match(result.stdout, /not a hostile security boundary|PREPARE|soft boxes/i);
   assert.doesNotMatch(
     result.stdout,
     /\bproduction\b|\bfully enforced\b|\bsecure\b|\brelease ready\b/i,
