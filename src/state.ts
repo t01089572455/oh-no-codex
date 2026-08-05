@@ -171,6 +171,30 @@ export interface TruthInventory {
   classification: TruthClassificationEntry[];
 }
 
+/** Owner-vision pipeline phase (0.3+). OPEN = legacy / ungated. */
+export type HarnessPhase =
+  | "OPEN"
+  | "DISCOVER"
+  | "DESIGN"
+  | "PLAN_READY"
+  | "EXECUTE"
+  | "RECOVER"
+  | "CHANGE";
+
+export interface TruthReadReceipt {
+  read_at: string;
+  paths: string[];
+  paths_digest: string;
+}
+
+/** Optional control block: missing on pre-0.3 state files (legacy OPEN). */
+export interface HarnessControl {
+  phase: HarnessPhase;
+  requirements_digest: string | null;
+  design_digest: string | null;
+  truth_read: TruthReadReceipt | null;
+}
+
 export interface ProjectState {
   /** 2 = pre–structured-basis (migrate); 3 = structured acceptance basis. */
   schema_version: 2 | 3;
@@ -202,6 +226,8 @@ export interface ProjectState {
       summary: string;
       started_at: string;
     };
+  /** 0.3+ phase control; omit on legacy files. */
+  harness?: HarnessControl | null;
 }
 
 function stateDirectory(projectPath: string): string {
@@ -712,24 +738,79 @@ function isDocumentSync(
     && isRfc3339Timestamp(value.started_at);
 }
 
-function isProjectState(value: unknown): value is ProjectState {
+const projectStateRequiredKeys = [
+  "schema_version",
+  "goal",
+  "status",
+  "plan_revision",
+  "ordered_tasks",
+  "cursor",
+  "plan_review",
+  "pending_plan",
+  "truth_inventory",
+  "active_task",
+  "last_verification",
+  "completed",
+  "document_sync",
+] as const;
+
+function isHarnessControl(value: unknown): value is HarnessControl {
   if (
     !isRecord(value)
     || !hasExactKeys(value, [
-      "schema_version",
-      "goal",
-      "status",
-      "plan_revision",
-      "ordered_tasks",
-      "cursor",
-      "plan_review",
-      "pending_plan",
-      "truth_inventory",
-      "active_task",
-      "last_verification",
-      "completed",
-      "document_sync",
+      "phase",
+      "requirements_digest",
+      "design_digest",
+      "truth_read",
     ])
+  ) {
+    return false;
+  }
+  const phases = new Set([
+    "OPEN",
+    "DISCOVER",
+    "DESIGN",
+    "PLAN_READY",
+    "EXECUTE",
+    "RECOVER",
+    "CHANGE",
+  ]);
+  if (!phases.has(String(value.phase))) {
+    return false;
+  }
+  if (
+    !(value.requirements_digest === null || isSha256(value.requirements_digest))
+    || !(value.design_digest === null || isSha256(value.design_digest))
+  ) {
+    return false;
+  }
+  if (value.truth_read === null) {
+    return true;
+  }
+  if (
+    !isRecord(value.truth_read)
+    || !isRfc3339Timestamp(value.truth_read.read_at)
+    || !Array.isArray(value.truth_read.paths)
+    || !value.truth_read.paths.every((path) => typeof path === "string")
+    || !isSha256(value.truth_read.paths_digest)
+  ) {
+    return false;
+  }
+  return true;
+}
+
+function isProjectState(value: unknown): value is ProjectState {
+  if (
+    !isRecord(value)
+    || !projectStateRequiredKeys.every((key) => key in value)
+    || Object.keys(value).some(
+      (key) =>
+        !(projectStateRequiredKeys as readonly string[]).includes(key)
+        && key !== "harness",
+    )
+    || (value.harness !== undefined
+      && value.harness !== null
+      && !isHarnessControl(value.harness))
     || (value.schema_version !== 2 && value.schema_version !== 3)
     || !isProjectGoal(value.goal)
     || !Number.isSafeInteger(value.cursor)
@@ -889,6 +970,12 @@ export function initialState(
       change_id: null,
       required_paths: [],
       reviewed_diff_digest: null,
+    },
+    harness: {
+      phase: "DISCOVER",
+      requirements_digest: null,
+      design_digest: null,
+      truth_read: null,
     },
   };
 }

@@ -59,6 +59,8 @@ export function runInit(cwd, _goalOrOptions = {}, options = {}) {
       : options;
   const result = runCli(cwd, ["init"], opts);
   assert.equal(result.status, 0, result.stderr);
+  // Fixtures skip interactive DISCOVER; production still starts DISCOVER.
+  sealHarnessForTests(cwd);
   return result;
 }
 
@@ -140,6 +142,39 @@ export function writeDefaultAcceptanceBasis(cwd, tasks, relativePath) {
   );
 }
 
+/**
+ * Satisfy 0.3 harness seals so plan accept is allowed after init (DISCOVER).
+ */
+export function sealHarnessForTests(cwd) {
+  const reqPath = resolve(cwd, ".ohno", "REQUIREMENTS.md");
+  let prior = "";
+  try {
+    prior = readFileSync(reqPath, "utf8");
+  } catch {
+    prior = "# Requirements\n";
+  }
+  writeFileSync(
+    reqPath,
+    `${prior}\n\n## Owner intent (test seal)\n\n`
+      + "Ship the bounded black-box behavior for this disposable fixture. "
+      + "Clarify acceptance as the frozen expect/test on the plan tasks. "
+      + "Non-goals: expand scope outside allowed_files.\n",
+    "utf8",
+  );
+  writeFileSync(
+    resolve(cwd, ".ohno", "DESIGN.md"),
+    "# Design (test seal)\n\n"
+      + "Route: implement the frozen task contract only. "
+      + "Full plan may list multiple tasks; execute cursor-first with hard tests.\n"
+      + "Components: subject under allowed_files; verify via exact test_command.\n",
+    "utf8",
+  );
+  const sealedReq = runCli(cwd, ["phase", "seal-requirements"]);
+  assert.equal(sealedReq.status, 0, sealedReq.stderr);
+  const sealedDes = runCli(cwd, ["phase", "seal-design"]);
+  assert.equal(sealedDes.status, 0, sealedDes.stderr);
+}
+
 export function reviewPlan(
   cwd,
   {
@@ -150,6 +185,7 @@ export function reviewPlan(
     allowWeakPlan = false,
   } = {},
 ) {
+  sealHarnessForTests(cwd);
   // Independent basis first (same field values as frozen tasks by fixture design).
   const frozen = tasks.filter((t) => t.status === "FROZEN");
   writeStructuredAcceptanceBasis(

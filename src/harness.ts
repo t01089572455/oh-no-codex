@@ -1,0 +1,492 @@
+/**
+ * Owner-vision harness control: phase gates, seals, truth-read receipts.
+ * Human surface stays tiny; Agent/hooks call these internals.
+ */
+
+import { createHash } from "node:crypto";
+import {
+  access,
+  mkdir,
+  readFile,
+  writeFile,
+} from "node:fs/promises";
+import { dirname, resolve } from "node:path";
+
+import {
+  compareAndSwapStateAtomic,
+  readState,
+} from "./state.js";
+import type {
+  HarnessControl,
+  HarnessPhase,
+  ProjectState,
+  TruthReadReceipt,
+} from "./state.js";
+
+export const REQUIREMENTS_PATH = ".ohno/REQUIREMENTS.md";
+export const OWNER_INPUTS_PATH = ".ohno/OWNER-INPUTS.md";
+export const DESIGN_PATH = ".ohno/DESIGN.md";
+
+const PRODUCT_CODE =
+  /^(src|lib|app|apps|packages|services|server|cmd|internal|miniprogram|cloudfunctions)\//iu;
+
+export function defaultHarness(): HarnessControl {
+  return {
+    phase: "DISCOVER",
+    requirements_digest: null,
+    design_digest: null,
+    truth_read: null,
+  };
+}
+
+export function effectiveHarness(state: ProjectState): HarnessControl {
+  return state.harness ?? {
+    phase: "OPEN",
+    requirements_digest: null,
+    design_digest: null,
+    truth_read: null,
+  };
+}
+
+/** Legacy OPEN = pre-0.3 projects: no phase gates. */
+export function isOpenHarness(state: ProjectState): boolean {
+  return state.harness == null || state.harness.phase === "OPEN";
+}
+
+export function phaseAllowsProductCode(state: ProjectState): boolean {
+  if (isOpenHarness(state)) {
+    return true;
+  }
+  const phase = effectiveHarness(state).phase;
+  return phase === "EXECUTE" || phase === "RECOVER";
+}
+
+export function productCodeBlockedReason(state: ProjectState): string | null {
+  if (phaseAllowsProductCode(state)) {
+    return null;
+  }
+  const phase = effectiveHarness(state).phase;
+  if (phase === "DISCOVER") {
+    return "phase DISCOVER: clarify ALL requirements first; "
+      + "seal with `ohno phase seal-requirements` before product code";
+  }
+  if (phase === "DESIGN") {
+    return "phase DESIGN: finish design then `ohno phase seal-design` "
+      + "and accept a plan before product code";
+  }
+  if (phase === "PLAN_READY") {
+    return "phase PLAN_READY: run plan propose/accept then task start "
+      + "before product code";
+  }
+  if (phase === "CHANGE") {
+    return "phase CHANGE: re-clarify, seal requirements+design, new plan "
+      + "before product code again";
+  }
+  return `phase ${phase}: product code not allowed`;
+}
+
+export function looksLikeProductPath(relativePath: string): boolean {
+  const path = relativePath.replaceAll("\\", "/");
+  if (PRODUCT_CODE.test(path)) {
+    return true;
+  }
+  // Loose product sources at repo root
+  return /\.(ts|tsx|js|jsx|mjs|cjs|py|go|rs|java|kt|swift|cs)$/iu.test(path)
+    && !path.startsWith(".ohno/")
+    && !path.startsWith("docs/")
+    && !path.startsWith("test/")
+    && !path.startsWith("tests/")
+    && path !== "AGENTS.md";
+}
+
+async function fileDigest(
+  projectPath: string,
+  relativePath: string,
+): Promise<string | null> {
+  try {
+    const bytes = await readFile(resolve(projectPath, relativePath));
+    return createHash("sha256").update(bytes).digest("hex");
+  } catch {
+    return null;
+  }
+}
+
+async function combinedDigest(
+  projectPath: string,
+  relativePaths: string[],
+): Promise<string> {
+  const hash = createHash("sha256");
+  hash.update("ohno-seal-v1\n");
+  for (const relative of relativePaths) {
+    hash.update(relative);
+    hash.update("\0");
+    const absolute = resolve(projectPath, relative);
+    try {
+      hash.update(await readFile(absolute));
+    } catch {
+      hash.update("MISSING\n");
+    }
+    hash.update("\n");
+  }
+  return hash.digest("hex");
+}
+
+function nonTrivialMarkdown(text: string): boolean {
+  const body = text
+    .replace(/^#.*$/gmu, "")
+    .replace(/Project initialized/giu, "")
+    .replace(/Default working method/giu, "")
+    .trim();
+  return Buffer.byteLength(body, "utf8") >= 80;
+}
+
+/**
+ * Seal requirements after DISCOVER (or CHANGE).
+ * Requires non-trivial REQUIREMENTS.md (Owner intent captured).
+ */
+export async function sealRequirements(projectPath: string): Promise<string> {
+  const state = await readState(projectPath);
+  let requirements: string;
+  try {
+    requirements = await readFile(
+      resolve(projectPath, REQUIREMENTS_PATH),
+      "utf8",
+    );
+  } catch {
+    throw new Error(
+      `missing ${REQUIREMENTS_PATH}; capture Owner intent (notes / Codex) first`,
+    );
+  }
+  if (!nonTrivialMarkdown(requirements)) {
+    throw new Error(
+      `${REQUIREMENTS_PATH} is too thin for seal; clarify demand details `
+        + "(need substantial Owner-intent prose, not only init boilerplate)",
+    );
+  }
+  const digest = await combinedDigest(projectPath, [
+    REQUIREMENTS_PATH,
+    OWNER_INPUTS_PATH,
+  ]);
+  const ok = await compareAndSwapStateAtomic(projectPath, state, {
+    ...state,
+    harness: {
+      phase: "DESIGN",
+      requirements_digest: digest,
+      design_digest: null,
+      truth_read: null,
+    },
+  });
+  if (!ok) {
+    throw new Error("state changed while sealing requirements");
+  }
+  return (
+    `SEALED_REQUIREMENTS: ${digest}\n`
+    + "PHASE: DESIGN\n"
+    + "Next: write detailed design to .ohno/DESIGN.md then "
+    + "`ohno phase seal-design`\n"
+  );
+}
+
+/**
+ * Seal design after DESIGN phase.
+ */
+export async function sealDesign(projectPath: string): Promise<string> {
+  const state = await readState(projectPath);
+  const current = effectiveHarness(state);
+  if (state.harness != null) {
+    if (current.phase === "EXECUTE" || current.phase === "RECOVER") {
+      throw new Error(
+        `cannot seal design in phase ${current.phase}; `
+          + "run `ohno phase declare-change` first",
+      );
+    }
+    if (current.requirements_digest == null && current.phase !== "OPEN") {
+      throw new Error(
+        "requirements not sealed; run `ohno phase seal-requirements` first",
+      );
+    }
+  }
+
+  const designPath = resolve(projectPath, DESIGN_PATH);
+  let design: string;
+  try {
+    design = await readFile(designPath, "utf8");
+  } catch {
+    throw new Error(
+      `missing ${DESIGN_PATH}; Codex must write detailed design + route first`,
+    );
+  }
+  if (!nonTrivialMarkdown(design)) {
+    throw new Error(
+      `${DESIGN_PATH} is too thin; write real design/route before seal`,
+    );
+  }
+  const digest = await combinedDigest(projectPath, [DESIGN_PATH]);
+  const requirementsDigest = current.requirements_digest
+    ?? await combinedDigest(projectPath, [REQUIREMENTS_PATH, OWNER_INPUTS_PATH]);
+  const ok = await compareAndSwapStateAtomic(projectPath, state, {
+    ...state,
+    harness: {
+      phase: "PLAN_READY",
+      requirements_digest: requirementsDigest,
+      design_digest: digest,
+      truth_read: null,
+    },
+  });
+  if (!ok) {
+    throw new Error("state changed while sealing design");
+  }
+  return (
+    `SEALED_DESIGN: ${digest}\n`
+    + "PHASE: PLAN_READY\n"
+    + "Next: plan propose/accept (id+expect+test+scope), then task start\n"
+  );
+}
+
+/**
+ * Record that Truth paths were actually read (file bytes hashed).
+ */
+export async function recordTruthRead(
+  projectPath: string,
+  relativePaths: string[],
+): Promise<string> {
+  if (relativePaths.length === 0) {
+    throw new Error("truth-read needs at least one project-relative path");
+  }
+  const normalized = relativePaths.map((path) => path.replaceAll("\\", "/"));
+  const digests: string[] = [];
+  for (const relative of normalized) {
+    const digest = await fileDigest(projectPath, relative);
+    if (digest === null) {
+      throw new Error(`cannot read Truth path: ${relative}`);
+    }
+    digests.push(`${relative}=${digest}`);
+  }
+  const pathsDigest = createHash("sha256")
+    .update(digests.join("\n"))
+    .digest("hex");
+  const receipt: TruthReadReceipt = {
+    read_at: new Date().toISOString(),
+    paths: normalized,
+    paths_digest: pathsDigest,
+  };
+  const state = await readState(projectPath);
+  const harness = {
+    ...effectiveHarness(state),
+    truth_read: receipt,
+  };
+  if (harness.phase === "OPEN" && state.harness == null) {
+    // Keep OPEN but attach receipt for optional use
+  }
+  const ok = await compareAndSwapStateAtomic(projectPath, state, {
+    ...state,
+    harness: state.harness == null && harness.phase === "OPEN"
+      ? { ...defaultHarness(), phase: "OPEN", truth_read: receipt }
+      : harness,
+  });
+  if (!ok) {
+    throw new Error("state changed while recording truth-read");
+  }
+  return (
+    `TRUTH_READ: ${pathsDigest}\n`
+    + `PATHS: ${normalized.join(", ")}\n`
+    + `AT: ${receipt.read_at}\n`
+  );
+}
+
+export function truthReadIsFresh(
+  state: ProjectState,
+  maxAgeMs = 2 * 60 * 60 * 1000,
+): boolean {
+  const receipt = effectiveHarness(state).truth_read;
+  if (receipt == null) {
+    return false;
+  }
+  const at = Date.parse(receipt.read_at);
+  if (Number.isNaN(at)) {
+    return false;
+  }
+  return Date.now() - at <= maxAgeMs;
+}
+
+/**
+ * After verify FAIL: enter RECOVER and clear truth-read (must re-read).
+ */
+export async function enterRecoverAfterFail(
+  projectPath: string,
+  previous: ProjectState,
+): Promise<void> {
+  if (isOpenHarness(previous) && previous.harness == null) {
+    return;
+  }
+  if (previous.harness == null) {
+    return;
+  }
+  const phase = previous.harness.phase;
+  if (phase !== "EXECUTE" && phase !== "RECOVER") {
+    return;
+  }
+  const latest = await readState(projectPath);
+  if (latest.harness == null) {
+    return;
+  }
+  await compareAndSwapStateAtomic(projectPath, latest, {
+    ...latest,
+    harness: {
+      ...latest.harness,
+      phase: "RECOVER",
+      truth_read: null,
+    },
+  });
+}
+
+/**
+ * After verify PASS with active progression: stay EXECUTE.
+ */
+export async function markExecuteAfterPass(
+  projectPath: string,
+  previous: ProjectState,
+): Promise<void> {
+  if (previous.harness == null) {
+    return;
+  }
+  const latest = await readState(projectPath);
+  if (latest.harness == null) {
+    return;
+  }
+  if (
+    latest.harness.phase !== "RECOVER"
+    && latest.harness.phase !== "EXECUTE"
+    && latest.harness.phase !== "PLAN_READY"
+  ) {
+    return;
+  }
+  await compareAndSwapStateAtomic(projectPath, latest, {
+    ...latest,
+    harness: {
+      ...latest.harness,
+      phase: "EXECUTE",
+    },
+  });
+}
+
+/**
+ * Requirement change: revoke execution authority, back to CHANGE/DISCOVER.
+ */
+export async function declareHarnessChange(
+  projectPath: string,
+  summary: string,
+): Promise<string> {
+  if (summary.trim() === "") {
+    throw new Error("change summary must be non-empty");
+  }
+  const state = await readState(projectPath);
+  const ok = await compareAndSwapStateAtomic(projectPath, state, {
+    ...state,
+    status: state.document_sync.status === "PENDING_REVIEW"
+      ? state.status
+      : "IDLE",
+    active_task: null,
+    // Keep plan bytes for audit but revoke execution via phase
+    harness: {
+      phase: "CHANGE",
+      requirements_digest: null,
+      design_digest: null,
+      truth_read: null,
+    },
+  });
+  if (!ok) {
+    throw new Error("state changed while declaring change");
+  }
+  const note = `${new Date().toISOString()} CHANGE: ${summary.trim()}\n`;
+  const reqPath = resolve(projectPath, REQUIREMENTS_PATH);
+  try {
+    await access(reqPath);
+    await writeFile(reqPath, `${await readFile(reqPath, "utf8")}\n${note}`, "utf8");
+  } catch {
+    await mkdir(dirname(reqPath), { recursive: true });
+    await writeFile(reqPath, `# Requirements\n\n${note}`, "utf8");
+  }
+  return (
+    `PHASE: CHANGE\n`
+    + "Execution revoked. Re-clarify details, then:\n"
+    + "  ohno phase seal-requirements\n"
+    + "  ohno phase seal-design\n"
+    + "  plan propose/accept with updated expects/tests\n"
+    + `SUMMARY: ${summary.trim()}\n`
+  );
+}
+
+export function assertPlanAcceptAllowed(state: ProjectState): void {
+  if (state.harness == null || state.harness.phase === "OPEN") {
+    return;
+  }
+  const { phase, requirements_digest, design_digest } = state.harness;
+  if (phase === "DISCOVER" || phase === "CHANGE") {
+    throw new Error(
+      `HARNESS_GATE: phase ${phase} cannot accept plan; `
+        + "seal requirements+design first",
+    );
+  }
+  if (requirements_digest == null) {
+    throw new Error(
+      "HARNESS_GATE: seal requirements before plan accept "
+        + "(`ohno phase seal-requirements`)",
+    );
+  }
+  if (design_digest == null) {
+    throw new Error(
+      "HARNESS_GATE: seal design before plan accept "
+        + "(`ohno phase seal-design`)",
+    );
+  }
+}
+
+export async function onPlanAccepted(projectPath: string): Promise<void> {
+  const state = await readState(projectPath);
+  if (state.harness == null) {
+    return;
+  }
+  await compareAndSwapStateAtomic(projectPath, state, {
+    ...state,
+    harness: {
+      ...state.harness,
+      phase: "EXECUTE",
+      truth_read: null,
+    },
+  });
+}
+
+export function harnessBriefLines(state: ProjectState): string[] {
+  const h = effectiveHarness(state);
+  if (state.harness == null && h.phase === "OPEN") {
+    return ["harness: OPEN (legacy — no phase gates)"];
+  }
+  return [
+    `harness.phase: ${h.phase}`,
+    `harness.requirements_sealed: ${h.requirements_digest != null}`,
+    `harness.design_sealed: ${h.design_digest != null}`,
+    `harness.truth_read_fresh: ${truthReadIsFresh(state)}`,
+  ];
+}
+
+export async function ensureDesignStub(projectPath: string): Promise<void> {
+  const path = resolve(projectPath, DESIGN_PATH);
+  try {
+    await access(path);
+  } catch {
+    await mkdir(dirname(path), { recursive: true });
+    await writeFile(
+      path,
+      [
+        "# Design (Oh No)",
+        "",
+        "Replace this stub with detailed design and full route from Truth.",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+  }
+}
+
+export type { HarnessPhase };

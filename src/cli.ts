@@ -78,33 +78,30 @@ import { startTask } from "./task-start.js";
 import { reopenLastCompletedTask } from "./task-reopen.js";
 import { verifyTask } from "./verify.js";
 import { migrateAcceptanceBasis } from "./migrate-acceptance.js";
+import {
+  declareHarnessChange,
+  recordTruthRead,
+  sealDesign,
+  sealRequirements,
+} from "./harness.js";
 
 const usageText = [
-  "usage: (Owner — almost none)",
-  "  ohno setup                        # once per repo: init + install + skills",
-  "  ohno                              # one-screen where-am-I",
-  "  ohno verify                       # prove active slice (or let Codex run it)",
+  "usage: (Owner)",
+  "  ohno setup                        # once: init + install + skills",
+  "  ohno                              # where am I",
   "",
-  "agent/daily:",
-  "  ohno status [--json] | ohno next | ohno resume",
-  "  ohno task start | ohno task reopen",
-  "  ohno plan propose --file <review.json>",
-  "  ohno plan accept --revision <sha256> --diff <sha256> [--allow-weak-plan]",
-  "  ohno doctor [--json] | ohno cockpit [--port <n>] [--replace] | ohno cockpit stop",
+  "pipeline (Codex / internal — Owner usually never types these):",
+  "  ohno phase seal-requirements      # after demand is clear",
+  "  ohno phase seal-design            # after .ohno/DESIGN.md written",
+  "  ohno plan propose|accept …        # then task start + verify",
+  "  ohno truth-read --paths a,b,…     # required after FAIL before code",
+  "  ohno phase declare-change --summary <words>  # new/changed requirements",
+  "  ohno verify",
   "",
-  "advanced:",
-  "  ohno init | ohno install | ohno skill install | ohno skill status",
-  "  ohno projectors refresh [--no-agents]",
-  "  ohno requirements note --text <owner words> | ohno requirements show",
-  "  ohno preferences show | set | reset",
-  "  ohno change begin --summary <owner words> [--concerns <labels>] [--candidates <Truth paths>]",
-  "  ohno change diff | ohno change accept --change <id> --diff <displayed digest>",
-  "  ohno hooks status --json",
-  "  ohno migrate acceptance-basis --file <structured-basis.json> [--diff <sha256> --head <git-head>]",
-  "  ohno hook | ohno git pre-commit",
+  "more: status|next|resume|task|doctor|cockpit|change|requirements|…",
   "",
-  "Harness: bind Codex to Truth. PREPARE blocks product code; ACTIVE scopes files;",
-  "FAIL → must re-read Truth then fix implement or plan. Soft boxes refused on accept.",
+  "Harness: DISCOVER→DESIGN→PLAN→EXECUTE; FAIL→RECOVER needs truth-read;",
+  "CHANGE revokes execution. Soft black boxes refused.",
   "Hook classification: COOPERATIVE_GUARDRAIL (not a hostile security boundary).",
   "",
 ].join("\n");
@@ -304,14 +301,14 @@ async function main(): Promise<void> {
   }
 
   if (
-    command === "setup"
+    (command === "setup" || command === "bootstrap")
     && subcommand === undefined
     && args.length === 0
   ) {
     const chunks: string[] = [];
     if (!(await stateExists(projectPath))) {
       await initialize(projectPath, []);
-      chunks.push("setup: initialized .ohno");
+      chunks.push("setup: initialized .ohno (phase DISCOVER)");
     } else {
       chunks.push("setup: already initialized (skipped init)");
     }
@@ -321,11 +318,38 @@ async function main(): Promise<void> {
     );
     chunks.push(
       "",
-      "SETUP_OK: talk to Codex under Oh No (clarify → design → plan → execute).",
-      "Glance: ohno   Prove slice: ohno verify",
+      "SETUP_OK: talk to Codex only.",
+      "Pipeline: clarify → seal-requirements → design → seal-design → plan → execute.",
+      "FAIL: truth-read then fix. CHANGE: phase declare-change then re-seal.",
       "",
     );
     process.stdout.write(`${chunks.join("\n")}\n`);
+    return;
+  }
+
+  if (command === "phase" && subcommand === "seal-requirements") {
+    process.stdout.write(await sealRequirements(projectPath));
+    return;
+  }
+  if (command === "phase" && subcommand === "seal-design") {
+    process.stdout.write(await sealDesign(projectPath));
+    return;
+  }
+  if (command === "phase" && subcommand === "declare-change") {
+    const summary = requiredValue(args, "--summary");
+    process.stdout.write(await declareHarnessChange(projectPath, summary));
+    return;
+  }
+  if (command === "truth-read" && subcommand === undefined) {
+    const pathsFlag = args.indexOf("--paths");
+    if (pathsFlag === -1 || args[pathsFlag + 1] === undefined) {
+      throw new Error("usage: ohno truth-read --paths path1,path2,…");
+    }
+    const list = String(args[pathsFlag + 1])
+      .split(",")
+      .map((path) => path.trim())
+      .filter(Boolean);
+    process.stdout.write(await recordTruthRead(projectPath, list));
     return;
   }
 

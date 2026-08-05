@@ -1,3 +1,10 @@
+import {
+  effectiveHarness,
+  looksLikeProductPath,
+  phaseAllowsProductCode,
+  productCodeBlockedReason,
+  truthReadIsFresh,
+} from "../harness.js";
 import { needsAcceptanceBasisMigration } from "../state.js";
 import { readModel } from "../read-model.js";
 import type { ReadModel } from "../read-model.js";
@@ -212,12 +219,26 @@ async function handlePreToolUse(
     );
   }
 
+  // Phase gate: DISCOVER/DESIGN/PLAN_READY/CHANGE cannot touch product code.
+  if (!phaseAllowsProductCode(state)) {
+    const productHits = targets.filter(({ relativePath }) =>
+      relativePath !== null && looksLikeProductPath(relativePath)
+    );
+    if (productHits.length > 0) {
+      return denial(
+        (productCodeBlockedReason(state)
+          ?? "product code blocked by harness phase")
+        + `; blocked: ${displayPaths(productHits)}`,
+      );
+    }
+  }
+
   if (state.active_task === null) {
     const model = await readModel(projectPath);
     const next = model.next_action;
     // PREPARE (no active task): allow Truth / requirements / design / .ohno
     // plan files. Deny product code so Codex cannot skip clarify→design.
-    if (isPlanMaintenanceNextAction(next)) {
+    if (isPlanMaintenanceNextAction(next) || !phaseAllowsProductCode(state)) {
       const allowed = prepareAllowedRelativePaths(state);
       const outside = targets.filter(({ relativePath }) =>
         relativePath === null
@@ -227,17 +248,34 @@ async function handlePreToolUse(
         return {};
       }
       return denial(
-        `PREPARE (next=${next}): no product implementation yet. `
+        `PREPARE (next=${next}, phase=${effectiveHarness(state).phase}): `
+        + "no product implementation yet. "
         + "Only Truth/requirements/design/.ohno plan files. "
         + `Blocked: ${displayPaths(outside)}. `
-        + "Clarify requirements → design → plan (id+expect+test+scope) → "
-        + "ohno plan propose/accept → ohno task start.",
+        + "seal-requirements → seal-design → plan accept → task start.",
       );
     }
     return denial(
       `no active task; next is ${next}. `
         + "Read Truth and freeze a plan before product code.",
     );
+  }
+
+  // RECOVER: must re-read Truth before mutating product again.
+  if (
+    state.harness?.phase === "RECOVER"
+    && !truthReadIsFresh(state)
+  ) {
+    const productHits = targets.filter(({ relativePath }) =>
+      relativePath !== null && looksLikeProductPath(relativePath)
+    );
+    if (productHits.length > 0) {
+      return denial(
+        "phase RECOVER: run `ohno truth-read --paths <Truth files>` "
+          + "before changing product code (must re-read Truth after FAIL). "
+          + "Then fix implement (scope) OR plan/design.",
+      );
+    }
   }
 
   const outside = pathsOutsideGlobs(

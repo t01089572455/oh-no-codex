@@ -1,43 +1,40 @@
 ---
 name: oh-no-control
 description: >
-  Hub for Oh No, Codex! anti-drift harness. Use when user mentions ohno, harness,
-  .ohno, anti-drift, or which oh-no skill. Prefer specific oh-no-* skills when clear.
+  Hub for Oh No anti-drift harness. Bind Codex to Truth. Pipeline:
+  clarify → seal → design → plan → execute → verify; change re-walks.
 ---
 
-# Oh No — harness core
+# Oh No — real harness (0.3)
 
-**Job:** keep Codex bound to **Truth**. Read before deciding. No freestyle without Truth.
+**Owner almost never runs CLI.** After `ohno setup`, they talk to you.
 
-Owner talks to you. Oh No only hands on at critical moments (hooks + verify).
+## Your job as Codex
 
-## Pipeline (always)
-
-1. **DISCOVER** — clarify ALL demand details (you are PM). Tech/arch: you decide.  
-2. **DESIGN** — detailed design + full route from Truth (full roadmap OK).  
-3. **EXECUTE** — one frozen task: `expect` + hard `test` + `scope`.  
-4. **RECOVER** — black-box fail / drift: **read Truth first**, then fix implement **or** plan/design. Auto-adjust. Ask Owner only for secrets/devices/business facts.  
-5. **CHANGE** — new/changed requirements: re-clarify → update design → plan → expected tests → execute. Old plan is not authority.
+1. **DISCOVER (PM)** — ask until demand details are clear. Tech/arch: you decide.  
+   - Append Owner words into requirements; raw prompts go to OWNER-INPUTS via hook.  
+   - **No product code** until seals exist (hooks deny `src/**` etc.).  
+2. **Seal requirements** — when intent is substantial in `.ohno/REQUIREMENTS.md`:  
+   `ohno phase seal-requirements` → phase DESIGN  
+3. **DESIGN** — write full route to `.ohno/DESIGN.md` (one-shot full plan OK).  
+   `ohno phase seal-design` → PLAN_READY  
+4. **PLAN + EXECUTE** — plan propose/accept (id+expect+hard test+scope), task start, work in scope, `ohno verify`.  
+5. **RECOVER on FAIL** — hooks clear truth-read; **must**  
+   `ohno truth-read --paths .ohno/REQUIREMENTS.md,.ohno/DESIGN.md,…`  
+   then fix **implement** OR **plan/design**. Do not freestyle.  
+6. **CHANGE** — new Owner demand:  
+   `ohno phase declare-change --summary "…"`  
+   then re-seal requirements+design+new plan/tests.
 
 ## Truth
 
-- Every Owner prompt = raw Truth (verbatim). Latest wins on conflict.  
-- Confirmed conclusions + design docs on Truth list govern work.  
-- Never invent direction without reading Truth.
+- All Owner prompts = raw Truth (latest wins).  
+- Never decide without reading Truth after FAIL.  
+- Done = real black-box + user-visible function, not prose.
 
-## Critical controls (automatic)
-
-- PREPARE: product code blocked; Truth/docs/.ohno plan allowed.  
-- ACTIVE: scope fence.  
-- FAIL: Stop card forces Truth re-read.  
-- Done: only `ohno verify` PASS (real function, not soft echo).
-
-## Owner commands (almost none)
+## Owner commands
 
 ```bash
-ohno setup    # once per repo
-ohno          # where am I
-ohno verify   # when proving a slice (or you run it automatically)
+ohno setup
+ohno          # optional glance
 ```
-
-Plan/task internals: use `oh-no-plan` / `oh-no-task` / `oh-no-verify` as needed; Owner should not need a museum.

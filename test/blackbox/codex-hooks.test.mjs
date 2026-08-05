@@ -259,7 +259,7 @@ test("PreToolUse denies a parseable mutation when no task is active", async (t) 
   const output = preToolUse(projectPath, "apply_patch", {
     command: applyPatchCommand("src/new-file.ts"),
   });
-  assertDenied(output, /PREPARE|PROPOSE_PLAN|product implementation|Truth/i);
+  assertDenied(output, /PREPARE|PROPOSE_PLAN|DISCOVER|product|seal-requirements|Truth/i);
 });
 
 test("PreToolUse allows .ohno plan JSON when next is PROPOSE_PLAN (freeze path)", async (t) => {

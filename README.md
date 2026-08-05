@@ -115,7 +115,7 @@ one next action without creating a second source of truth.
 
 ## Install and use
 
-Requires Node.js **22.20 or newer**. Current release: **`0.2.2`**.
+Requires Node.js **22.20 or newer**. Current release: **`0.3.0`**.
 
 ### New or empty repository
 
@@ -123,8 +123,10 @@ Requires Node.js **22.20 or newer**. Current release: **`0.2.2`**.
 npm install -g oh-no-codex
 
 cd your-git-repo
-ohno setup    # init + install + skills
-# then talk to Codex; glance with: ohno
+ohno setup    # init + hooks + skills (starts phase DISCOVER)
+# Talk to Codex only. Pipeline (usually agent-run):
+#   seal-requirements → seal-design → plan accept → task/verify
+#   FAIL → truth-read → fix; change → declare-change → re-seal
 ```
 
 `ohno install` adds the project hooks and installs the `oh-no-*` Codex skills.
@@ -280,7 +282,7 @@ it cannot suppress Codex or operating-system approval prompts.
 
 | Public fact | Current evidence |
 | --- | --- |
-| Package | [`oh-no-codex@0.2.2`](https://www.npmjs.com/package/oh-no-codex) is published |
+| Package | [`oh-no-codex@0.3.0`](https://www.npmjs.com/package/oh-no-codex) is published |
 | Core loop | `ANTI_DRIFT_CORE_WORKS` with local public black-box coverage |
 | Harness surface | `0.2.0+`: id+expect+test+scope, scope hook, hard black box, short `OHNO_CONTINUE`; plan **length unrestricted** (no task-count cap); raised authoring limits; optional acceptance_source |
 | Real-project trial | The current local Correction 5 package subject earned same-batch LIVE `TRIAL_PASS` on three named disposable copies (`live-20260805T064039Z-834bc92`); this is not a universal speed or published-package claim |

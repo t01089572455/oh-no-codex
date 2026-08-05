@@ -57,7 +57,7 @@ export function serializeHarnessBrief(model: ReadModel): string {
   }
 
   return [
-    "Oh No harness — reins only (not a second product)",
+    "Oh No harness — Truth-bound (reins, not a second product)",
     "",
     `status:  ${model.status}`,
     `task:    ${task}`,
@@ -66,12 +66,12 @@ export function serializeHarnessBrief(model: ReadModel): string {
     `next:    ${model.next_action}`,
     `board:   ${model.cursor}/${model.task_count} of THIS plan`,
     "",
-    "loop:  freeze short slice → work in scope → ohno verify → next",
+    "loop:  clarify → seal → design → plan → execute → verify",
     `do:    ${doLine}`,
     "",
-    "daily: ohno | ohno next | ohno task start | ohno verify",
-    "task:  id + expect + test + scope   (other fields default)",
-    "more:  ohno --help",
+    "owner: ohno setup | ohno",
+    "gates: ohno phase seal-requirements | seal-design | truth-read | declare-change",
+    "task:  id + expect + test + scope",
     "",
   ].join("\n");
 }

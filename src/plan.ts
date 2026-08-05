@@ -31,6 +31,7 @@ import type {
   PlanTask,
   ProjectState,
 } from "./state.js";
+import { assertPlanAcceptAllowed, onPlanAccepted } from "./harness.js";
 import { normalizeAuthorTask } from "./task-normalize.js";
 
 export const DEFAULT_ACCEPTANCE_BASIS_PATH = ".ohno/acceptance-basis.json";
@@ -480,19 +481,20 @@ export async function acceptPlan(
   assertPlanDiscipline(source.proposal.ordered_tasks, {
     allowWeakPlan: options.allowWeakPlan === true,
   });
+  assertPlanAcceptAllowed(state);
 
   const recordedAt = new Date().toISOString();
-  const accepted = await compareAndSwapStateAtomic(projectPath, state, {
+  const acceptedState = {
     ...state,
-    schema_version: 3,
+    schema_version: 3 as const,
     status: state.document_sync.status === "PENDING_REVIEW"
-      ? "BLOCKED_DOC_SYNC"
-      : "IDLE",
+      ? "BLOCKED_DOC_SYNC" as const
+      : "IDLE" as const,
     plan_revision: pending.plan_revision,
     ordered_tasks: pending.ordered_tasks,
     cursor: pending.cursor,
     plan_review: {
-      status: "LOCAL_REVIEW_RECORDED",
+      status: "LOCAL_REVIEW_RECORDED" as const,
       plan_revision: pending.plan_revision,
       diff_digest: pending.diff_digest,
       head: pending.head,
@@ -504,10 +506,23 @@ export async function acceptPlan(
     pending_plan: null,
     active_task: null,
     last_verification: null,
-  });
+  };
+  if (state.harness != null) {
+    (acceptedState as { harness: typeof state.harness }).harness = {
+      ...state.harness,
+      phase: "EXECUTE",
+      truth_read: null,
+    };
+  }
+  const accepted = await compareAndSwapStateAtomic(
+    projectPath,
+    state,
+    acceptedState,
+  );
   if (!accepted) {
     throw new Error("current state changed while recording the local plan review");
   }
+  await onPlanAccepted(projectPath).catch(() => undefined);
   const weakNote = options.allowWeakPlan
     ? "WEAK_PLAN_OVERRIDE: Owner passed --allow-weak-plan\n"
     : "";
@@ -515,6 +530,7 @@ export async function acceptPlan(
     `${weakNote}LOCAL_REVIEW_RECORDED: ${pending.plan_revision}\n`
     + `ACCEPTANCE_SOURCE: ${pending.acceptance_source_path}\n`
     + `ACCEPTANCE_DIGEST: ${pending.acceptance_source_digest}\n`
+    + (state.harness != null ? "PHASE: EXECUTE\n" : "")
   );
 }
 

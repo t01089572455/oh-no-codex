@@ -22,6 +22,10 @@ import {
   readGitHead,
 } from "./subject-digest.js";
 import {
+  enterRecoverAfterFail,
+  markExecuteAfterPass,
+} from "./harness.js";
+import {
   compareAndSwapStateAtomic,
   readState,
 } from "./state.js";
@@ -319,9 +323,11 @@ async function verifyTaskWithLock(
     if (!recorded) {
       return stateChangedOutcome();
     }
+    await enterRecoverAfterFail(projectPath, state).catch(() => undefined);
     return {
       result: "FAIL",
-      message: `FAIL: exact command exited ${processResult.exitCode}`,
+      message: `FAIL: exact command exited ${processResult.exitCode}`
+        + " — phase RECOVER: ohno truth-read then fix implement OR plan",
     };
   }
 
@@ -361,6 +367,12 @@ async function verifyTaskWithLock(
       completed: [...finalState.completed, task],
       cursor: finalState.cursor + 1,
     };
+  if (finalState.harness != null) {
+    completedState.harness = {
+      ...finalState.harness,
+      phase: "EXECUTE",
+    };
+  }
   await pauseBeforePassCasForTest();
   if (
     !await compareAndSwapStateAtomic(
@@ -371,6 +383,7 @@ async function verifyTaskWithLock(
   ) {
     return stateChangedOutcome();
   }
+  await markExecuteAfterPass(projectPath, state).catch(() => undefined);
   return {
     result: "PASS",
     nextAction: nextActionFromPlan(completedState),

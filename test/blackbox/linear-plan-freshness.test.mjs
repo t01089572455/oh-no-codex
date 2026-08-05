@@ -178,7 +178,7 @@ function accept(projectPath, evidence) {
   assert.equal(result.stderr, "");
   assert.match(
     result.stdout,
-    /^LOCAL_REVIEW_RECORDED: [0-9a-f]{64}\r?\nACCEPTANCE_SOURCE: .+\r?\nACCEPTANCE_DIGEST: [0-9a-f]{64}\r?\n$/,
+    /^LOCAL_REVIEW_RECORDED: [0-9a-f]{64}\r?\nACCEPTANCE_SOURCE: .+\r?\nACCEPTANCE_DIGEST: [0-9a-f]{64}\r?\n(?:PHASE: EXECUTE\r?\n)?$/,
   );
   assert.doesNotMatch(
     result.stdout,
