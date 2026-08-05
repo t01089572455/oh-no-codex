@@ -274,7 +274,7 @@ Oh No 是协作式本机护栏，不是自主 Agent OS 或安全边界。它无�
 | npm 包 | [`oh-no-codex@0.1.10`](https://www.npmjs.com/package/oh-no-codex) 已发布 |
 | 核心闭环 | `ANTI_DRIFT_CORE_WORKS`，有本机公开黑盒覆盖 |
 | 计划后自动执行 | 当前本地分支为 `AUTO_AFTER_PLAN_LOCAL_PASS`；已发布的 `0.1.10` 不含本次修正 |
-| 真实项目试验 | 本次 package subject 改变后，三副本 `0.1.10` 收据仅为 `HISTORICAL`；不宣称当前 `TRIAL_PASS` |
+| 真实项目试验 | 当前本地 Correction 5 package subject 已在三个具名一次性副本上获得同批次 LIVE `TRIAL_PASS`（`live-20260805T064039Z-834bc92`）；这不是普遍速度或已发布包声明 |
 | 驾驶舱 | 与 CLI 状态同源，并经过浏览器和本机状态反射检查 |
 
 精确合同与证据：

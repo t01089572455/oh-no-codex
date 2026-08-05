@@ -128,13 +128,16 @@ harness label cannot paper over unfinished release evidence (#17).
 > **Release / public status:** `0.1.10` is **published** on the public npm
 > registry with cooperative harness evidence (`ANTI_DRIFT_CORE_WORKS`). Its
 > original three-copy `TRIAL_PASS` receipts are `HISTORICAL` after the local
-> Correction 5 package-subject change. That is **not**
+> Correction 5 package-subject change. The current local subject subsequently
+> earned same-batch LIVE `TRIAL_PASS` on three named disposable copies, but the
+> correction is still absent from published `0.1.10`. That is **not**
 > `V1_TRIAL_ACCEPTED` (no absolute Codex control, no universal speed claim,
 > incomplete premium A14 matrix).
 
 > **Correction 5 local status:** `AUTO_AFTER_PLAN_LOCAL_PASS`. The accepted-plan
-> automation correction is not present in published `0.1.10`, and no current
-> performance `TRIAL_PASS` is claimed until a fresh same-batch three-copy run.
+> automation correction is not present in published `0.1.10`; its current local
+> package subject has same-batch LIVE P01–P06 `TRIAL_PASS` evidence in
+> `live-20260805T064039Z-834bc92`.
 
 If any A/P row later fails or is withdrawn, keep or return to
 `RELEASE_CHANGES_REQUIRED` with the exact failing rows. Do not use older

@@ -197,12 +197,13 @@ ready` unless a later Owner-approved contract defines and earns that term.
 - normal paths read bounded state and named files only.
 
 Task 7 recorded measurements on three disposable project copies for the
-published `0.1.10` package subject. Correction 5 changes that subject, so those
-receipts are `HISTORICAL`: their original hashes and values remain evidence of
-what was measured, but they are not current performance or release proof.
-Correction 5 earns `AUTO_AFTER_PLAN_LOCAL_PASS` only; a fresh same-batch
-three-copy run is required before claiming a current `TRIAL_PASS`. No trial is
-a universal speed guarantee.
+published `0.1.10` package subject. Correction 5 changed that subject, so those
+original receipts remain `HISTORICAL`: their hashes and values are evidence of
+what was measured, but not current performance or release proof. The local
+Correction 5 package subject subsequently earned P01–P06 `TRIAL_PASS` on three
+named disposable copies in one LIVE batch,
+`live-20260805T064039Z-834bc92`. Published `0.1.10` still does not contain the
+correction, and no trial is a universal speed guarantee.
 
 ## Authority order
 

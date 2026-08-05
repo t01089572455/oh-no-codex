@@ -29,7 +29,7 @@ without new authorization.
 | Correction 2 — bounded scope, Truth shrink, pending summary, package subject, gate truth | LOCAL_PASS | F3–F5, F8; honest A14/P06 |
 | Correction 3 — release honesty, CONTINUE_ACTIVE, goal surface, Truth seed, AGENTS-safe init, denominator warn | LOCAL_PASS | honest public status; ACTIVE next; Goal/Truth/Git handoff |
 | Correction 4 — acceptance denominator hard gate (path+digest+revision; Task2 RED) | LOCAL_PASS | structured basis + migrate; keywords retired |
-| Correction 5 — automatic execution after accepted plan | LOCAL_PASS | A08; accepted-plan continuation + dual requirement assets; current performance receipts intentionally HISTORICAL |
+| Correction 5 — automatic execution after accepted plan | LOCAL_PASS | A08; accepted-plan continuation + dual requirement assets; current same-batch LIVE P01–P06 `TRIAL_PASS` |
 
 ## Task 1 local evidence
 
@@ -1081,16 +1081,54 @@ diagnostic exited 1 at 159/160 because the pre-existing test-only 150 ms verify
 timer was scheduled after its 900 ms survivor write under full host load. The
 unchanged exact case passed 5/5 in isolation, and an unmodified exact
 `npm run test:acceptance` rerun exited 0 with 160/160 passing; neither product
-timeout code nor acceptance thresholds changed. Current-package P01–P06 were
-not rebound: all three fresh-copy attempts failed the existing `status` budget
-under host load, so the prior receipts remain `HISTORICAL` and Correction 5
-makes no current `TRIAL_PASS` claim.
+timeout code nor acceptance thresholds changed. At this original commit
+boundary, current-package P01–P06 were not rebound: all three fresh-copy
+attempts failed the existing `status` budget under host load, so the prior
+receipts remained `HISTORICAL` and no current `TRIAL_PASS` was claimed then.
 
 Final local package boundary: `npm ci`, `npm run typecheck`, and
 `npm run build` each exited 0; the synchronized owning/ledger checks passed
 19/19; `npm run test:performance` exited 0 with 2/2 receipt-verifier cases but
-validates only the preserved historical samples, not current-package latency;
+validated only the preserved historical samples at that commit boundary;
 `npm pack --dry-run` exited 0 for `oh-no-codex@0.1.10` with 71 intended files;
 and `git diff --check` exited 0 with no output. The successful frozen public
 denominators remain `npm test` 160/160 and exact `npm run test:acceptance`
 160/160. No push, merge, tag, publish, release, or external message occurred.
+
+### Correction 5 post-commit LIVE performance refresh (2026-08-05)
+
+After the Owner reported normal CPU load, three CPU samples were 5.04%, 5.91%,
+and 4.99%. A fresh same-batch run used three untouched source copies (WeChat
+miniprogram, React/Vite web, and Python service), copied into disposable
+working directories under batch `live-20260805T064039Z-834bc92`. The existing
+`node test/trials/real-project-trial.mjs ...` command exited 0 and produced
+current LIVE P01–P05 evidence:
+
+| Copy | `status` p95 | `next` p95 | `resume` p95 | task start p95 | Cockpit P06 p95 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Trial A — WeChat miniprogram | 109.036 ms | 119.324 ms | 131.412 ms | 122.555 ms | 112 ms |
+| Trial B — React/Vite web | 106.042 ms | 105.304 ms | 147.586 ms | 114.096 ms | 120 ms |
+| Trial C — Python service | 110.115 ms | 116.159 ms | 142.297 ms | 125.397 ms | 122 ms |
+
+The maximum accepted P04 fixture serialized to 4025 bytes, below the exclusive
+4096-byte budget. The first P06 command failed during Trial A warm-up because
+`test/browser/measure-p06.mjs` still waited for the superseded manual
+continuation copy. Direct browser inspection showed the current canonical
+`CONTINUE_ACTIVE` automatic-work/repair/verify copy and otherwise correct
+ACTIVE state. Only that English/Chinese measurement expectation was updated;
+no product code, timeout, sample, or performance threshold changed. The same
+P06 command then exited 0 with all three `TRIAL_PASS` receipts above.
+
+Before receipt merge, `npm run test:performance` correctly exited 1 with 1/2
+passing and `P06_PENDING_SAME_BATCH_BROWSER_MEASURE`. After mechanically
+binding the exact same-batch P06 receipt, it exited 0 with 2/2 passing. Samples
+remain bound to the unchanged `runtime_subject_sha256`; the package subject is
+refreshed only for the exact README evidence projection. This is current local
+Correction 5 trial evidence, not a universal speed, published-package,
+`V1_TRIAL_ACCEPTED`, or release claim.
+
+Follow-up closeout checks: `node --check test/browser/measure-p06.mjs` exited 0;
+the Correction 2, release-honesty, and linear-plan-freshness black boxes passed
+14/14; `npm run test:performance` passed 2/2 against the current package
+subject; `npm pack --dry-run` exited 0 with 71 intended files; and
+`git diff --check` exited 0 with no output.

@@ -8,9 +8,10 @@
 
 **Tech Stack:** Node.js 22.20+, TypeScript ESM, Node built-ins (`crypto`, `fs/promises`), existing PID-token locks, official Codex project hooks, Node test runner, vanilla Cockpit copy.
 
-**Execution status:** `LOCAL_PASS`. The checklist below records the executed
-correction; final identity and cleanliness are proven immediately after the
-single scoped local commit.
+**Execution status:** `LOCAL_PASS`, with a post-commit same-batch LIVE
+P01–P06 `TRIAL_PASS`. The checklist below records the executed correction;
+final identity and cleanliness are proven immediately after the single scoped
+local commit.
 
 ---
 
@@ -19,7 +20,7 @@ single scoped local commit.
 - **Expected user-visible behavior:** A trusted Codex prompt hook preserves exact multiline Owner prompts in local/private `.ohno/OWNER-INPUTS.md`; after a plan is accepted, Codex receives canonical automatic continuations without recurring Owner confirmation until `PROJECT_COMPLETE` or an exact task-bound `OHNO_NEEDS_INPUT:<id>` escape hatch. Weak-plan and size heuristics warn during PREPARE but never require an override; structural and evidence gates remain fail-closed.
 - **Owning public black box:** `test/blackbox/automatic-execution-after-plan.test.mjs`
 - **Exact command:** `node --test test/blackbox/automatic-execution-after-plan.test.mjs`
-- **Allowed files:** `src/owner-inputs.ts`, `src/hooks/codex.ts`, `src/hooks/precommit.ts`, `src/read-model.ts`, `src/cockpit/server.ts`, `src/requirements.ts`, `src/discipline.ts`, `src/cli.ts`, `src/install.ts`, `src/truth.ts`, `src/control-protocol.ts`, `templates/.codex/hooks.json`, `assets/cockpit/cockpit.js`, `skills/oh-no-{control,plan,requirements,task,verify,next,change}/SKILL.md`, `test/blackbox/automatic-execution-after-plan.test.mjs`, compatibility assertions in `test/blackbox/{atomic-state,codex-hooks,git-precommit,field-trial-fixes,release-honesty}.test.mjs` and `test/trials/real-project-trial.mjs`, regenerated current-package receipts in `test/evidence/{task7-real-project-trials,p06-browser-receipt}.json`, `docs/{PRODUCT-CONTRACT,DESIGN,ACCEPTANCE,IMPLEMENTATION-PLAN}.md`, `README.md`, `README.zh-CN.md`, and this plan. `src/hooks/precommit.ts` is included only to remove its obsolete claim that a heuristic warning requires an Owner override; its active-contract/fresh-PASS gate is unchanged. Stop fixtures may only switch their obsolete empty result to the canonical accepted-plan continuation. The installer fixture uses an isolated disposable HOME to avoid cross-file skill-install races while preserving the same template assertions. `src/read-model.ts` may only replace four handoff Git processes with one status/branch identity process plus the existing tree lookup after the frozen P01 RED; field semantics stay unchanged. `src/cockpit/server.ts` may only extend existing HTTP keep-alive past a loaded verify after two exact gate `ECONNRESET` failures; no API, polling, state, or UI behavior changes. Evidence files may change only through the existing three-copy P01–P06 scripts after the package-subject honesty test detects drift.
+- **Allowed files:** `src/owner-inputs.ts`, `src/hooks/codex.ts`, `src/hooks/precommit.ts`, `src/read-model.ts`, `src/cockpit/server.ts`, `src/requirements.ts`, `src/discipline.ts`, `src/cli.ts`, `src/install.ts`, `src/truth.ts`, `src/control-protocol.ts`, `templates/.codex/hooks.json`, `assets/cockpit/cockpit.js`, `skills/oh-no-{control,plan,requirements,task,verify,next,change}/SKILL.md`, `test/blackbox/automatic-execution-after-plan.test.mjs`, compatibility assertions in `test/blackbox/{atomic-state,codex-hooks,git-precommit,field-trial-fixes,release-honesty}.test.mjs` and `test/trials/real-project-trial.mjs`, the same-copy browser measurement fixture `test/browser/measure-p06.mjs`, regenerated current-package receipts in `test/evidence/{task7-real-project-trials,p06-browser-receipt}.json`, `docs/{PRODUCT-CONTRACT,DESIGN,ACCEPTANCE,IMPLEMENTATION-PLAN}.md`, `README.md`, `README.zh-CN.md`, and this plan. `src/hooks/precommit.ts` is included only to remove its obsolete claim that a heuristic warning requires an Owner override; its active-contract/fresh-PASS gate is unchanged. Stop fixtures may only switch their obsolete empty result to the canonical accepted-plan continuation. The installer fixture uses an isolated disposable HOME to avoid cross-file skill-install races while preserving the same template assertions. `src/read-model.ts` may only replace four handoff Git processes with one status/branch identity process plus the existing tree lookup after the frozen P01 RED; field semantics stay unchanged. `src/cockpit/server.ts` may only extend existing HTTP keep-alive past a loaded verify after two exact gate `ECONNRESET` failures; no API, polling, state, or UI behavior changes. Evidence files may change only through the existing three-copy P01–P06 scripts after the package-subject honesty test detects drift. `test/browser/measure-p06.mjs` may only align its English/Chinese continuation expectation with the already-accepted Cockpit copy after an exact P06 RED; no timeout, sample count, or budget may change.
 - **Budget:** 75 minutes for the correction slice, plus one frozen full-suite boundary.
 - **Stop condition:** Owning black box, typecheck, build, one `npm test`, and `git diff --check` pass; the ledger is synchronized in the same scoped local commit; branch/worktree identity is exact and clean. No push, merge, tag, package publication, release, daemon, scheduler, state schema, mode, auth layer, or runtime dependency.
 
@@ -401,3 +402,34 @@ Expected: one local commit succeeds on `codex/auto-after-plan`; no push, merge, 
 Run: `git rev-parse HEAD`, `git rev-parse 'HEAD^{tree}'`, `git status --short`, and `git show --stat --oneline --decorate --no-renames HEAD`.
 
 Expected: final HEAD/tree are recorded; `git status --short` has no output; commit paths equal the correction slice; final report names start HEAD `1d33676b8a6ec4ac57f79fb6c97f2bcc1c4aa36a`, start tree `92292a9f289e20f90b8d60a3601b89b76b1846e1`, exact verification scope/results, raw-capture and cooperative-hook limitations, and exactly one next step.
+
+## Post-commit LIVE performance evidence refresh (2026-08-05)
+
+After the Owner reported normal CPU load, fresh CPU samples were 5.04%, 5.91%,
+and 4.99%. Batch `live-20260805T064039Z-834bc92` copied three pristine source
+fixtures into new disposable directories and ran the existing real-project
+trial. P01–P05 passed on WeChat miniprogram, React/Vite web, and Python service
+copies. The maximum P04 capsule was 4025 bytes.
+
+The first P06 run was a valid RED: its browser fixture still expected the old
+manual continuation text and timed out during Trial A warm-up. Direct DOM
+inspection proved the product already rendered the accepted automatic
+work/repair/verify continuation with the correct ACTIVE state. The minimal
+GREEN changed only the fixture's English and Chinese expected continuation;
+it did not change product code, timeout, sample count, or budget. The same P06
+command then passed all three copies at 112 ms, 120 ms, and 122 ms p95.
+
+Before same-batch receipt merge, `npm run test:performance` exited 1 with 1/2
+passing and `P06_PENDING_SAME_BATCH_BROWSER_MEASURE`. After exact identity,
+batch, runtime-subject, stack, and copy checks, the merged evidence made the
+same command exit 0 with 2/2 passing. README projection changes rebind only
+`package_subject_sha256`; the measurements remain bound to the unchanged
+`runtime_subject_sha256`. The follow-up stops after the smallest owning checks,
+one scoped local evidence commit, and a clean worktree. It does not rerun the
+already-frozen 160-test denominator or authorize push, merge, tag, publish, or
+release.
+
+Fresh closeout evidence: the P06 script syntax check exited 0; the Correction
+2, release-honesty, and linear-plan-freshness black boxes passed 14/14;
+`npm run test:performance` passed 2/2; `npm pack --dry-run` reported 71 intended
+files; and `git diff --check` exited 0 with no output.

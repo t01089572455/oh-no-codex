@@ -288,7 +288,7 @@ it cannot suppress Codex or operating-system approval prompts.
 | Package | [`oh-no-codex@0.1.10`](https://www.npmjs.com/package/oh-no-codex) is published |
 | Core loop | `ANTI_DRIFT_CORE_WORKS` with local public black-box coverage |
 | Accepted-plan automation | `AUTO_AFTER_PLAN_LOCAL_PASS` on this local branch; the published `0.1.10` package does not contain this correction |
-| Real-project trial | The three-copy `0.1.10` receipts are `HISTORICAL` after this package-subject change; no current `TRIAL_PASS` is claimed |
+| Real-project trial | The current local Correction 5 package subject earned same-batch LIVE `TRIAL_PASS` on three named disposable copies (`live-20260805T064039Z-834bc92`); this is not a universal speed or published-package claim |
 | Cockpit | Read-only equality with the CLI state plus browser and local reflection checks |
 
 Exact contracts and evidence:
