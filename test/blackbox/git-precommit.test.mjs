@@ -3,10 +3,13 @@ import { spawnSync } from "node:child_process";
 import {
   access,
   mkdir,
+  mkdtemp,
   readFile,
+  rm,
   stat,
   writeFile,
 } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import test from "node:test";
 
@@ -116,7 +119,16 @@ async function assertMissing(path) {
 
 test("install writes cross-platform templates, stays untrusted, and is idempotent", async (t) => {
   const projectPath = await createProject(t);
-  const first = runCli(projectPath, ["install"]);
+  const fakeHome = await mkdtemp(resolve(tmpdir(), "ohno-install-home-"));
+  t.after(async () => {
+    await rm(fakeHome, { force: true, recursive: true });
+  });
+  const installEnv = {
+    ...process.env,
+    HOME: fakeHome,
+    USERPROFILE: fakeHome,
+  };
+  const first = runCli(projectPath, ["install"], { env: installEnv });
   assert.equal(first.status, 0, first.stderr);
   assert.match(first.stdout, /COOPERATIVE_GUARDRAIL/);
   assert.match(first.stdout, /Codex.*trust.*UNVERIFIED/i);
@@ -124,6 +136,7 @@ test("install writes cross-platform templates, stays untrusted, and is idempoten
   for (const eventName of [
     "SessionStart",
     "PostCompact",
+    "UserPromptSubmit",
     "PreToolUse",
     "Stop",
   ]) {
@@ -140,7 +153,13 @@ test("install writes cross-platform templates, stays untrusted, and is idempoten
   assert.doesNotMatch(codexBytes.toString("utf8"), /\{\{[^}]+\}\}/);
   assert.deepEqual(
     Object.keys(config.hooks).sort(),
-    ["PostCompact", "PreToolUse", "SessionStart", "Stop"].sort(),
+    [
+      "PostCompact",
+      "PreToolUse",
+      "SessionStart",
+      "Stop",
+      "UserPromptSubmit",
+    ].sort(),
   );
   assert.equal(
     config.hooks.SessionStart[0].matcher,
@@ -182,7 +201,7 @@ test("install writes cross-platform templates, stays untrusted, and is idempoten
     assert.notEqual((await stat(gitPath)).mode & 0o111, 0);
   }
 
-  const second = runCli(projectPath, ["install"]);
+  const second = runCli(projectPath, ["install"], { env: installEnv });
   assert.equal(second.status, 0, second.stderr);
   assert.match(second.stdout, /already installed|idempotent/i);
   assert.deepEqual(await readFile(codexPath), codexBytes);

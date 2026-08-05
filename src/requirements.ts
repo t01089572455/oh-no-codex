@@ -118,6 +118,12 @@ function renderProjection(
     "- Prefer narrow `allowed_files` and a user-visible black box.",
     "- Do not expand into infrastructure-only work without a new Owner plan revision.",
     "",
+    "### Evidence roles",
+    "",
+    "- `.ohno/OWNER-INPUTS.md`: local/private append-only raw prompts from a trusted `UserPromptSubmit` hook.",
+    "- `.ohno/REQUIREMENTS.md`: Codex's current interpretation and visible history; material entries should cite Owner input ids.",
+    "- Oh No cannot reliably decide which prompt is the final requirement. Neither file replaces `.ohno/state.json`.",
+    "",
     requirementsProjectionEnd,
   ].join("\n");
 }
@@ -143,11 +149,14 @@ function ensureScaffold(existing: string): string {
     return existing;
   }
   return [
-    "# Owner requirements log",
+    "# Requirements interpretation",
     "",
-    "Collect Owner-stated goals and decisions here so every session sees the",
-    "same requirement history. The projection block below is generated from",
-    "`.ohno/state.json` and is **not** a second authority.",
+    "This file is Codex's consolidated interpretation and visible decision",
+    "history. Material entries should reference stable input ids from the",
+    "local/private append-only `.ohno/OWNER-INPUTS.md` raw prompt record.",
+    "Oh No cannot reliably decide which prompt is the final requirement.",
+    "The projection block below comes from `.ohno/state.json` and is **not**",
+    "a second authority.",
     "",
     "Use `ohno requirements note --text \"...\"` to append notes.",
     "",

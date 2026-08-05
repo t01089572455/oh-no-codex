@@ -80,7 +80,7 @@ const usageText = [
   "usage:",
   "  ohno init --goal <owner-authored project goal>",
   "  ohno plan propose --file <review.json>",
-  "  ohno plan accept --revision <sha256> --diff <sha256> [--allow-weak-plan]",
+  "  ohno plan accept --revision <sha256> --diff <sha256>",
   "  ohno task start | ohno task reopen",
   "  ohno verify | ohno status [--json] | ohno resume | ohno next",
   "  ohno cockpit [--port <n>] [--replace]",

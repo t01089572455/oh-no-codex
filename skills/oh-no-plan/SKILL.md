@@ -61,29 +61,30 @@ by hand.
 Cursor task must be `FROZEN` (behavior, test_command, allowed_files, stop, budget).
 Later tasks may be `OUTLINE`.
 
-### Anti-toy-plan (field trial FT-05/14) — **hard gate**
+### Task-shape guidance (PREPARE warning)
 
 - Do **not** propose a single docs/commit/gitignore-only task just to unblock git
   when the Owner goal is a multi-slice product.
 - Prefer several product tasks with **behavioral** black boxes (`npm test`, app
   smoke, etc.). Avoid sole `git diff --check` as the product test.
 - `ohno plan propose` prints **WARN** lines.
-- `ohno plan accept` **refuses** commit-license / weak-blackbox plans by default.
-  Only if the Owner **explicitly** wants a meta-only plan:
-
-```bash
-ohno plan accept --revision <sha256> --diff <sha256> --allow-weak-plan
-```
+- These heuristic findings do not require an override flag. Improve the split
+  during PREPARE when doing so does not expand the goal, acceptance, non-goals,
+  or allowed scope.
+- Missing structure, acceptance-basis mismatch, unbounded scope, and missing
+  fresh PASS remain hard failures.
 
 - After `PROJECT_COMPLETE`, propose a **new** implementation plan — that marker
   means **this linear plan** finished, not the product.
 
-## Accept (only after Owner review)
+## Accept at the PREPARE boundary
 
 ```bash
 ohno plan accept --revision <sha256> --diff <sha256>
-# Owner override for meta-only plans only:
-# ohno plan accept --revision … --diff … --allow-weak-plan
 ```
 
-Never silent-accept without Owner review.
+Resolve material ambiguity and review the exact basis/plan diff first. If the
+Owner already asked to “plan and finish” or otherwise authorized implementation,
+accept without asking again, then execute `task start`, repair, `verify`, and
+every plan-derived next task automatically. If the Owner requested planning
+only, leave the proposal unaccepted.

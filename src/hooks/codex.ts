@@ -1,5 +1,6 @@
 import { needsAcceptanceBasisMigration } from "../state.js";
 import { readModel } from "../read-model.js";
+import type { ReadModel } from "../read-model.js";
 import { serializeResumeWithWorktrees } from "../resume.js";
 import { readState } from "../state.js";
 import { isAbsolute } from "node:path";
@@ -18,6 +19,7 @@ interface HookInput extends Record<string, unknown> {
 }
 
 const maximumInputBytes = 1024 * 1024;
+const automaticContinuationPrefix = "OHNO_AUTO_CONTINUE";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object"
@@ -276,16 +278,17 @@ function isOhnoPlanMaintenancePath(relativePath: string): boolean {
     || relativePath.endsWith(".md");
 }
 
-interface CompletionMarker {
+interface TaskMarker {
   id: string;
   hasExactStartBoundary: boolean;
 }
 
-function completionMarkers(message: unknown): CompletionMarker[] {
+function taskMarkers(message: unknown, prefix: string): TaskMarker[] {
   if (typeof message !== "string") {
     return [];
   }
-  return [...message.matchAll(/OHNO_COMPLETE:([^\s]+)/gu)]
+  const pattern = new RegExp(`${prefix}:([^\\s]+)`, "gu");
+  return [...message.matchAll(pattern)]
     .flatMap((match) => {
       const id = match[1];
       if (id === undefined || match.index === undefined) {
@@ -302,11 +305,33 @@ function completionMarkers(message: unknown): CompletionMarker[] {
     });
 }
 
+function completionMarkers(message: unknown): TaskMarker[] {
+  return taskMarkers(message, "OHNO_COMPLETE");
+}
+
+function needsInputMarkers(message: unknown): TaskMarker[] {
+  return taskMarkers(message, "OHNO_NEEDS_INPUT");
+}
+
 function continuation(reason: string): HookOutput {
   return {
     decision: "block",
-    reason,
+    reason: `${automaticContinuationPrefix}\n${reason}`,
   };
+}
+
+function automaticContinuation(
+  model: ReadModel,
+  note?: string,
+): HookOutput {
+  return continuation([
+    ...(note === undefined ? [] : [`NOTE: ${note}`]),
+    `PROOF: ${model.proof_freshness}`,
+    `BLOCKER: ${model.blocker}`,
+    `CANONICAL_NEXT: ${model.next_action}`,
+    "Continue autonomously under the accepted plan without asking the Owner "
+      + "to confirm start, continue, repair, verify, or task transition.",
+  ].join("\n"));
 }
 
 async function handleStop(
@@ -314,35 +339,55 @@ async function handleStop(
   input: HookInput,
 ): Promise<HookOutput> {
   const markers = completionMarkers(input.last_assistant_message);
-  if (markers.length === 0) {
-    return {};
-  }
-  if (markers.some(({ hasExactStartBoundary }) => !hasExactStartBoundary)) {
-    return continuation(
-      "Exact completion marker required; it must be token-bounded: "
-      + "OHNO_COMPLETE:<task-id>.",
-    );
-  }
+  const inputMarkers = needsInputMarkers(input.last_assistant_message);
 
   let state;
   try {
     state = await readState(projectPath);
   } catch {
+    if (markers.length === 0 && inputMarkers.length === 0) {
+      return {};
+    }
     return continuation(
       "Oh No state is unavailable; repair it before using a completion marker.",
     );
   }
 
-  if (needsAcceptanceBasisMigration(state)) {
-    return continuation(
-      "next is MIGRATE_ACCEPTANCE_BASIS; run "
-        + "ohno migrate acceptance-basis --file <structured-basis.json> "
-        + "before claiming completion",
-    );
-  }
-
   const currentId = state.active_task?.id;
   const completedId = state.completed.at(-1)?.id;
+  const model = await readModel(projectPath);
+
+  if (inputMarkers.length > 0) {
+    if (
+      inputMarkers.some(({ hasExactStartBoundary }) => !hasExactStartBoundary)
+    ) {
+      const note = "Exact NEEDS_INPUT marker required; it must be token-bounded: "
+        + "OHNO_NEEDS_INPUT:<active-task-id>.";
+      return state.plan_revision === null
+        ? continuation(note)
+        : automaticContinuation(model, note);
+    }
+    const wrongInputId = inputMarkers
+      .map(({ id }) => id)
+      .find((id) => id !== currentId);
+    if (currentId === undefined || wrongInputId !== undefined) {
+      const note = `Wrong NEEDS_INPUT task id ${wrongInputId ?? inputMarkers[0]?.id}; `
+        + `expected active task ${currentId ?? "NONE"}.`;
+      return state.plan_revision === null
+        ? continuation(note)
+        : automaticContinuation(model, note);
+    }
+    return {};
+  }
+
+  if (markers.some(({ hasExactStartBoundary }) => !hasExactStartBoundary)) {
+    const note = "Exact completion marker required; it must be token-bounded: "
+      + "OHNO_COMPLETE:<task-id>.";
+    return state.plan_revision === null
+      ? continuation(note)
+      : automaticContinuation(model, note);
+  }
+
   const expectedIds = [currentId, completedId].filter(
     (value): value is string => value !== undefined,
   );
@@ -350,26 +395,48 @@ async function handleStop(
     .map(({ id }) => id)
     .find((marker) => !expectedIds.includes(marker));
   if (wrongId !== undefined) {
-    return continuation(
-      `Wrong task id ${wrongId}; expected ${currentId ?? completedId ?? "NONE"}.`,
-    );
+    const note = `Wrong task id ${wrongId}; expected ${currentId ?? completedId ?? "NONE"}.`;
+    return state.plan_revision === null
+      ? continuation(note)
+      : automaticContinuation(model, note);
   }
 
-  const model = await readModel(projectPath);
+  if (needsAcceptanceBasisMigration(state)) {
+    return state.plan_revision === null
+      ? continuation(
+        "next is MIGRATE_ACCEPTANCE_BASIS; run "
+          + "ohno migrate acceptance-basis --file <structured-basis.json>",
+      )
+      : automaticContinuation(model);
+  }
+
   const marker = markers[0]?.id;
   if (
     marker !== undefined
     && marker === completedId
     && model.proof_freshness === "FRESH"
   ) {
-    return {};
+    return model.next_action === "PROJECT_COMPLETE"
+      ? {}
+      : automaticContinuation(model);
   }
 
-  const stalePrefix = model.proof_freshness === "STALE" ? "STALE: " : "";
-  return continuation(
-    `${stalePrefix}fresh PASS evidence is required for `
-    + `${marker ?? currentId ?? completedId ?? "the task"}; run ohno verify.`,
-  );
+  if (marker !== undefined) {
+    const stalePrefix = model.proof_freshness === "STALE" ? "STALE: " : "";
+    const note = `${stalePrefix}fresh PASS evidence is required for `
+      + `${marker ?? currentId ?? completedId ?? "the task"}; run ohno verify.`;
+    return state.plan_revision === null
+      ? continuation(note)
+      : automaticContinuation(model, note);
+  }
+
+  if (model.next_action === "PROJECT_COMPLETE") {
+    return {};
+  }
+  if (state.plan_revision !== null) {
+    return automaticContinuation(model);
+  }
+  return {};
 }
 
 async function capsule(projectPath: string): Promise<string> {
@@ -397,6 +464,27 @@ export async function handleCodexHook(
     return {
       systemMessage: await capsule(projectPath),
     };
+  }
+  if (input.hook_event_name === "UserPromptSubmit") {
+    if (
+      typeof input.session_id !== "string"
+      || typeof input.turn_id !== "string"
+      || typeof input.prompt !== "string"
+    ) {
+      throw new Error(
+        "UserPromptSubmit requires session_id, turn_id, and prompt",
+      );
+    }
+    if (!input.prompt.startsWith(`${automaticContinuationPrefix}\n`)) {
+      // Keep prompt-log hashing/locking off ordinary status/next/resume startup.
+      const { appendOwnerInput } = await import("../owner-inputs.js");
+      await appendOwnerInput(projectPath, {
+        sessionId: input.session_id,
+        turnId: input.turn_id,
+        prompt: input.prompt,
+      });
+    }
+    return {};
   }
   if (input.hook_event_name === "PreToolUse") {
     return handlePreToolUse(projectPath, input);

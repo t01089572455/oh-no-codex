@@ -141,10 +141,10 @@ Oh No 可以安装在现有代码旁边，但它不会根据 Git 历史自动猜
 已完成工作或正确计划。
 
 1. 用**当前阶段**目标初始化，而不是塞入整个历史愿景。
-2. 用 Owner 原话记录已经成立的事实、本阶段必须交付、非目标和硬约束。
+2. 由可信 prompt hook 把新的 Owner 原话保存在 `.ohno/OWNER-INPUTS.md`，再把已成立事实、本阶段交付、非目标和硬约束整合进 `.ohno/REQUIREMENTS.md`。
 3. 审阅哪些 PRD、设计、验收、计划、README 和 Agent 文件仍是当前权威；Truth 只保留一套作准文件。
 4. Plan 只安排仍需用户可见黑盒证明的工作，不要伪造历史 PASS 收据。
-5. 启动 cursor 任务，在文件边界内工作，让 `ohno verify` 决定是否推进。
+5. 接受审阅后的计划；Codex 随后自动启动 cursor、在边界内工作、修复证明、验证并推进。
 
 ```bash
 ohno init --goal "当前阶段 Owner 目标"
@@ -159,11 +159,12 @@ ohno requirements note --text "本阶段仍然必须交付的结果"
 
 ### 日常闭环
 
-平时可以直接对 Codex 说“起草一份有边界的计划”。安装后的 `oh-no-plan`
-skill 会准备计划文件和审阅流程。也可以直接执行同一套确定性命令：
+平时可以直接对 Codex 说“起草一份有边界的计划并做完”。安装后的
+`oh-no-plan` skill 会在 PREPARE 阶段解决实质歧义并审阅计划。计划接受后，
+Codex 会跨普通任务边界自动执行，不再反复确认。底层确定性命令仍可直接使用：
 
 ```bash
-ohno requirements note --text "Owner 原话，勿改写"  # 真正作出决定时记录
+ohno requirements note --text "当前解释后的决定"  # 可选的单行手动记录
 ohno plan propose --file plan.json
 ohno plan accept --revision <rev> --diff <digest>
 ohno task start
@@ -175,23 +176,26 @@ ohno next
 
 - 精确测试以 0 退出，且作用域文件前后不变，才产生新鲜 PASS 并推进一次。
 - FAIL、超时、状态不可读或测试期间文件变化，都会把任务留在当前项。
-- `next` 只定位计划做到哪里，不授权 Agent 自己发明更多工作。
+- `next` 只定位计划做到哪里，不授权 Agent 自己发明更多工作；已接受计划会授权 Codex 自动执行这个规范下一步。
+- Oh No 只在 `PROJECT_COMPLETE` 或真正、任务绑定的 `NEEDS_INPUT` 停止，例如缺少密钥/设备/业务事实、未授权付费或破坏性动作、没有诚实验收路径、状态或平台阻塞；输入补齐后继续同一份已接受计划。
 
 ### 在 Codex 里直接说人话
 
 | 你怎么说 | Skill / 命令 |
 | --- | --- |
-| “把这条需求原样记下来” | `oh-no-requirements` → `ohno requirements note` |
+| “整合这条当前有效需求” | `oh-no-requirements` → `ohno requirements note` |
 | “起草或审阅有边界的计划” | `oh-no-plan` |
-| “开始当前任务” | `oh-no-task` → `ohno task start` |
-| “我觉得这项做完了” | `oh-no-verify` → `ohno verify` |
+| “开始当前任务” | `oh-no-task` → `ohno task start`（计划接受后自动） |
+| “我觉得这项做完了” | `oh-no-verify` → `ohno verify`（自动证明闭环） |
 | “现在做到哪里了？” | `oh-no-resume` / `ohno status` |
 | “需求变了” | `oh-no-change` |
 | “打开看板” | `oh-no-cockpit` → `ohno cockpit` |
 | “检查安装是否正常” | `oh-no-doctor` |
 
-Owner 决定应该进入 `.ohno/REQUIREMENTS.md`，不能只留在聊天里。同一仓库
-里的所有 Codex 会话读取同一组项目文件，因此新会话不必相信旧聊天摘要。
+可信 `UserPromptSubmit` hook 会把新的精确提示追加到本地私有
+`.ohno/OWNER-INPUTS.md`；`.ohno/REQUIREMENTS.md` 保存 Codex 当前解释和可见历史，
+重要内容引用 input id。Oh No 不能可靠判断哪条提示才是最终决定，也不能恢复旧提示、
+覆盖其他客户端或被绕过/未信任的 hook。
 
 ### 打开驾驶舱
 
@@ -217,12 +221,13 @@ ohno cockpit stop
 
 安装以后，控制来自项目文件和明确检查点，而不是一条更长的提示词：
 
-1. **Owner 原话不会随聊天消失。** 重要目标、约束和决定原样追加到 `.ohno/REQUIREMENTS.md`。
+1. **Owner 原话与 Codex 解释分开保存。** 可信 hook 把精确提示追加到本地私有 `.ohno/OWNER-INPUTS.md`；Codex 在 `.ohno/REQUIREMENTS.md` 整合当前含义和可见历史。
 2. **一次只冻结一个任务。** 当前计划项固定期望行为、一条黑盒测试、允许文件、预算和停止条件。
 3. **受支持的写入会被约束。** Codex hooks 与 Git pre-commit 拒绝无任务、文档待审和可解析的越界修改。
 4. **只有证据能推进计划。** `ohno verify` 运行冻结命令；FAIL / UNKNOWN 留在当前项，新鲜 PASS 只推进一次。
 5. **所有界面读取同一状态。** `status`、`resume`、`next`、hooks 和驾驶舱对项目位置给出一致答案。
-6. **需求变化会暂停编码。** `ohno change` 按 Owner 维护的 Truth 清单工作，并要求审阅权威文档 diff 和替代计划。
+6. **接受后的计划自动执行。** Stop hook 返回带规范下一步的 `OHNO_AUTO_CONTINUE`；真正启动、修复、验证和推进的是 Codex，不是 hook。
+7. **需求变化会暂停编码。** `ohno change` 按 Owner 维护的 Truth 清单工作，并要求审阅权威文档 diff 和替代计划；清晰的新 Owner 意图无需再次口头确认。
 
 ### Authority / 权威关系
 
@@ -239,7 +244,8 @@ ohno CLI  ──原子替换──►  .ohno/state.json   （唯一运行时权�
 | 产物 | 作用 |
 | --- | --- |
 | `.ohno/state.json` | 当前目标、计划、cursor、活跃合同、证明和下一步 |
-| `.ohno/REQUIREMENTS.md` | 追加式 Owner 原话记录 |
+| `.ohno/OWNER-INPUTS.md` | 本地私有、追加式可信 hook 原始提示证据；不负责判定最终需求 |
+| `.ohno/REQUIREMENTS.md` | Codex 当前解释与可见替代历史，重要内容引用 Owner input id |
 | `.ohno/truth.json` | Owner 维护的权威文档适用清单 |
 | PASS 收据 | 验证溯源与新鲜度证据；不是另一份当前权威 |
 | `PROGRESS.md` / resume 文案 / 驾驶舱 | 当前状态的只读投影 |
@@ -261,12 +267,14 @@ Oh No 是协作式本机护栏，不是自主 Agent OS 或安全边界。它无�
 它不会用 NLP 自动判断文案语义，不会自动重建半成品项目，也不保证所有仓库
 都绝对正确、绝对快速。驾驶舱进度是 `cursor / task_count`，不是产品完成
 百分比。
+自动执行只移除 Oh No 自己的对话确认仪式；它不能压制 Codex 或操作系统的安全审批。
 
 | 公开事实 | 当前证据 |
 | --- | --- |
 | npm 包 | [`oh-no-codex@0.1.10`](https://www.npmjs.com/package/oh-no-codex) 已发布 |
 | 核心闭环 | `ANTI_DRIFT_CORE_WORKS`，有本机公开黑盒覆盖 |
-| 真实项目试验 | 三份小型可丢弃项目副本 `TRIAL_PASS`；不是大仓普遍保证 |
+| 计划后自动执行 | 当前本地分支为 `AUTO_AFTER_PLAN_LOCAL_PASS`；已发布的 `0.1.10` 不含本次修正 |
+| 真实项目试验 | 本次 package subject 改变后，三副本 `0.1.10` 收据仅为 `HISTORICAL`；不宣称当前 `TRIAL_PASS` |
 | 驾驶舱 | 与 CLI 状态同源，并经过浏览器和本机状态反射检查 |
 
 精确合同与证据：

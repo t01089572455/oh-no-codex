@@ -3,8 +3,8 @@
   "classification": "TRIAL_EVIDENCE",
   "generated_at": "2026-08-03T10:11:42.390Z",
   "measurement_batch_id": "live-20260803T100000Z-0bd5926",
-  "measurement_binding": "LIVE",
-  "measurement_note": "Same-batch LIVE live-20260803T100000Z-0bd5926 for oh-no-codex@0.1.10 candidate. Three distinct small disposable stacks. Integrity corrections included. Not a universal large-repo speed claim. package_subject refreshed after post-publish README-only documentation commits; runtime samples unchanged.",
+  "measurement_binding": "HISTORICAL",
+  "measurement_note": "Historical same-batch 0.1.10 receipt; not re-run and not release proof for Correction 5. Three fresh-copy attempts on 2026-08-04 failed the current-host P01 status budget under heavy external CPU load, so package/runtime hashes remain bound to the measured 0.1.10 subject and were not rebased.",
   "implementation": {
     "dist_cli_sha256": "2af021a781f098753057912cb1a5971b86b1934edbc90249c2068b56906db91d",
     "package_subject_sha256": "f6fff40a135725c433cff9608627e51c3c35d7abe3d5210e29a3ef28b39cb1ae",
@@ -556,7 +556,7 @@
     "classification": "P06_BROWSER_RECEIPT",
     "generated_at": "2026-08-03T10:14:34.060Z",
     "measurement_batch_id": "live-20260803T100000Z-0bd5926",
-    "measurement_binding": "LIVE",
+    "measurement_binding": "HISTORICAL",
     "result": "TRIAL_PASS",
     "sample_method": {
       "clock": "Date.now epoch ms (cross-process)",

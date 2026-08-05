@@ -116,10 +116,9 @@ export async function checkPreCommit(startPath: string): Promise<string> {
   if (completedTask === undefined) {
     throw new Error(
       "COOPERATIVE_GUARDRAIL: no active task and no fresh PASS subject. "
-        + "Do not invent a one-task docs/commit micro-plan just to unlock git "
-        + "(FT-14). Propose multi-slice product tasks with behavioral tests, "
-        + "then: ohno plan propose → accept → task start → verify. "
-        + "Meta-only plans require Owner --allow-weak-plan on accept.",
+        + "Start the accepted cursor task, then verify its exact black box. "
+        + "Plan-size and weak-test heuristics are PREPARE warnings; this gate "
+        + "still requires an active bounded contract or fresh PASS.",
     );
   }
 

@@ -302,6 +302,7 @@ export const ohnoRuntimeGitignore = [
   "verify.lock",
   "*.lock",
   "cockpit.runtime.json",
+  "OWNER-INPUTS.md",
   "cockpit-port",
   "*.pid",
   "",

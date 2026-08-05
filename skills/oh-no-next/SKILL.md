@@ -11,4 +11,7 @@ description: >
 ohno next
 ```
 
-Locator only — still need plan/task start for new slices.
+Locator only: it cannot expand scope or grant new permission. Once the plan is
+accepted, its canonical locator is executed automatically (`START_TASK`,
+`CONTINUE_ACTIVE`, `RUN_EXACT_TEST`, `REOPEN_TASK`, or the next cursor) until
+`PROJECT_COMPLETE` or real `NEEDS_INPUT`.

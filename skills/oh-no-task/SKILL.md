@@ -17,6 +17,9 @@ ohno task start
 Requires an accepted plan with a **FROZEN** cursor task.  
 No free-form contract args — the frozen task is the contract.
 
+After plan acceptance this is an implementation primitive, not an Owner
+confirmation point. Run it automatically for each frozen cursor task.
+
 ## Reopen last completed task (FT-24)
 
 After a PASS closes a task, if quality review forces more edits and proof goes
@@ -32,6 +35,8 @@ ohno verify
   fresh PASS (normal board semantics).
 - Does **not** invent a new one-task micro-plan (avoid FT-14).
 - Prefer this over `plan propose` of a tiny “patch” task when the same contract applies.
+- When canonical next is `REOPEN_TASK:<id>`, reopen, repair, and verify without
+  asking the Owner unless the goal/scope/acceptance must expand.
 
 ## Discipline
 

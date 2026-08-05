@@ -15,3 +15,7 @@ ohno verify
 - **PASS** → task closes; report real result.  
 - **FAIL / UNKNOWN** → task stays open; do not claim done.  
 Never invent PASS. Never skip this for “looks good” prose.
+
+Under an accepted plan, FAIL/UNKNOWN/STALE means diagnose, repair in scope, and
+run `ohno verify` again automatically. Test execution is not an Owner
+confirmation point.

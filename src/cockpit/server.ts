@@ -279,6 +279,9 @@ export async function startCockpitServer(
   server.on("clientError", (_error, socket) => {
     socket.end("HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n");
   });
+  // A loaded exact verify can outlast Node's 5 s default between API reads.
+  // Keep the same local connection alive; this adds no polling or authority.
+  server.keepAliveTimeout = 30_000;
 
   const requestedPort = options.port ?? 0;
   let port: number;

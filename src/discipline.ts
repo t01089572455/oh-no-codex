@@ -1,6 +1,7 @@
 /**
  * Field-trial discipline (FT-02/05/11/14/15).
- * Soft warnings for propose; hard gate on accept unless --allow-weak-plan.
+ * PREPARE guidance only. Structural and acceptance-integrity gates live in
+ * plan/state validators, not these heuristic shape checks.
  */
 
 export function looksLikeTrivialBlackbox(testCommand: string): boolean {
@@ -192,7 +193,7 @@ export interface PlanDisciplineViolation {
   message: string;
 }
 
-/** Hard-gate violations for plan accept (unless Owner passes --allow-weak-plan). */
+/** Heuristic findings retained for diagnostics; they do not block accept. */
 export function planDisciplineViolations(tasks: Array<{
   id: string;
   title: string;
@@ -208,9 +209,8 @@ export function planDisciplineViolations(tasks: Array<{
       code: "COMMIT_LICENSE_MICRO_PLAN",
       message:
         "plan looks like a commit-license / docs-only micro-plan (FT-05/14). "
-        + "Refuse single-task design/gitignore/worktree-only plans when building "
-        + "a product. Split into multi-slice tasks with behavioral tests, or pass "
-        + "--allow-weak-plan if the Owner explicitly accepts a meta-only plan.",
+        + "Prefer one independently provable user result per task and keep "
+        + "mechanical design/git/worktree steps inside that task's checklist.",
     });
   }
   for (const task of tasks) {
@@ -222,8 +222,7 @@ export function planDisciplineViolations(tasks: Array<{
       out.push({
         code: "WEAK_BLACKBOX",
         message: `task ${task.id}: ${weak} (FT-02). `
-          + "Use a user-visible black box (e.g. npm test / app smoke). "
-          + "Or pass --allow-weak-plan if the Owner explicitly accepts this test.",
+          + "Prefer a user-visible black box (e.g. the owning app smoke).",
       });
     }
   }
@@ -304,16 +303,9 @@ export function assertPlanDiscipline(
   }>,
   options: { allowWeakPlan: boolean },
 ): void {
-  if (options.allowWeakPlan) {
-    return;
-  }
-  const violations = planDisciplineViolations(tasks);
-  if (violations.length === 0) {
-    return;
-  }
-  throw new Error(
-    "plan discipline refused accept:\n"
-      + violations.map((v) => `- ${v.code}: ${v.message}`).join("\n")
-      + "\nOverride only with Owner intent: ohno plan accept … --allow-weak-plan",
-  );
+  // Accepted-plan autonomy must not turn a size or prose-quality heuristic
+  // into recurring Owner ceremony. Propose and doctor still surface these
+  // findings; exact structure, basis, scope, and proof remain hard elsewhere.
+  void tasks;
+  void options;
 }

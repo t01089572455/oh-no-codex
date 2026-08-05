@@ -627,7 +627,10 @@ async function exerciseRealProject(cwd, label, stack, identity) {
     stop_hook_active: false,
     last_assistant_message: "Evidence: OHNO_COMPLETE:trial-task-1",
   });
-  assert.deepEqual(stopped, {});
+  assert.equal(stopped.decision, "block");
+  assert.match(stopped.reason, /^OHNO_AUTO_CONTINUE\r?\n/u);
+  assert.match(stopped.reason, /^CANONICAL_NEXT: START_TASK:trial-task-2$/mu);
+  flows.automatic_continuation_after_pass = true;
 
   runGit(cwd, ["add", "--", "ohno-trial/subject-1.txt"]);
   requireSuccess(

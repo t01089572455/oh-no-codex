@@ -172,6 +172,25 @@ classification; a new unclassified high-risk entry or a missing/renamed
 governing target fails closed. Normal status/resume/next, hooks, and Cockpit
 reads do not perform this scan.
 
+### `.ohno/OWNER-INPUTS.md` and `.ohno/REQUIREMENTS.md`
+
+These are deliberately separate assets:
+
+- `.ohno/OWNER-INPUTS.md` is local/private, append-only evidence. A reviewed
+  project `UserPromptSubmit` hook records each newly observed prompt exactly,
+  with a stable id, prompt digest, session/turn ids, and receipt time. Retries
+  deduplicate by stable id and concurrent hook processes serialize through the
+  existing process-lock model. The file is ignored by project-local Git rules.
+- `.ohno/REQUIREMENTS.md` is Codex's current effective interpretation and
+  visible supersession history. Material interpretations should cite the raw
+  input ids that support them.
+
+The prompt log is not runtime state or an authorization oracle. Capture starts
+only after the project hook is installed and trusted; it cannot recover older
+chat, see other clients or bypassed hooks, or reliably decide which prompt is
+the final Owner decision. Oh No-generated continuation prompts begin with
+`OHNO_AUTO_CONTINUE` and are never appended as Owner input.
+
 ## Loop 1 — Start
 
 Initialization is explicit:
@@ -239,6 +258,30 @@ HEAD, and time. Acceptance records only `LOCAL_REVIEW_RECORDED`; it is local
 evidence, not `OWNER_AUTHORIZED`, `OWNER_CONFIRMED`, cryptographic identity, or
 hostile same-user containment.
 
+The one product workflow is conceptual, not a new state authority or `mode`
+field:
+
+```text
+PREPARE -> ACTIVE_AUTO -> COMPLETE
+                    |
+                    `-> NEEDS_INPUT -> ACTIVE_AUTO
+```
+
+PREPARE resolves material ambiguity, consolidates requirements, and reviews
+the exact plan/basis. If the initial Owner request says to plan and finish,
+Codex accepts a ready plan without asking the same question again. A request
+for planning only still ends after the plan is presented. Once accepted,
+Codex automatically starts, works, verifies, repairs, advances, and starts the
+next canonical task. This automation uses the existing state/read-model/next
+action; there is no daemon, scheduler, or alternate mode.
+
+Task sizing is PREPARE guidance: prefer one independently user-visible outcome
+with one closing black box, while mechanical implementation steps remain an
+internal checklist. Size, docs-only, and weak-test heuristics may warn, but do
+not create an Owner-override gate. Missing structure, exact acceptance-basis
+mismatch, scope expansion, pending document sync, and missing fresh PASS stay
+hard fail-closed boundaries.
+
 Accepting a new revision invalidates active work and receipts from the old
 revision; neither can advance the replacement plan.
 
@@ -300,6 +343,9 @@ coverage. It does not silently edit user-authored prose.
 replacement current plan. Because V1 is cooperative, it records
 `LOCAL_REVIEW_RECORDED`; it does not claim Owner authorization/confirmation,
 cryptographic human identity, or production review separation.
+Clear new Owner intent authorizes its reviewed replacement plan without a
+second conversational confirmation; unresolved business meaning remains an
+input blocker.
 
 ## Loop 4 — Resume and display
 
@@ -323,13 +369,18 @@ entrypoint. They read only the small state file on the normal path.
 | --- | --- |
 | `SessionStart` | Add the bounded resume capsule as context. |
 | `PostCompact` | Re-inject the current capsule so compaction cannot make stale prose authoritative. |
+| `UserPromptSubmit` | Append the exact newly observed Owner prompt to local/private `.ohno/OWNER-INPUTS.md`; retry-deduplicate it and exclude `OHNO_AUTO_CONTINUE` prompts. |
 | `PreToolUse` | For supported mutation tools, deny when no task is active, document sync is pending, or a parseable target is outside scope. Ambiguous command targeting fails closed only when the hook can do so without pretending to understand arbitrary shell semantics. |
-| `Stop` | If the final message uses the product's completion marker without fresh PASS evidence, continue with the exact missing-proof reason. |
+| `Stop` | For an accepted non-terminal plan, return an `OHNO_AUTO_CONTINUE` prompt containing proof, blocker, and canonical next action. Stop only at `PROJECT_COMPLETE` or an exact task-bound `OHNO_NEEDS_INPUT:<active-task-id>`. A completion marker without fresh PASS continues into repair/verify. |
 
-The cooperative marker is `OHNO_COMPLETE:<active-task-id>`. Repository agent
-instructions tell Codex to use it only after `ohno verify` succeeds. A model
-can omit or paraphrase the marker, so the hook must not claim to understand or
-control arbitrary completion prose.
+The cooperative completion marker is `OHNO_COMPLETE:<active-task-id>` and the
+input marker is `OHNO_NEEDS_INPUT:<active-task-id>`. Repository agent
+instructions permit NEEDS_INPUT only for a genuinely missing account, secret,
+device, or business fact; an unapproved destructive, paid, publish, or external
+message action; no honest acceptance path; or a state/platform blocker. A model
+can omit, invent, or paraphrase markers, so the hook does not claim semantic
+proof or hostile control. Wrong-id and token-prefixed markers continue with the
+canonical action instead of stopping.
 
 The official Codex documentation states:
 
@@ -397,16 +448,24 @@ implementation, then browser acceptance. `ui-ux-pro-max` is catalog-only.
 - Dirty required docs during change: pending until exact diff acceptance.
 - Completed linear plan: display `PROJECT_COMPLETE`; blocked or active states
   may display `NONE`; never accept caller-supplied free-text next authority.
+- Accepted non-terminal plan: Stop hook continues with the read model's one
+  canonical action; failed/stale proof routes back through repair/verify.
+- Exact task-bound `NEEDS_INPUT`: stop for Owner input without changing
+  `.ohno/state.json`; resume from the same authority after the input arrives.
 - Hook unavailable: display the limitation and keep CLI/Git controls usable.
 
 ## Security and privacy
 
 V1 stores project-local operational data only. It does not upload transcripts,
-source, prompts, or test output. Test commands execute with the user's normal
-local authority. The installer shows every hook it will add.
+source, prompts, or test output. Exact prompt capture is local/private by
+default and begins only on trusted `UserPromptSubmit` events; the raw file may
+contain secrets the Owner typed and must not be committed. Test commands
+execute with the user's normal local authority. The installer shows every hook
+it will add and labels hook trust as unverified until Codex reviews it.
 
 ## Deliberately absent
 
-There is no grant service, effect gateway, append-only journal, adapter trust
-grade, control-plan DAG, event bus, policy engine, or migration framework.
-Those concepts do not solve a current V1 public acceptance test.
+There is no grant service, effect gateway, runtime event journal, adapter trust
+grade, control-plan DAG, event bus, policy engine, mode switch, daemon,
+scheduler, or generalized migration framework. The append-only Owner prompt
+file is evidence only, never a second current-state authority.

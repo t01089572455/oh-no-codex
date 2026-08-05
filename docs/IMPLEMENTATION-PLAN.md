@@ -1,14 +1,16 @@
 # Codex-only V1 implementation plan
 
-Status: **STOP** (core: **ANTI_DRIFT_CORE_WORKS**; npm: **0.1.10 published**)
+Status: **STOP** (`AUTO_AFTER_PLAN_LOCAL_PASS`; no publish authorization)
 
 Owner authorization: Tasks 1–7 below, including 6A–6C, were authorized as the
 complete V1 implementation scope on 2026-07-30. Correction 2 (audit F3/F4/F5/F8,
 gate truth, external-browser A14/P06) was authorized by Owner handoff on
 2026-07-31. Correction 3 (release honesty + ACTIVE next + Goal/Truth init +
 denominator warn + AGENTS-safe init) authorized by Owner on 2026-08-01 after
-Grok/Codex joint field judgment. Do not publish a package without new
-authorization.
+Grok/Codex joint field judgment. Correction 5 (automatic execution after an
+accepted plan, exact trusted prompt capture, and non-blocking sizing heuristics)
+was authorized by the Owner handoff on 2026-08-04. Do not publish a package
+without new authorization.
 
 ## Ledger
 
@@ -27,6 +29,7 @@ authorization.
 | Correction 2 — bounded scope, Truth shrink, pending summary, package subject, gate truth | LOCAL_PASS | F3–F5, F8; honest A14/P06 |
 | Correction 3 — release honesty, CONTINUE_ACTIVE, goal surface, Truth seed, AGENTS-safe init, denominator warn | LOCAL_PASS | honest public status; ACTIVE next; Goal/Truth/Git handoff |
 | Correction 4 — acceptance denominator hard gate (path+digest+revision; Task2 RED) | LOCAL_PASS | structured basis + migrate; keywords retired |
+| Correction 5 — automatic execution after accepted plan | LOCAL_PASS | A08; accepted-plan continuation + dual requirement assets; current performance receipts intentionally HISTORICAL |
 
 ## Task 1 local evidence
 
@@ -559,10 +562,7 @@ Owning checks: projectors, codex-hooks, resume-status-next, cockpit black boxes.
 
 There is exactly one. **Unique next:**
 
-> **`STOP` after Owner-authorized publish of `oh-no-codex@0.1.10`.** Published
-> to registry.npmjs.org (`latest=0.1.10`). Gate green (154 tests + LIVE batch
-> `live-20260803T100000Z-0bd5926`). Not `V1_TRIAL_ACCEPTED`. Do not republish
-> or retag without new Owner words. Procedure: `docs/PUBLISH.md`.
+> **`STOP — AUTO_AFTER_PLAN_LOCAL_PASS; await separate Owner authorization for push, merge, tag, publish, or release.`**
 
 ### README terminology correction (2026-08-03)
 
@@ -994,3 +994,103 @@ Product delta from Correction-4 merge: Cockpit cadence only +
 No second state marker; no Chromium port blocklist in product.
 
 No npm publish, tag, or network mutation is authorized by this gate.
+
+## Correction 5 — automatic execution after accepted plan (2026-08-04)
+
+**Frozen user-visible behavior:** After material ambiguity and exact plan/basis
+review in PREPARE, an accepted plan runs start, work, verify, repair, advance,
+and next-task start without ordinary Owner confirmation. Exact trusted
+`UserPromptSubmit` input is preserved once in local/private
+`.ohno/OWNER-INPUTS.md`; `.ohno/REQUIREMENTS.md` remains Codex interpretation
+and states the capture/classification limits. Stop occurs only at
+`PROJECT_COMPLETE` or genuine task-bound `NEEDS_INPUT`. Sizing/weak-plan
+heuristics warn in PREPARE; structure, basis, scope, document sync, and fresh
+PASS remain hard boundaries.
+
+**One owning public black box:**
+`node --test test/blackbox/automatic-execution-after-plan.test.mjs`.
+
+**Allowed files:** the owning test; `src/hooks/codex.ts`,
+`src/owner-inputs.ts`, `src/discipline.ts`, `src/requirements.ts`,
+`src/control-protocol.ts`, `src/install.ts`, `src/truth.ts`, `src/cli.ts`,
+`src/hooks/precommit.ts`;
+`.codex` hook template; the seven execution/change/requirement skills;
+README English/Chinese and the existing Cockpit capability copy; the four
+stable governing documents; the Correction 5 implementation plan; and only
+the compatibility black boxes whose prior assertions described the replaced
+behavior, including the old real-trial Stop expectation. Current-package
+P01–P06 evidence receipts may be regenerated only by the existing three-copy
+measurement scripts after package-digest drift. No
+schema/mode, daemon, scheduler, database, provider layer, policy
+DSL, authentication layer, runtime dependency, or Cockpit control is allowed.
+
+**Budget:** 75 minutes for the correction slice.
+
+**Stop:** owning public black box plus smallest compatibility/type/build checks
+green; one frozen full gate; synchronized ledger; one scoped local commit;
+clean designated worktree; then `AUTO_AFTER_PLAN_LOCAL_PASS`. Otherwise stop
+with the exact blocker without weakening acceptance.
+
+**TDD evidence:** Two setup faults were corrected before counting RED: an
+invalid test regex and an absent clean-worktree `dist/` build. After building
+the unchanged baseline, the valid RED command exited 1 with 1/5 subtests
+passing (existing hard boundaries) and 4/5 failing for the missing prompt
+capture, concurrent preservation, automatic Stop continuation, and warning-only
+plan heuristic. The minimal implementation then made the same command exit 0
+with 5/5 passing before stable-document synchronization.
+
+The first three-copy performance attempt failed honestly after the updated
+trial reached its sampling phase: Trial A `status` p95 was 2834.624 ms against
+the <250 ms budget. A same-copy 30-sample diagnostic remained over budget at
+349.315 ms. The correction therefore keeps prompt-log hashing/locking behind a
+`UserPromptSubmit` dynamic import so normal read commands do not load that new
+module. Because the public P01 RED persisted, the existing handoff read is also
+reduced from four concurrent Git child processes to one porcelain-v2
+status/branch/HEAD read plus the existing tree read, with the same fail-closed
+dirty, unborn, detached, head, tree, and branch fields. The frozen measurement
+must be rerun from fresh copies. On the second fresh batch, Trial A cleared
+P01–P05, but Trial B `status` p95 was 346.448 ms and the batch correctly
+stopped without writing LIVE evidence; three same-batch passing copies remain
+required. A third fresh batch also stopped honestly at Trial A (`status` p95
+525.815 ms). The prior 0.1.10 receipts are therefore marked `HISTORICAL`, keep
+their original hashes, and are not current release proof for Correction 5.
+
+The first frozen `npm test` exited 1 with 158/160 passing. Both failures were
+obsolete/unstable fixtures, not relaxed product checks: A15 expected an empty
+Stop result after accepted-plan activation, and the install idempotence fixture
+shared the real HOME with parallel test files. The A15 fixture now requires the
+canonical continuation while retaining its zero-scan/state-byte assertions;
+the installer fixture uses a disposable isolated HOME while retaining every
+template/trust/idempotence assertion.
+
+The repaired full rerun exited 1 with 159/160 passing because one Cockpit fetch
+received a loopback `ECONNRESET` under host load. The unchanged exact owning
+case immediately passed in isolation (1/1); no server assertion, timeout, or
+acceptance was weakened.
+
+The separate `test:acceptance` entry reproduced the same post-verify
+`ECONNRESET` at 159/160. Under parallel load, the exact verify exceeded Node's
+default 5-second HTTP keep-alive gap between state reads. The existing local
+server now keeps that same connection for 30 seconds; API, polling cadence,
+state authority, and every reflection assertion remain unchanged.
+
+After that fix, `npm run typecheck` and `npm run build` exited 0, and the exact
+Cockpit reflection case passed 1/1. The frozen `npm test` then exited 0 with
+160/160 public black boxes passing. The first logged `npm run test:acceptance`
+diagnostic exited 1 at 159/160 because the pre-existing test-only 150 ms verify
+timer was scheduled after its 900 ms survivor write under full host load. The
+unchanged exact case passed 5/5 in isolation, and an unmodified exact
+`npm run test:acceptance` rerun exited 0 with 160/160 passing; neither product
+timeout code nor acceptance thresholds changed. Current-package P01–P06 were
+not rebound: all three fresh-copy attempts failed the existing `status` budget
+under host load, so the prior receipts remain `HISTORICAL` and Correction 5
+makes no current `TRIAL_PASS` claim.
+
+Final local package boundary: `npm ci`, `npm run typecheck`, and
+`npm run build` each exited 0; the synchronized owning/ledger checks passed
+19/19; `npm run test:performance` exited 0 with 2/2 receipt-verifier cases but
+validates only the preserved historical samples, not current-package latency;
+`npm pack --dry-run` exited 0 for `oh-no-codex@0.1.10` with 71 intended files;
+and `git diff --check` exited 0 with no output. The successful frozen public
+denominators remain `npm test` 160/160 and exact `npm run test:acceptance`
+160/160. No push, merge, tag, publish, release, or external message occurred.

@@ -15,7 +15,7 @@ named user-visible behavior.
 | A05 | A HEAD change during verify is `UNKNOWN`. After PASS, an ordinary commit alone leaves proof `FRESH`; changing the task contract, plan revision, or matched allowed-file subject makes it `STALE` and prevents changed-subject completion without re-verification. |
 | A06 | `status`, `resume`, and `next` agree on goal, plan revision/cursor, active/completed state, proof freshness, blocker, and the same derived next action. They never accept or invent free-text next authority. |
 | A07 | A new session and a post-compaction hook receive a capsule below 4 KiB that agrees with direct `resume` output on all canonical fields. |
-| A08 | With no active task, pending document sync, or a clearly out-of-scope file target, supported `PreToolUse` mutation calls are denied with an actionable reason. In-scope calls are allowed. `Stop` recognizes only the explicit `OHNO_COMPLETE:<task-id>` marker and fresh proof. Hook status honestly exposes untrusted or unavailable integration. |
+| A08 | With no active task, pending document sync, or a clearly out-of-scope file target, supported `PreToolUse` mutation calls are denied with an actionable reason; in-scope calls are allowed. A trusted `UserPromptSubmit` preserves each newly observed exact prompt once in local/private, Git-ignored `.ohno/OWNER-INPUTS.md`, remains safe under concurrent submissions, and excludes `OHNO_AUTO_CONTINUE` synthetic prompts. `.ohno/REQUIREMENTS.md` states that it is Codex interpretation and that Oh No cannot recover all prompts or decide the final Owner requirement. For an accepted non-terminal plan, `Stop` returns proof/blocker/canonical-next continuation for start, work, FAIL repair, verify, stale reopen, advance, and next-task start without ordinary Owner confirmation; it stops only at `PROJECT_COMPLETE` or exact task-bound `OHNO_NEEDS_INPUT:<active-task-id>`. Exact acceptance-basis, scope, document-sync, and fresh-PASS boundaries remain hard. Hook status honestly exposes untrusted or unavailable integration. |
 | A09 | The Git `pre-commit` integration rejects pending doc sync, out-of-scope staged paths, stale completion proof, and a staged-subject digest different from the verified worktree-subject digest; it accepts an exact fresh in-scope subject. Existing hooks are preserved or installation refuses safely. |
 | A10 | Init persists a classified high-risk Truth inventory and digest. Only `change begin` rescans: an unchanged digest reuses classification, while a new unclassified high-risk entry or deleted/renamed governing target fails closed. Requirement paths still derive from Owner-maintained Truth concerns; unknown/empty concerns include all targets, exact diff coverage is displayed, and acceptance rejects an undisplayed digest or missing replacement plan. |
 | A11 | While change sync is pending, the only reported next action is `SYNC_GOVERNING_DOCUMENTS`; unrelated implementation mutation is blocked on supported paths. Reorder/delete/edit/freeze creates a new plan revision, and active work or receipts from an old revision cannot complete it. After exact local review, the replacement plan resumes normal task start without an Owner-identity claim. |
@@ -53,6 +53,7 @@ test/blackbox/verify-finish.test.mjs
 test/blackbox/resume-status-next.test.mjs
 test/blackbox/requirement-change.test.mjs
 test/blackbox/acceptance-denominator.test.mjs
+test/blackbox/automatic-execution-after-plan.test.mjs
 test/blackbox/codex-hooks.test.mjs
 test/blackbox/git-precommit.test.mjs
 test/blackbox/cockpit.test.mjs
@@ -125,10 +126,15 @@ harness label cannot paper over unfinished release evidence (#17).
 > real multi-slice sessions. Not a coverage score over the eighteen sins.
 
 > **Release / public status:** `0.1.10` is **published** on the public npm
-> registry with cooperative harness evidence (`ANTI_DRIFT_CORE_WORKS`, local
-> LIVE `TRIAL_PASS` on three small disposable copies). That is **not**
+> registry with cooperative harness evidence (`ANTI_DRIFT_CORE_WORKS`). Its
+> original three-copy `TRIAL_PASS` receipts are `HISTORICAL` after the local
+> Correction 5 package-subject change. That is **not**
 > `V1_TRIAL_ACCEPTED` (no absolute Codex control, no universal speed claim,
 > incomplete premium A14 matrix).
+
+> **Correction 5 local status:** `AUTO_AFTER_PLAN_LOCAL_PASS`. The accepted-plan
+> automation correction is not present in published `0.1.10`, and no current
+> performance `TRIAL_PASS` is claimed until a fresh same-batch three-copy run.
 
 If any A/P row later fails or is withdrawn, keep or return to
 `RELEASE_CHANGES_REQUIRED` with the exact failing rows. Do not use older

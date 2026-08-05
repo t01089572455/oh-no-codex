@@ -3,7 +3,7 @@
   "classification": "P06_BROWSER_RECEIPT",
   "generated_at": "2026-08-03T10:14:34.060Z",
   "measurement_batch_id": "live-20260803T100000Z-0bd5926",
-  "measurement_binding": "LIVE",
+  "measurement_binding": "HISTORICAL",
   "browser": "System Chrome/Edge via puppeteer-core",
   "sample_method": {
     "clock": "Date.now epoch ms (cross-process)",
@@ -155,5 +155,5 @@
       "result": "TRIAL_PASS"
     }
   ],
-  "measurement_note": "package_subject refreshed after post-publish README-only documentation commits; runtime samples unchanged."
+  "measurement_note": "Historical 0.1.10 browser receipt; not re-run and not release proof for Correction 5. Hashes remain bound to the originally measured runtime and were not rebased."
 }
