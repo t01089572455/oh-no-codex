@@ -72,13 +72,29 @@ async function acquireVerificationLock(
   );
 }
 
+function nextConsecutiveFailures(
+  previous: VerificationReceipt | null | undefined,
+  task: TaskContract,
+  result: VerificationReceipt["result"],
+): number | undefined {
+  // PASS omits the field (clean receipt). FAIL/UNKNOWN count same-contract streak.
+  if (result !== "FAIL" && result !== "UNKNOWN") {
+    return undefined;
+  }
+  const sameContract = previous?.contract_digest === task.contract_digest;
+  const prior = sameContract ? (previous?.consecutive_failures ?? 0) : 0;
+  return prior + 1;
+}
+
 function receipt(
   task: TaskContract,
   result: VerificationReceipt["result"],
   head: string | null,
   subjectDigest: string | null,
   exitCode: number | null,
+  previous: VerificationReceipt | null | undefined = undefined,
 ): VerificationReceipt {
+  const consecutive = nextConsecutiveFailures(previous, task, result);
   return {
     result,
     command: task.test_command,
@@ -88,6 +104,7 @@ function receipt(
     subject_digest: subjectDigest,
     exit_code: exitCode,
     finished_at: new Date().toISOString(),
+    ...(consecutive === undefined ? {} : { consecutive_failures: consecutive }),
   };
 }
 
@@ -204,7 +221,7 @@ async function verifyTaskWithLock(
     const recorded = await recordActiveResultIfStateUnchanged(
       projectPath,
       state,
-      receipt(task, "UNKNOWN", head, null, null),
+      receipt(task, "UNKNOWN", head, null, null, state.last_verification),
     );
     if (!recorded) {
       return stateChangedOutcome();
@@ -234,7 +251,7 @@ async function verifyTaskWithLock(
     const recorded = await recordActiveResultIfStateUnchanged(
       projectPath,
       state,
-      receipt(task, "UNKNOWN", head, subjectDigest, null),
+      receipt(task, "UNKNOWN", head, subjectDigest, null, state.last_verification),
     );
     if (!recorded) {
       return stateChangedOutcome();
@@ -257,7 +274,7 @@ async function verifyTaskWithLock(
     const recorded = await recordActiveResultIfStateUnchanged(
       projectPath,
       state,
-      receipt(task, "UNKNOWN", head, subjectDigest, null),
+      receipt(task, "UNKNOWN", head, subjectDigest, null, state.last_verification),
     );
     if (!recorded) {
       return stateChangedOutcome();
@@ -275,7 +292,7 @@ async function verifyTaskWithLock(
     const recorded = await recordActiveResultIfStateUnchanged(
       projectPath,
       state,
-      receipt(task, "UNKNOWN", head, subjectDigest, null),
+      receipt(task, "UNKNOWN", head, subjectDigest, null, state.last_verification),
     );
     if (!recorded) {
       return stateChangedOutcome();
@@ -290,7 +307,14 @@ async function verifyTaskWithLock(
     const recorded = await recordActiveResultIfStateUnchanged(
       projectPath,
       state,
-      receipt(task, "FAIL", head, subjectDigest, processResult.exitCode),
+      receipt(
+        task,
+        "FAIL",
+        head,
+        subjectDigest,
+        processResult.exitCode,
+        state.last_verification,
+      ),
     );
     if (!recorded) {
       return stateChangedOutcome();
@@ -307,6 +331,7 @@ async function verifyTaskWithLock(
     head,
     subjectDigest,
     0,
+    state.last_verification,
   );
   const finalState = await readUnchangedState(projectPath, state);
   if (finalState === null) {

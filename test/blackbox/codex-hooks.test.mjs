@@ -499,7 +499,8 @@ test("Stop automatically continues accepted active work without requiring a comp
     const output = stopHook(projectPath, message);
     assert.equal(output.decision, "block");
     assert.match(output.reason, /^OHNO_AUTO_CONTINUE/m);
-    assert.match(output.reason, /CANONICAL_NEXT: CONTINUE_ACTIVE:hooks-001/);
+    assert.match(output.reason, /OHNO_CONTINUE/);
+    assert.match(output.reason, /^next: CONTINUE_ACTIVE:hooks-001$/m);
   }
 });
 

@@ -152,16 +152,16 @@ test("field trial: doctor warns on an accepted weak blackbox", async (t) => {
   assert.match(doctor.stdout, /WARN:/);
 });
 
-test("field trial: requirements note accepts up to 4096 bytes", async (t) => {
+test("field trial: requirements note accepts up to 16KiB authoring limit", async (t) => {
   const projectPath = await createProject(t);
   assert.equal(runInit(projectPath).status, 0);
-  const long = "x".repeat(2000);
+  const long = "x".repeat(8_000);
   const note = runCli(projectPath, ["requirements", "note", "--text", long]);
   assert.equal(note.status, 0, note.stderr + note.stdout);
-  const tooLong = "y".repeat(5000);
+  const tooLong = "y".repeat(17_000);
   const fail = runCli(projectPath, ["requirements", "note", "--text", tooLong]);
   assert.notEqual(fail.status, 0);
-  assert.match(fail.stderr + fail.stdout, /4096|UTF-8 bytes/i);
+  assert.match(fail.stderr + fail.stdout, /16384|UTF-8 bytes/i);
 });
 
 test("field trial: task reopen re-activates last completed without double advance", async (t) => {

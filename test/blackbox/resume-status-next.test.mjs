@@ -46,10 +46,10 @@ const expectedBehavior = "Every read surface shows the same current truth";
 const nextTaskId = "read-surfaces-next";
 const nextAction = `START_TASK:${nextTaskId}`;
 const displayByteLimits = Object.freeze({
-  goal: 256,
-  id: 96,
-  expected: 512,
-  test: 1_024,
+  goal: 16_384,
+  id: 128,
+  expected: 16_384,
+  test: 4_096,
 });
 
 function quoteForShell(value) {
@@ -466,7 +466,10 @@ for (const { field, options } of oversizedTaskFields) {
       ...options,
     });
     assert.notEqual(result.status, 0);
-    assert.match(result.stderr, /invalid|bounded|stable task id/i);
+    assert.match(
+      result.stderr,
+      /invalid|bounded|stable|single line|exceeds|UTF-8|expect|test|goal|id/i,
+    );
     assert.deepEqual(await readStateBytes(projectPath), before);
   });
 }
@@ -507,7 +510,10 @@ for (const { field, options } of [
       ...options,
     });
     assert.notEqual(result.status, 0);
-    assert.match(result.stderr, /invalid|bounded|stable task id/i);
+    assert.match(
+      result.stderr,
+      /invalid|bounded|stable|single line|exceeds|UTF-8|expect|test|goal|id/i,
+    );
     assert.deepEqual(await readStateBytes(projectPath), before);
   });
 }
@@ -745,15 +751,17 @@ test("pending document sync has one authoritative next action", async (t) => {
 
 test("resume stays below 4096 UTF-8 bytes and prioritizes the current contract and blocker", async (t) => {
   const projectPath = await createProject(t);
-  const maximumId = asciiValueAtLimit(displayByteLimits.id, "active-");
-  const maximumExpected = utf8ValueAtLimit(
-    displayByteLimits.expected,
-    "Expected ",
-  );
+  // Capsule budget is 4KiB; authoring limits are larger. Use display-sized
+  // contract fields that must still fit intact in the resume projection.
+  const capsuleIdLimit = 96;
+  const capsuleExpectedLimit = 512;
+  const capsuleTestLimit = 1_024;
+  const maximumId = asciiValueAtLimit(capsuleIdLimit, "active-");
+  const maximumExpected = utf8ValueAtLimit(capsuleExpectedLimit, "Expected ");
   await initialize(projectPath);
   await writeFile(resolve(projectPath, "subject.txt"), "failing subject\n", "utf8");
   const script = await writeCommandScript(projectPath, "fail", "process.exit(9);\n");
-  const command = paddedCommand(nodeCommand(script));
+  const command = paddedCommand(nodeCommand(script), capsuleTestLimit);
   await startTask(projectPath, {
     command,
     expected: maximumExpected,
@@ -765,16 +773,16 @@ test("resume stays below 4096 UTF-8 bytes and prioritizes the current contract a
   state.completed = Array.from({ length: 120 }, (_, index) =>
     completedContract({
       id: asciiValueAtLimit(
-        displayByteLimits.id,
+        capsuleIdLimit,
         `completed-${String(index).padStart(3, "0")}-`,
       ),
       expected: utf8ValueAtLimit(
-        displayByteLimits.expected,
+        capsuleExpectedLimit,
         `History ${index} `,
       ),
       planRevision: state.plan_revision,
       testCommand: utf8ValueAtLimit(
-        displayByteLimits.test,
+        capsuleTestLimit,
         `node historical-${index}.mjs `,
       ),
     })

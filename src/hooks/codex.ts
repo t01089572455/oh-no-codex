@@ -320,44 +320,118 @@ function continuation(reason: string): HookOutput {
   };
 }
 
-function truthRecoveryLines(model: ReadModel): string[] {
+/**
+ * Short cooperative continue card (harness 0.2).
+ * Codex uses decision=block as the continue channel — it is not a work stop.
+ */
+export const STUCK_FAIL_THRESHOLD = 5;
+
+function continueMode(model: ReadModel, failCount: number): string {
+  if (model.next_action === "PROJECT_COMPLETE") {
+    return "DONE";
+  }
+  if (failCount >= STUCK_FAIL_THRESHOLD) {
+    return "STUCK";
+  }
+  if (model.next_action.startsWith("START_TASK:")) {
+    return "START";
+  }
+  if (model.next_action.startsWith("RUN_EXACT_TEST:")) {
+    return "VERIFY";
+  }
+  if (
+    model.proof_freshness === "FAIL"
+    || model.proof_freshness === "UNKNOWN"
+    || model.proof_freshness === "STALE"
+  ) {
+    return "REPAIR";
+  }
+  if (model.next_action.startsWith("CONTINUE_ACTIVE:")) {
+    return "WORK";
+  }
+  if (
+    model.next_action.startsWith("FREEZE_TASK:")
+    || model.next_action === "PROPOSE_PLAN"
+  ) {
+    return "PREPARE";
+  }
+  return "ADVANCE";
+}
+
+function oneLineDo(mode: string, model: ReadModel): string {
+  switch (mode) {
+    case "START":
+      return "ohno task start → implement inside scope → ohno verify";
+    case "WORK":
+      return "implement inside scope → ohno verify";
+    case "VERIFY":
+    case "REPAIR":
+      return "re-read expect+test+scope → fix in scope → ohno verify";
+    case "STUCK":
+      return "stop spinning code; fix test/contract or short new plan / ohno change";
+    case "DONE":
+      return "this linear plan is complete (not whole product)";
+    case "PREPARE":
+      return "short plan (≤5): id+expect+test+scope; then plan accept";
+    default:
+      return `execute ${model.next_action}`;
+  }
+}
+
+function topTruthHint(model: ReadModel): string | undefined {
   const targets = model.truth_targets ?? [];
-  const listed = targets.length === 0
-    ? ".ohno/truth.json (and project playbook/matrix when present)"
-    : targets.slice(0, 16).join(", ")
-      + (targets.length > 16 ? `, …(+${targets.length - 16})` : "");
-  return [
-    "STOP_TO_ASK_OWNER_IS_FORBIDDEN under an accepted plan.",
-    "On failure, UNKNOWN, STALE, missing env, or confusion: do NOT stop to ask "
-      + "the Owner. Re-open Truth governing docs, adjust the approach inside "
-      + "the frozen contract, then continue.",
-    `TRUTH_TARGETS: ${listed}`,
-    "Required recovery order:",
-    "1) ohno status / ohno next",
-    "2) Open Truth-listed docs — especially testing playbook and verification "
-      + "matrix when listed — and copy literal commands (do not invent a "
-      + "softer procedure)",
-    "3) Re-read the active task contract (expected_behavior, test_command, "
-      + "stop_condition, allowed_files)",
-    "4) Change approach inside allowed_files; no mocks that the contract "
-      + "forbids; do not invent secret values",
-    "5) Re-run the exact black box with ohno verify",
-  ];
+  if (targets.length === 0) {
+    return undefined;
+  }
+  const preferred = targets.filter((path) =>
+    /playbook|matrix|accept|REQUIREMENTS|PRODUCT|DESIGN/iu.test(path)
+  );
+  const pick = (preferred.length > 0 ? preferred : targets).slice(0, 3);
+  return pick.join(", ");
 }
 
 function automaticContinuation(
   model: ReadModel,
   note?: string,
+  failCount = 0,
 ): HookOutput {
-  return continuation([
-    ...(note === undefined ? [] : [`NOTE: ${note}`]),
-    ...truthRecoveryLines(model),
-    `PROOF: ${model.proof_freshness}`,
-    `BLOCKER: ${model.blocker}`,
-    `CANONICAL_NEXT: ${model.next_action}`,
-    "Continue autonomously under the accepted plan without asking the Owner "
-      + "to confirm start, continue, repair, verify, or task transition.",
-  ].join("\n"));
+  const mode = continueMode(model, failCount);
+  const task = model.current_task?.id
+    ?? (model.next_action.includes(":")
+      ? model.next_action.split(":").slice(1).join(":")
+      : "—");
+  const lines = [
+    // Platform: decision=block + reason = force another agent turn (continue).
+    "OHNO_CONTINUE  # decision=block means continue, not stop",
+    `mode: ${mode}`,
+    `task: ${task}`,
+    `proof: ${model.proof_freshness}`,
+    `next: ${model.next_action}`,
+    `do: ${oneLineDo(mode, model)}`,
+  ];
+  if (mode === "REPAIR" || mode === "VERIFY" || mode === "STUCK") {
+    const hint = topTruthHint(model);
+    if (hint !== undefined) {
+      lines.push(`hint: re-read ${hint}`);
+    }
+  }
+  if (failCount > 0) {
+    lines.push(`fails: ${failCount}`);
+  }
+  if (note !== undefined && note.trim() !== "") {
+    lines.push(`note: ${note}`);
+  }
+  if (mode === "STUCK") {
+    lines.push(
+      "STUCK: same contract failed repeatedly — do not invent softer tests; "
+        + "narrow expect/test or Owner change.",
+    );
+  } else if (mode !== "DONE" && mode !== "PREPARE") {
+    lines.push(
+      "no Owner ask under accepted plan; stay in scope; only ohno verify closes.",
+    );
+  }
+  return continuation(lines.join("\n"));
 }
 
 async function handleStop(
@@ -382,6 +456,8 @@ async function handleStop(
   const currentId = state.active_task?.id;
   const completedId = state.completed.at(-1)?.id;
   const model = await readModel(projectPath);
+  const failCount = state.last_verification?.consecutive_failures ?? 0;
+  const cont = (note?: string) => automaticContinuation(model, note, failCount);
 
   // NEEDS_INPUT is not an Owner-handoff stop. Under an accepted plan it only
   // adds recovery guidance; the turn must continue (re-read Truth, re-approach).
@@ -394,7 +470,7 @@ async function handleStop(
         + "docs and continue inside the contract.";
       return state.plan_revision === null
         ? continuation(note)
-        : automaticContinuation(model, note);
+        : cont(note);
     }
     const wrongInputId = inputMarkers
       .map(({ id }) => id)
@@ -405,28 +481,24 @@ async function handleStop(
         + "and continue — do not stop to ask the Owner.";
       return state.plan_revision === null
         ? continuation(note)
-        : automaticContinuation(model, note);
+        : cont(note);
     }
     return state.plan_revision === null
       ? continuation(
         "OHNO_NEEDS_INPUT is ignored as a stop. No accepted plan yet — "
           + "finish PREPARE from Truth docs; do not block on Owner chat.",
       )
-      : automaticContinuation(
-        model,
-        "OHNO_NEEDS_INPUT does not end the turn. Treat missing input as a "
-          + "recovery signal: re-read Truth-listed playbook/matrix/contracts, "
-          + "use only documented env key names (never invent values), adjust "
-          + "approach inside the frozen task, then ohno verify.",
+      : cont(
+        "OHNO_NEEDS_INPUT is recovery only: re-read Truth, stay in scope, "
+          + "ohno verify — never invent secret values.",
       );
   }
-
   if (markers.some(({ hasExactStartBoundary }) => !hasExactStartBoundary)) {
     const note = "Exact completion marker required; it must be token-bounded: "
       + "OHNO_COMPLETE:<task-id>.";
     return state.plan_revision === null
       ? continuation(note)
-      : automaticContinuation(model, note);
+      : cont(note);
   }
 
   const expectedIds = [currentId, completedId].filter(
@@ -439,7 +511,7 @@ async function handleStop(
     const note = `Wrong task id ${wrongId}; expected ${currentId ?? completedId ?? "NONE"}.`;
     return state.plan_revision === null
       ? continuation(note)
-      : automaticContinuation(model, note);
+      : cont(note);
   }
 
   if (needsAcceptanceBasisMigration(state)) {
@@ -448,7 +520,7 @@ async function handleStop(
         "next is MIGRATE_ACCEPTANCE_BASIS; run "
           + "ohno migrate acceptance-basis --file <structured-basis.json>",
       )
-      : automaticContinuation(model);
+      : cont();
   }
 
   const marker = markers[0]?.id;
@@ -459,7 +531,7 @@ async function handleStop(
   ) {
     return model.next_action === "PROJECT_COMPLETE"
       ? {}
-      : automaticContinuation(model);
+      : cont();
   }
 
   if (marker !== undefined) {
@@ -468,14 +540,14 @@ async function handleStop(
       + `${marker ?? currentId ?? completedId ?? "the task"}; run ohno verify.`;
     return state.plan_revision === null
       ? continuation(note)
-      : automaticContinuation(model, note);
+      : cont(note);
   }
 
   if (model.next_action === "PROJECT_COMPLETE") {
     return {};
   }
   if (state.plan_revision !== null) {
-    return automaticContinuation(model);
+    return cont();
   }
   return {};
 }

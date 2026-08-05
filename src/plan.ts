@@ -1,6 +1,10 @@
 import { createHash } from "node:crypto";
-import { readFile } from "node:fs/promises";
-import { relative, resolve } from "node:path";
+import {
+  mkdir,
+  readFile,
+  writeFile,
+} from "node:fs/promises";
+import { dirname, relative, resolve } from "node:path";
 
 import {
   assertFrozenTasksMatchBasis,
@@ -16,25 +20,33 @@ import { readGitHead } from "./subject-digest.js";
 import { provenPrefixForPlan } from "./plan-proof.js";
 import {
   compareAndSwapStateAtomic,
-  isPlanTask,
   needsAcceptanceBasisMigration,
   planRevisionFor,
   readState,
 } from "./state.js";
 import type {
   AcceptanceBasis,
+  FrozenPlanTask,
   PendingPlan,
   PlanTask,
   ProjectState,
 } from "./state.js";
+import {
+  assertPlanTaskCount,
+  normalizeAuthorTask,
+} from "./task-normalize.js";
+
+export const DEFAULT_ACCEPTANCE_BASIS_PATH = ".ohno/acceptance-basis.json";
 
 export interface PlanProposalFile {
   cursor: number;
   ordered_tasks: PlanTask[];
-  /** Project-relative path to structured acceptance basis JSON (Truth target). */
+  /**
+   * Project-relative path to structured acceptance basis JSON (Truth target).
+   * Omitted in authoring → harness materializes DEFAULT_ACCEPTANCE_BASIS_PATH.
+   */
   acceptance_source: string;
 }
-
 export interface PlanProposalEvidence {
   planRevision: string;
   diffDigest: string;
@@ -70,83 +82,11 @@ function safeSourcePath(projectPath: string, input: string): {
   };
 }
 
-function normalizeTask(value: unknown): PlanTask {
-  if (!isRecord(value)) {
-    throw new Error("every ordered task must be one object");
-  }
-  if (value.status === "OUTLINE") {
-    if (
-      Object.keys(value).length !== 4
-      || value.id === undefined
-      || value.title === undefined
-      || value.goal === undefined
-    ) {
-      throw new Error(
-        "OUTLINE tasks contain only stable task id, title, goal, and status",
-      );
-    }
-    const task = {
-      id: value.id,
-      title: value.title,
-      goal: value.goal,
-      status: value.status,
-    };
-    if (!isPlanTask(task)) {
-      throw new Error("invalid stable task id, title, or goal");
-    }
-    return task;
-  }
-  if (value.status === "FROZEN") {
-    const frozenKeys = [
-      "id",
-      "title",
-      "goal",
-      "status",
-      "expected_behavior",
-      "test_command",
-      "allowed_files",
-      "stop_condition",
-      "time_budget_minutes",
-    ] as const;
-    const actualKeys = Object.keys(value);
-    const unknown = actualKeys.filter(
-      (key) => !(frozenKeys as readonly string[]).includes(key),
-    );
-    if (unknown.length > 0) {
-      throw new Error(
-        `ACCEPTANCE_UNKNOWN_FIELD: FROZEN task has unsupported field(s): `
-          + `${unknown.join(", ")} (silent drop forbidden)`,
-      );
-    }
-    if (actualKeys.length !== frozenKeys.length) {
-      throw new Error(
-        "FROZEN cursor contract must bind behavior, test, files, stop, and budget",
-      );
-    }
-    const task = {
-      id: value.id,
-      title: value.title,
-      goal: value.goal,
-      status: value.status,
-      expected_behavior: value.expected_behavior,
-      test_command: value.test_command,
-      allowed_files: value.allowed_files,
-      stop_condition: value.stop_condition,
-      time_budget_minutes: value.time_budget_minutes,
-    };
-    if (!isPlanTask(task)) {
-      throw new Error(
-        "invalid FROZEN task; stable task id and bounded contract are required"
-        + "; allowed_files must use bounded non-root globs or concrete paths",
-      );
-    }
-    return task;
-  }
-  throw new Error("ordered task status must be FROZEN or OUTLINE");
-}
-
 /** Parse a plan proposal file body (same rules as plan propose/accept). */
-export function parsePlan(bytes: string): PlanProposalFile {
+export function parsePlan(
+  bytes: string,
+  options: { allowLongPlan?: boolean } = {},
+): PlanProposalFile {
   let parsed: unknown;
   try {
     parsed = JSON.parse(bytes);
@@ -169,19 +109,24 @@ export function parsePlan(bytes: string): PlanProposalFile {
   if (
     !keys.includes("cursor")
     || !keys.includes("ordered_tasks")
-    || !keys.includes("acceptance_source")
     || !keys.every((key) => allowed.has(key))
   ) {
     throw new Error(
-      "ACCEPTANCE_BASIS_REQUIRED: plan proposal must contain cursor, "
-        + "ordered_tasks, and acceptance_source (structured basis JSON path)",
+      "plan proposal must contain cursor and ordered_tasks "
+        + "(acceptance_source optional; defaults to "
+        + `${DEFAULT_ACCEPTANCE_BASIS_PATH})`,
     );
   }
-  const acceptanceSource = assertSafeProjectRelativePath(
-    parsed.acceptance_source,
-    "acceptance_source",
-  );
-  const orderedTasks = parsed.ordered_tasks.map(normalizeTask);
+  const acceptanceSource = parsed.acceptance_source === undefined
+    ? DEFAULT_ACCEPTANCE_BASIS_PATH
+    : assertSafeProjectRelativePath(
+      parsed.acceptance_source,
+      "acceptance_source",
+    );
+  const orderedTasks = parsed.ordered_tasks.map(normalizeAuthorTask);
+  assertPlanTaskCount(orderedTasks.length, {
+    allowLongPlan: options.allowLongPlan === true,
+  });
   if ((parsed.cursor as number) > orderedTasks.length) {
     throw new Error("plan cursor cannot exceed ordered_tasks length");
   }
@@ -194,6 +139,44 @@ export function parsePlan(bytes: string): PlanProposalFile {
     ordered_tasks: orderedTasks,
     acceptance_source: acceptanceSource,
   };
+}
+
+function basisDocumentFromTasks(tasks: readonly PlanTask[]): {
+  schema_version: 1;
+  tasks: Array<{
+    id: string;
+    expected_behavior: string;
+    test_command: string;
+    stop_condition: string;
+  }>;
+} {
+  const frozen = tasks.filter(
+    (task): task is FrozenPlanTask => task.status === "FROZEN",
+  );
+  return {
+    schema_version: 1,
+    tasks: frozen.map((task) => ({
+      id: task.id,
+      expected_behavior: task.expected_behavior,
+      test_command: task.test_command,
+      stop_condition: task.stop_condition,
+    })),
+  };
+}
+
+/**
+ * When the plan omits a hand-maintained basis, materialize it from FROZEN
+ * expect/test/stop so agents do not double-author the same three strings.
+ */
+async function ensureAcceptanceBasisFile(
+  projectPath: string,
+  relativePath: string,
+  tasks: readonly PlanTask[],
+): Promise<void> {
+  const absolute = resolve(projectPath, relativePath);
+  const body = `${JSON.stringify(basisDocumentFromTasks(tasks), null, 2)}\n`;
+  await mkdir(dirname(absolute), { recursive: true });
+  await writeFile(absolute, body, "utf8");
 }
 
 /**
@@ -264,10 +247,12 @@ function isTruthTarget(state: ProjectState, path: string): boolean {
 async function readSource(
   projectPath: string,
   sourcePath: string,
+  options: { allowLongPlan?: boolean } = {},
 ): Promise<{
   sourcePath: string;
   sourceDigest: string;
   proposal: PlanProposalFile;
+  authorOmittedAcceptanceSource: boolean;
 }> {
   const path = safeSourcePath(projectPath, sourcePath);
   let bytes: string;
@@ -276,16 +261,26 @@ async function readSource(
   } catch {
     throw new Error(`cannot read plan proposal ${path.relativePath}`);
   }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(bytes);
+  } catch {
+    throw new Error("plan proposal file must be valid JSON");
+  }
+  const authorOmittedAcceptanceSource = isRecord(parsed)
+    && parsed.acceptance_source === undefined;
   return {
     sourcePath: path.relativePath,
     sourceDigest: sha256(bytes),
-    proposal: parsePlan(bytes),
+    proposal: parsePlan(bytes, options),
+    authorOmittedAcceptanceSource,
   };
 }
 
 export async function proposePlan(
   projectPath: string,
   sourcePath: string,
+  options: { allowLongPlan?: boolean } = {},
 ): Promise<PlanProposalEvidence> {
   const state = await readState(projectPath);
   if (needsAcceptanceBasisMigration(state)) {
@@ -295,7 +290,20 @@ export async function proposePlan(
         + "before proposing a new plan",
     );
   }
-  const source = await readSource(projectPath, sourcePath);
+  const source = await readSource(projectPath, sourcePath, options);
+  if (source.authorOmittedAcceptanceSource
+    || source.proposal.acceptance_source === DEFAULT_ACCEPTANCE_BASIS_PATH
+  ) {
+    // Materialize basis from frozen tasks when author uses the default path or
+    // omits acceptance_source entirely (harness 0.2 less copy-paste tax).
+    if (source.authorOmittedAcceptanceSource) {
+      await ensureAcceptanceBasisFile(
+        projectPath,
+        source.proposal.acceptance_source,
+        source.proposal.ordered_tasks,
+      );
+    }
+  }
   if (!isTruthTarget(state, source.proposal.acceptance_source)) {
     throw new Error(
       "ACCEPTANCE_BASIS_NOT_IN_TRUTH: acceptance_source must be a Truth "
@@ -303,12 +311,31 @@ export async function proposePlan(
     );
   }
 
+  // If basis file is missing but path is the default, write from tasks once.
+  try {
+    await loadStructuredAcceptanceBasis(
+      projectPath,
+      source.proposal.acceptance_source,
+    );
+  } catch {
+    if (source.proposal.acceptance_source === DEFAULT_ACCEPTANCE_BASIS_PATH) {
+      await ensureAcceptanceBasisFile(
+        projectPath,
+        source.proposal.acceptance_source,
+        source.proposal.ordered_tasks,
+      );
+    } else {
+      throw new Error(
+        `cannot read acceptance_source ${source.proposal.acceptance_source}`,
+      );
+    }
+  }
+
   const loaded = await loadStructuredAcceptanceBasis(
     projectPath,
     source.proposal.acceptance_source,
   );
   assertFrozenTasksMatchBasis(source.proposal.ordered_tasks, loaded.document);
-
   const basis: AcceptanceBasis = {
     path: loaded.path,
     digest: loaded.digest,
@@ -373,7 +400,7 @@ export async function acceptPlan(
   projectPath: string,
   revision: string,
   diffDigest: string,
-  options: { allowWeakPlan?: boolean } = {},
+  options: { allowWeakPlan?: boolean; allowLongPlan?: boolean } = {},
 ): Promise<string> {
   const state = await readState(projectPath);
   if (needsAcceptanceBasisMigration(state)) {
@@ -412,7 +439,9 @@ export async function acceptPlan(
       "proposal HEAD changed; record a new exact local plan review",
     );
   }
-  const source = await readSource(projectPath, pending.source_path);
+  const source = await readSource(projectPath, pending.source_path, {
+    allowLongPlan: options.allowLongPlan === true,
+  });
   if (source.sourceDigest !== pending.source_digest) {
     throw new Error(
       "plan proposal file changed; record a new exact local plan review",
@@ -464,6 +493,9 @@ export async function acceptPlan(
   assertPlanDiscipline(source.proposal.ordered_tasks, {
     allowWeakPlan: options.allowWeakPlan === true,
   });
+  assertPlanTaskCount(source.proposal.ordered_tasks.length, {
+    allowLongPlan: options.allowLongPlan === true,
+  });
 
   const recordedAt = new Date().toISOString();
   const accepted = await compareAndSwapStateAtomic(projectPath, state, {
@@ -495,8 +527,11 @@ export async function acceptPlan(
   const weakNote = options.allowWeakPlan
     ? "WEAK_PLAN_OVERRIDE: Owner passed --allow-weak-plan\n"
     : "";
+  const longNote = options.allowLongPlan
+    ? "LONG_PLAN_OVERRIDE: Owner passed --allow-long-plan\n"
+    : "";
   return (
-    `${weakNote}LOCAL_REVIEW_RECORDED: ${pending.plan_revision}\n`
+    `${weakNote}${longNote}LOCAL_REVIEW_RECORDED: ${pending.plan_revision}\n`
     + `ACCEPTANCE_SOURCE: ${pending.acceptance_source_path}\n`
     + `ACCEPTANCE_DIGEST: ${pending.acceptance_source_digest}\n`
   );

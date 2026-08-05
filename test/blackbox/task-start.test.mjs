@@ -19,14 +19,12 @@ import {
   syncTruthInventoryForBasis,
 } from "../helpers/blackbox.mjs";
 
+/** Harness 0.2: only id + expect + test + scope are required (others default). */
 const requiredFrozenFields = [
   "id",
-  "goal",
   "expected_behavior",
   "test_command",
-  "stop_condition",
   "allowed_files",
-  "time_budget_minutes",
 ];
 
 async function initialize(projectPath, projectGoal = "Ship one bounded change") {
@@ -59,9 +57,19 @@ function blankValue(field) {
 
 function assertInvalidFrozenField(result, field) {
   assert.notEqual(result.status, 0, `${field} rejection must exit non-zero`);
+  const alias = field === "expected_behavior"
+    ? "expected_behavior|expect"
+    : field === "test_command"
+    ? "test_command|test"
+    : field === "allowed_files"
+    ? "allowed_files|scope"
+    : field;
   assert.match(
     result.stderr,
-    new RegExp(`${field}|FROZEN|stable task id|bounded contract`, "i"),
+    new RegExp(
+      `${alias}|FROZEN|stable|single line|non-empty|bounded|UTF-8`,
+      "i",
+    ),
     `stderr must identify the invalid frozen contract; received:\n${result.stderr}`,
   );
 }

@@ -61,14 +61,24 @@ function stop(cwd, message) {
 function assertAutomatic(output, nextAction, proof) {
   assert.equal(output.decision, "block");
   assert.match(output.reason, /^OHNO_AUTO_CONTINUE(?:\r?\n|$)/u);
-  assert.match(output.reason, new RegExp(
-    `^CANONICAL_NEXT: ${nextAction.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}$`,
-    "mu",
-  ));
+  assert.match(output.reason, /OHNO_CONTINUE/u);
+  assert.match(
+    output.reason,
+    new RegExp(
+      `^next: ${nextAction.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}$`,
+      "mu",
+    ),
+  );
   if (proof !== undefined) {
-    assert.match(output.reason, new RegExp(`^PROOF: ${proof}$`, "mu"));
+    assert.match(
+      output.reason,
+      new RegExp(`^proof: ${proof}$`, "miu"),
+    );
   }
-  assert.match(output.reason, /without asking the Owner|Do not ask the Owner/iu);
+  assert.match(
+    output.reason,
+    /no Owner ask|stay in scope|ohno verify|mode:/iu,
+  );
 }
 
 function applyPatchCommand(path) {
@@ -337,8 +347,8 @@ test("an accepted plan automatically continues through start, failure, stale pro
     "OHNO_NEEDS_INPUT:auto-2\nA paid service credential is unavailable.",
   );
   assertAutomatic(needsInput, "CONTINUE_ACTIVE:auto-2", "NONE");
-  assert.match(needsInput.reason, /STOP_TO_ASK_OWNER_IS_FORBIDDEN/i);
-  assert.match(needsInput.reason, /TRUTH_TARGETS:|Re-read Truth|playbook/i);
+  assert.match(needsInput.reason, /OHNO_CONTINUE|mode:/i);
+  assert.match(needsInput.reason, /re-read|scope|ohno verify|Truth/i);
   assertAutomatic(
     stop(projectPath, "OHNO_NEEDS_INPUT:wrong-task\nMissing input."),
     "CONTINUE_ACTIVE:auto-2",

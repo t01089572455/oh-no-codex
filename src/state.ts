@@ -19,15 +19,19 @@ import {
   tryCreatePidLockFile,
 } from "./process-lock.js";
 
+/**
+ * Authoring caps (harness 0.2). Display/injection may truncate earlier;
+ * these limits must not ridicule ordinary Owner intent (sin #12 control tax).
+ */
 export const displayFieldByteLimits = Object.freeze({
-  goal: 256,
-  taskId: 96,
-  title: 256,
-  expectedBehavior: 512,
-  testCommand: 1_024,
-  changeSummary: 512,
-  /** Owner requirements notes (FT-25): longer than change summaries. */
-  ownerNote: 4_096,
+  goal: 16_384,
+  taskId: 128,
+  title: 512,
+  expectedBehavior: 16_384,
+  testCommand: 4_096,
+  changeSummary: 4_096,
+  /** Owner requirements notes: longer than change summaries. */
+  ownerNote: 16_384,
 });
 
 export type DisplayTextIssue = "LINE_BREAK" | "TOO_LARGE";
@@ -85,6 +89,8 @@ export interface VerificationReceipt {
   subject_digest: string | null;
   exit_code: number | null;
   finished_at: string;
+  /** Same-contract consecutive FAIL/UNKNOWN count (harness STUCK threshold). */
+  consecutive_failures?: number;
 }
 
 /** External acceptance basis bound into plan_revision (structured basis). */
@@ -420,18 +426,24 @@ function isTaskContract(value: unknown): value is TaskContract {
 function isVerificationReceipt(
   value: unknown,
 ): value is VerificationReceipt {
+  const required = [
+    "result",
+    "command",
+    "contract_digest",
+    "plan_revision",
+    "head",
+    "subject_digest",
+    "exit_code",
+    "finished_at",
+  ] as const;
   if (
     !isRecord(value)
-    || !hasExactKeys(value, [
-      "result",
-      "command",
-      "contract_digest",
-      "plan_revision",
-      "head",
-      "subject_digest",
-      "exit_code",
-      "finished_at",
-    ])
+    || !required.every((key) => key in value)
+    || Object.keys(value).some(
+      (key) =>
+        !(required as readonly string[]).includes(key)
+        && key !== "consecutive_failures",
+    )
     || !["PASS", "FAIL", "UNKNOWN"].includes(String(value.result))
     || !isNonBlankString(value.command)
     || !isSha256(value.contract_digest)
@@ -442,6 +454,13 @@ function isVerificationReceipt(
     )
     || !(value.subject_digest === null || isSha256(value.subject_digest))
     || !isRfc3339Timestamp(value.finished_at)
+  ) {
+    return false;
+  }
+  if (
+    value.consecutive_failures !== undefined
+    && (!Number.isSafeInteger(value.consecutive_failures)
+      || (value.consecutive_failures as number) < 0)
   ) {
     return false;
   }

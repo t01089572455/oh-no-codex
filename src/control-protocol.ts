@@ -4,38 +4,27 @@
  */
 export function renderControlProtocolMarkdown(): string {
   return [
-    "### Oh No control (skill suite)",
+    "### Oh No harness (reins)",
     "",
-    "Setup is terminal-only: `ohno init` then `ohno install` (not skills).",
-    "Day-to-day: Codex skills `oh-no-plan` · `oh-no-task` · `oh-no-verify` ·",
-    "`oh-no-resume` · `oh-no-status` · `oh-no-next` · `oh-no-change` ·",
-    "`oh-no-requirements` · `oh-no-preferences` · `oh-no-doctor` · `oh-no-cockpit` ·",
-    "`oh-no-projectors` · hub `oh-no-control`. Refresh: `ohno skill install`.",
+    "Setup (terminal): `ohno init` then `ohno install`. Refresh: `ohno skill install`.",
+    "Daily: bare `ohno` | `ohno next` | `ohno task start` | `ohno verify`.",
+    "Skills: hub `oh-no-control`, plus `oh-no-verify` / `oh-no-task` / `oh-no-plan` / `oh-no-resume`.",
+    "Authority: **this cwd** `.ohno/state.json` only. Done => **ohno verify** PASS only.",
     "",
-    "This block is **live state only**. Done ⇒ **oh-no-verify**.",
-    "No invented PASS. Authority: **this cwd** `.ohno/state.json` (worktrees differ).",
-    "PREPARE resolves material ambiguity and reviews the exact plan/basis diff.",
-    "If the Owner authorized plan-and-finish, accept without asking again; an",
-    "accepted plan runs start/repair/verify/advance automatically until terminal.",
+    "### Anti-drift (eighteen sins -> four fences)",
     "",
-    "### Field-trial hard rules (must follow)",
+    "1. **Short plan (<=5)** - one vertical slice; not a product roadmap.",
+    "2. **Task shape** - only `id`, `expect`, `test`, `scope` (aliases: expected_behavior,",
+    "   test_command, allowed_files). title/goal/stop/budget default.",
+    "3. **Scope fence** - PreToolUse/pre-commit; no product code outside scope.",
+    "4. **Hard black box** - soft/playbook-deferral tests refused without `--allow-weak-plan`.",
     "",
-    "1. Under an accepted plan: never stop to ask the Owner on FAIL/confusion — "
-      + "re-open Truth-listed playbook/matrix/contracts, re-approach inside the "
-      + "frozen task, then `ohno verify`. Soft black boxes (echo+exit 3 / "
-      + "playbook deferral) are refused on plan accept without --allow-weak-plan.",
-    "2. Before product coding: preserve raw Owner prompts in `OWNER-INPUTS.md`,",
-    "   consolidate `.ohno/REQUIREMENTS.md`, then review `ohno plan propose`.",
-    "3. Weak-size / docs-only findings may warn in PREPARE; weak black boxes "
-      + "hard-refuse accept unless Owner passes --allow-weak-plan.",
-    "4. After PASS then quality fix: `ohno task reopen` (not a new micro-plan).",
-    "5. `PROJECT_COMPLETE` / plan % = **this linear plan only**, not product done.",
-    "6. Multi-agent (Codex spawn): only **root** runs ohno plan/task/verify;",
-    "   review agents cannot invent PASS. Oh No does not schedule agents.",
-    "7. Prefer committing `.ohno/` + `AGENTS.md` with the product (authority travel).",
-    "8. Windows: use `ohno.cmd` on PATH; never double-click `dist/cli.js`.",
-    "9. Stop only at PROJECT_COMPLETE under an accepted plan. OHNO_NEEDS_INPUT "
-      + "is recovery guidance (re-read Truth), not an Owner handoff.",
+    "Accepted plan => cooperative auto continue (`OHNO_CONTINUE`; Codex `block` = continue).",
+    "FAIL => REPAIR in scope + re-read Truth top paths; do **not** stop to ask Owner.",
+    "Repeated FAIL => STUCK (fix contract/test or new short plan / `ohno change`).",
+    "`PROJECT_COMPLETE` = this linear plan only, not the whole product.",
+    "",
+    "Windows: `ohno.cmd` on PATH; never double-click `dist/cli.js`.",
     "",
   ].join("\n");
 }

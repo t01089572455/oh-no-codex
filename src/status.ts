@@ -37,11 +37,11 @@ export function serializeHarnessBrief(model: ReadModel): string {
 
   let doLine = "ohno verify          # only claim done after this passes";
   if (model.next_action === "PROPOSE_PLAN") {
-    doLine = "ohno plan propose …  # then plan accept, then task start";
+    doLine = "short plan (≤5): id+expect+test+scope → plan accept → task start";
   } else if (model.next_action.startsWith("START_TASK:")) {
-    doLine = "ohno task start      # then work, then ohno verify";
+    doLine = "ohno task start      # then work in scope, then ohno verify";
   } else if (model.next_action.startsWith("FREEZE_TASK:")) {
-    doLine = "freeze the outline task in plan, then task start + verify";
+    doLine = "freeze outline with expect+test+scope, then task start + verify";
   } else if (model.next_action.startsWith("REOPEN_TASK:")) {
     doLine = "ohno task reopen     # then fix, then ohno verify";
   } else if (model.next_action === "PROJECT_COMPLETE") {
@@ -52,12 +52,11 @@ export function serializeHarnessBrief(model: ReadModel): string {
     || model.proof_freshness === "STALE"
   ) {
     doLine =
-      "fix inside allowed_files using Truth docs (playbook/matrix), "
-      + "then ohno verify — do not stop to ask the Owner";
+      "REPAIR in scope (expect+test) → ohno verify — do not ask Owner to invent scope";
   }
 
   return [
-    "Oh No harness — simple control (reins, not a second product)",
+    "Oh No harness — reins only (not a second product)",
     "",
     `status:  ${model.status}`,
     `task:    ${task}`,
@@ -66,11 +65,12 @@ export function serializeHarnessBrief(model: ReadModel): string {
     `next:    ${model.next_action}`,
     `board:   ${model.cursor}/${model.task_count} of THIS plan`,
     "",
-    "loop:  bound task → work in scope → ohno verify → next",
+    "loop:  freeze short slice → work in scope → ohno verify → next",
     `do:    ${doLine}`,
     "",
-    "daily: ohno status | ohno next | ohno task start | ohno verify",
-    "more:  ohno --help   (plan/change/cockpit/truth live under advanced)",
+    "daily: ohno | ohno next | ohno task start | ohno verify",
+    "task:  id + expect + test + scope   (other fields default)",
+    "more:  ohno --help",
     "",
   ].join("\n");
 }

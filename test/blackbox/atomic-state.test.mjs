@@ -305,7 +305,7 @@ test("normal read surfaces and every supported hook avoid Truth and project-test
   assert.match(stopped.reason, /^OHNO_AUTO_CONTINUE\r?\n/u);
   assert.match(
     stopped.reason,
-    /^CANONICAL_NEXT: CONTINUE_ACTIVE:a15-read-isolation$/mu,
+    /^next: CONTINUE_ACTIVE:a15-read-isolation$/mu,
   );
 
   const cockpit = await startReadOnlyCockpit(projectPath);

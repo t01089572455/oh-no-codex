@@ -115,7 +115,7 @@ one next action without creating a second source of truth.
 
 ## Install and use
 
-Requires Node.js **22.20 or newer**. Current release: **`0.1.13`**.
+Requires Node.js **22.20 or newer**. Current release: **`0.2.0`**.
 
 ### New or empty repository
 
@@ -168,12 +168,10 @@ plan. Once accepted, Codex runs the deterministic loop without asking again at
 ordinary task boundaries. The primitives remain available directly:
 
 ```bash
-ohno                    # one-screen harness brief (simple control mode)
-ohno status | ohno next | ohno resume
-ohno task start
-# Codex works only on the frozen task and allowed files
-ohno verify             # only claim done after PASS
-# plan propose/accept when PREPARE still needs a board (advanced)
+ohno                    # one-screen harness brief
+ohno next | ohno task start | ohno verify
+# task shape: id + expect + test + scope (other fields default)
+# plan propose/accept for a short vertical slice (advanced)
 ```
 
 - A zero-exit exact test with unchanged scoped files creates a fresh PASS and
@@ -283,9 +281,9 @@ it cannot suppress Codex or operating-system approval prompts.
 
 | Public fact | Current evidence |
 | --- | --- |
-| Package | [`oh-no-codex@0.1.13`](https://www.npmjs.com/package/oh-no-codex) is published |
+| Package | [`oh-no-codex@0.2.0`](https://www.npmjs.com/package/oh-no-codex) is published |
 | Core loop | `ANTI_DRIFT_CORE_WORKS` with local public black-box coverage |
-| Accepted-plan automation | Since `0.1.12`: after plan accept, Stop continues with `OHNO_AUTO_CONTINUE` (cooperative, not a daemon). `0.1.13` simplifies the default surface (bare `ohno` brief; fail → Truth recovery, not Owner handoff). |
+| Harness surface | `0.2.0`: four fences (short plan, id+expect+test+scope, scope hook, hard black box); short `OHNO_CONTINUE` cards; raised authoring limits; optional acceptance_source |
 | Real-project trial | The current local Correction 5 package subject earned same-batch LIVE `TRIAL_PASS` on three named disposable copies (`live-20260805T064039Z-834bc92`); this is not a universal speed or published-package claim |
 | Cockpit | Read-only equality with the CLI state plus browser and local reflection checks |
 

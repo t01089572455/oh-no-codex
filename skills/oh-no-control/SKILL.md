@@ -1,75 +1,90 @@
 ---
 name: oh-no-control
 description: >
-  Hub skill for Oh No, Codex! (oh-no-codex / ohno) simple anti-drift harness.
+  Hub skill for Oh No, Codex! (oh-no-codex / ohno) anti-drift harness.
   Use when the user mentions ohno, harness, bounded task, .ohno, anti-drift,
-  or which oh-no skill to use. Prefer specific oh-no-* skills when intent is
-  clear. Setup (ohno init / install) is terminal-only, not a skill.
+  or which oh-no skill to use. Prefer specific oh-no-* skills when intent is clear.
+  Setup (ohno init / install) is terminal-only, not a skill.
 ---
 
-# Oh No — simple harness (reins)
+# Oh No — harness (reins)
 
-Oh No is a **small local harness**, not a second product or project manager.
+Not a second product. Four fences only:
 
-**Daily loop only:**
+1. **Short plan** (≤5 tasks) — one vertical slice  
+2. **Task** = `id` + `expect` + `test` + `scope`  
+3. **Scope** — only touch allowed files  
+4. **`ohno verify`** — only PASS proves done  
+
+## Daily
 
 ```text
-ohno status / ohno next   → where am I?
-ohno task start           → open the frozen cursor task (if needed)
-work inside allowed_files
-ohno verify               → only claim done after PASS
+ohno / ohno next
+ohno task start
+work inside scope
+ohno verify
 ```
 
-Bare `ohno` prints a one-screen view. Full capsule: `ohno resume`.
+Bare `ohno` = one-screen brief. Full capsule: `ohno resume`.
 
-## Setup (human / terminal)
+## Minimal plan task (author this)
+
+```json
+{
+  "id": "login-redirect",
+  "status": "FROZEN",
+  "expect": "unauthenticated /app redirects to login",
+  "test": "node scripts/bb-login-redirect.mjs",
+  "scope": ["src/auth/**", "scripts/bb-login-redirect.mjs"]
+}
+```
+
+Aliases ok: `expected_behavior`/`test_command`/`allowed_files`.  
+`title`/`goal`/`stop`/`budget` default.  
+`acceptance_source` optional (harness writes `.ohno/acceptance-basis.json`).
+
+Plan file:
+
+```json
+{
+  "cursor": 0,
+  "ordered_tasks": [ /* ≤5 frozen/outline tasks */ ]
+}
+```
 
 ```bash
-npm install -g oh-no-codex
-cd <git-repo>
-ohno init
-ohno install
+ohno plan propose --file .ohno/review-plan.json
+ohno plan accept --revision <sha> --diff <sha>
 ```
 
-## When stuck / FAIL
+## FAIL under accepted plan
 
-Under an **accepted plan**: do **not** stop to ask the Owner.
+Do **not** stop to ask the Owner.
 
-1. `ohno status` / `ohno next`
-2. Re-open Truth-listed docs (playbook / verification matrix when listed)
-3. Re-read the frozen task contract
-4. Fix inside `allowed_files` (no inventing secrets, no mock if forbidden)
-5. `ohno verify` again
+1. `ohno` / `ohno next`  
+2. Re-read expect + test + scope  
+3. Open top Truth paths if listed  
+4. Fix inside scope → `ohno verify`  
+5. Many FAILs → STUCK: fix contract/test or short new plan / `ohno change`
 
-`OHNO_AUTO_CONTINUE` means keep going; it is not Owner prose.
-`OHNO_NEEDS_INPUT` is recovery guidance, not a handoff stop.
+`OHNO_CONTINUE` / Stop `decision: block` = **continue**, not “work blocked”.
 
-## Skills map (keep small)
+## Skills map
 
-| Need | Skill / command |
+| Need | Skill |
 | --- | --- |
-| 卡在哪 | `oh-no-resume` / `ohno resume` or bare `ohno` |
+| 卡在哪 | `oh-no-resume` / bare `ohno` |
 | 下一步 | `oh-no-next` |
-| 开工 | `oh-no-task` → `ohno task start` |
-| 做完了 | `oh-no-verify` → **only** `ohno verify` |
-| 排计划 | `oh-no-plan` (advanced) |
-| 需求变了 | `oh-no-change` (advanced) |
+| 开工 | `oh-no-task` |
+| 验收 | `oh-no-verify` only |
+| 短计划 | `oh-no-plan` |
+| 需求变了 | `oh-no-change` |
 | 看板 | `oh-no-cockpit` |
 
-## Hard rules (few)
+## Hard rules
 
-1. Never claim done without **`ohno verify` PASS**.
-2. `next` is a locator, not new scope permission.
-3. Authority is **this cwd** `.ohno/state.json` only.
-4. Plan % / `PROJECT_COMPLETE` = **this linear plan**, not whole product.
-5. Prefer **short plans** (one vertical). Do not freeze mega roadmaps as one board.
-6. Soft black boxes (`echo` + exit 3 / “go read playbook”) are **refused** on accept unless Owner passes `--allow-weak-plan`.
-
-## Advanced (ignore unless needed)
-
-plan propose/accept, change begin/diff/accept, truth.json applicability,
-requirements/OWNER-INPUTS, preferences, migrate, doctor, projectors.
-
-## Windows
-
-Use `ohno.cmd` on PATH; never double-click `dist/cli.js`.
+1. Never claim done without **`ohno verify` PASS**.  
+2. Soft black boxes refused without `--allow-weak-plan`.  
+3. Plans >5 need `--allow-long-plan` (Owner only).  
+4. Authority = this cwd `.ohno/state.json`.  
+5. `PROJECT_COMPLETE` = this plan only.  
