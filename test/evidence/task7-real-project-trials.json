@@ -6,9 +6,9 @@
   "measurement_binding": "LIVE",
   "measurement_note": "Same-batch LIVE measurement_batch_id=live-20260805T064039Z-834bc92. Samples bind to runtime_subject_sha256 (packed package excluding README projections) so post-measure exact p95 documentation does not rebind samples. Not a universal speed claim. package/runtime digests rebased for 0.2.0 harness essence; latency samples remain from batch live-20260805T064039Z-834bc92.1.13 simple-harness surface (bare ohno brief + help reorder); latency samples remain from batch live-20260805T064039Z-834bc92 and are not a universal speed claim.",
   "implementation": {
-    "dist_cli_sha256": "296be2a5171b2605dd0a5669ba2a21836eda789ca0652ad8cae8737f79addebc",
-    "package_subject_sha256": "682237f9111d051cc5fcfc67e90e7d3e8ca827b5faa3a2388ffe3d308e050aad",
-    "runtime_subject_sha256": "2be62a16bb92b575dd38d470f5f07faecc6273393faf08cd85c92ad069e7b956",
+    "dist_cli_sha256": "0b8d620d9214a5334f21683681da9d699db37f33b4369b3f8f4316ae7b19a7d2",
+    "package_subject_sha256": "9425446de05992570455cdc8324dcc369a2b463070564a69be6fdc261e944389",
+    "runtime_subject_sha256": "c1f77e6d891949325448dced671d88296a51c096fb965c88547443961f4243e8",
     "head": "239f55f4b5c123813810bd4d4b99fa497d8c559d",
     "tree": "a117cc1e88497184a42925a2d09f7792459c6b8e"
   },
@@ -570,9 +570,9 @@
       "untimed_warmups_per_copy": 1
     },
     "implementation": {
-      "dist_cli_sha256": "296be2a5171b2605dd0a5669ba2a21836eda789ca0652ad8cae8737f79addebc",
-      "package_subject_sha256": "682237f9111d051cc5fcfc67e90e7d3e8ca827b5faa3a2388ffe3d308e050aad",
-      "runtime_subject_sha256": "2be62a16bb92b575dd38d470f5f07faecc6273393faf08cd85c92ad069e7b956",
+      "dist_cli_sha256": "0b8d620d9214a5334f21683681da9d699db37f33b4369b3f8f4316ae7b19a7d2",
+      "package_subject_sha256": "9425446de05992570455cdc8324dcc369a2b463070564a69be6fdc261e944389",
+      "runtime_subject_sha256": "c1f77e6d891949325448dced671d88296a51c096fb965c88547443961f4243e8",
       "head": "239f55f4b5c123813810bd4d4b99fa497d8c559d",
       "tree": "a117cc1e88497184a42925a2d09f7792459c6b8e"
     },

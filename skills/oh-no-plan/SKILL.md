@@ -7,9 +7,10 @@ description: >
 
 # oh-no-plan
 
-## Shape (harness 0.2)
+## Shape
 
-**Prefer ≤5 tasks.** One vertical slice, not a product roadmap.
+**Plan length is unrestricted.** Do not shrink a plan only to satisfy a harness
+quota. Anti-drift comes from hard black boxes and scope, not fewer tasks.
 
 Each **FROZEN** task needs only:
 
@@ -52,7 +53,6 @@ ohno plan accept --revision <sha256> --diff <sha256>
 ```
 
 - Soft / playbook-deferral `test` → refuse accept unless `--allow-weak-plan`.  
-- More than 5 tasks → refuse unless `--allow-long-plan`.  
 - When `next` is `MIGRATE_ACCEPTANCE_BASIS`, run migrate first.
 
 ## After accept

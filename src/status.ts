@@ -37,7 +37,7 @@ export function serializeHarnessBrief(model: ReadModel): string {
 
   let doLine = "ohno verify          # only claim done after this passes";
   if (model.next_action === "PROPOSE_PLAN") {
-    doLine = "short plan (≤5): id+expect+test+scope → plan accept → task start";
+    doLine = "plan with id+expect+test+scope per task → plan accept → task start";
   } else if (model.next_action.startsWith("START_TASK:")) {
     doLine = "ohno task start      # then work in scope, then ohno verify";
   } else if (model.next_action.startsWith("FREEZE_TASK:")) {

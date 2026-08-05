@@ -14,9 +14,6 @@ import type { PlanTask } from "./state.js";
 const DEFAULT_STOP = "Stop when the exact black-box test passes";
 const DEFAULT_BUDGET_MINUTES = 60;
 
-/** Default max ordered_tasks unless Owner passes --allow-long-plan. */
-export const DEFAULT_MAX_ORDERED_TASKS = 5;
-
 const outlineAllowed = new Set([
   "id",
   "title",
@@ -197,18 +194,3 @@ export function normalizeAuthorTask(value: unknown): PlanTask {
   return task;
 }
 
-export function assertPlanTaskCount(
-  count: number,
-  options: { allowLongPlan: boolean },
-): void {
-  if (options.allowLongPlan) {
-    return;
-  }
-  if (count > DEFAULT_MAX_ORDERED_TASKS) {
-    throw new Error(
-      `PLAN_TOO_LONG: ${count} tasks exceeds default max `
-        + `${DEFAULT_MAX_ORDERED_TASKS}. Prefer one vertical slice. `
-        + "Pass --allow-long-plan only after Owner review.",
-    );
-  }
-}

@@ -31,10 +31,7 @@ import type {
   PlanTask,
   ProjectState,
 } from "./state.js";
-import {
-  assertPlanTaskCount,
-  normalizeAuthorTask,
-} from "./task-normalize.js";
+import { normalizeAuthorTask } from "./task-normalize.js";
 
 export const DEFAULT_ACCEPTANCE_BASIS_PATH = ".ohno/acceptance-basis.json";
 
@@ -83,10 +80,7 @@ function safeSourcePath(projectPath: string, input: string): {
 }
 
 /** Parse a plan proposal file body (same rules as plan propose/accept). */
-export function parsePlan(
-  bytes: string,
-  options: { allowLongPlan?: boolean } = {},
-): PlanProposalFile {
+export function parsePlan(bytes: string): PlanProposalFile {
   let parsed: unknown;
   try {
     parsed = JSON.parse(bytes);
@@ -124,9 +118,6 @@ export function parsePlan(
       "acceptance_source",
     );
   const orderedTasks = parsed.ordered_tasks.map(normalizeAuthorTask);
-  assertPlanTaskCount(orderedTasks.length, {
-    allowLongPlan: options.allowLongPlan === true,
-  });
   if ((parsed.cursor as number) > orderedTasks.length) {
     throw new Error("plan cursor cannot exceed ordered_tasks length");
   }
@@ -247,7 +238,6 @@ function isTruthTarget(state: ProjectState, path: string): boolean {
 async function readSource(
   projectPath: string,
   sourcePath: string,
-  options: { allowLongPlan?: boolean } = {},
 ): Promise<{
   sourcePath: string;
   sourceDigest: string;
@@ -272,7 +262,7 @@ async function readSource(
   return {
     sourcePath: path.relativePath,
     sourceDigest: sha256(bytes),
-    proposal: parsePlan(bytes, options),
+    proposal: parsePlan(bytes),
     authorOmittedAcceptanceSource,
   };
 }
@@ -280,7 +270,6 @@ async function readSource(
 export async function proposePlan(
   projectPath: string,
   sourcePath: string,
-  options: { allowLongPlan?: boolean } = {},
 ): Promise<PlanProposalEvidence> {
   const state = await readState(projectPath);
   if (needsAcceptanceBasisMigration(state)) {
@@ -290,7 +279,7 @@ export async function proposePlan(
         + "before proposing a new plan",
     );
   }
-  const source = await readSource(projectPath, sourcePath, options);
+  const source = await readSource(projectPath, sourcePath);
   if (source.authorOmittedAcceptanceSource
     || source.proposal.acceptance_source === DEFAULT_ACCEPTANCE_BASIS_PATH
   ) {
@@ -400,7 +389,7 @@ export async function acceptPlan(
   projectPath: string,
   revision: string,
   diffDigest: string,
-  options: { allowWeakPlan?: boolean; allowLongPlan?: boolean } = {},
+  options: { allowWeakPlan?: boolean } = {},
 ): Promise<string> {
   const state = await readState(projectPath);
   if (needsAcceptanceBasisMigration(state)) {
@@ -439,9 +428,7 @@ export async function acceptPlan(
       "proposal HEAD changed; record a new exact local plan review",
     );
   }
-  const source = await readSource(projectPath, pending.source_path, {
-    allowLongPlan: options.allowLongPlan === true,
-  });
+  const source = await readSource(projectPath, pending.source_path);
   if (source.sourceDigest !== pending.source_digest) {
     throw new Error(
       "plan proposal file changed; record a new exact local plan review",
@@ -493,9 +480,6 @@ export async function acceptPlan(
   assertPlanDiscipline(source.proposal.ordered_tasks, {
     allowWeakPlan: options.allowWeakPlan === true,
   });
-  assertPlanTaskCount(source.proposal.ordered_tasks.length, {
-    allowLongPlan: options.allowLongPlan === true,
-  });
 
   const recordedAt = new Date().toISOString();
   const accepted = await compareAndSwapStateAtomic(projectPath, state, {
@@ -527,11 +511,8 @@ export async function acceptPlan(
   const weakNote = options.allowWeakPlan
     ? "WEAK_PLAN_OVERRIDE: Owner passed --allow-weak-plan\n"
     : "";
-  const longNote = options.allowLongPlan
-    ? "LONG_PLAN_OVERRIDE: Owner passed --allow-long-plan\n"
-    : "";
   return (
-    `${weakNote}${longNote}LOCAL_REVIEW_RECORDED: ${pending.plan_revision}\n`
+    `${weakNote}LOCAL_REVIEW_RECORDED: ${pending.plan_revision}\n`
     + `ACCEPTANCE_SOURCE: ${pending.acceptance_source_path}\n`
     + `ACCEPTANCE_DIGEST: ${pending.acceptance_source_digest}\n`
   );

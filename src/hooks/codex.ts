@@ -372,7 +372,7 @@ function oneLineDo(mode: string, model: ReadModel): string {
     case "DONE":
       return "this linear plan is complete (not whole product)";
     case "PREPARE":
-      return "short plan (≤5): id+expect+test+scope; then plan accept";
+      return "plan with id+expect+test+scope per task; then plan accept";
     default:
       return `execute ${model.next_action}`;
   }

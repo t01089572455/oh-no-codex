@@ -9,12 +9,16 @@ description: >
 
 # Oh No — harness (reins)
 
-Not a second product. Four fences only:
+Not a second product. **Do not limit model capability by plan length.**
+Anti-drift is four fences, not a task quota:
 
-1. **Short plan** (≤5 tasks) — one vertical slice  
-2. **Task** = `id` + `expect` + `test` + `scope`  
-3. **Scope** — only touch allowed files  
+1. **Task contract** — `id` + `expect` + `test` + `scope`  
+2. **Scope fence** — only touch allowed files  
+3. **Hard black box** — real executable proof, not soft deferral  
 4. **`ohno verify`** — only PASS proves done  
+
+Plan may be as long as the Owner needs. Prefer clear vertical slices when useful;
+never refuse a plan only because it has many tasks.
 
 ## Daily
 
@@ -43,15 +47,6 @@ Aliases ok: `expected_behavior`/`test_command`/`allowed_files`.
 `title`/`goal`/`stop`/`budget` default.  
 `acceptance_source` optional (harness writes `.ohno/acceptance-basis.json`).
 
-Plan file:
-
-```json
-{
-  "cursor": 0,
-  "ordered_tasks": [ /* ≤5 frozen/outline tasks */ ]
-}
-```
-
 ```bash
 ohno plan propose --file .ohno/review-plan.json
 ohno plan accept --revision <sha> --diff <sha>
@@ -65,7 +60,7 @@ Do **not** stop to ask the Owner.
 2. Re-read expect + test + scope  
 3. Open top Truth paths if listed  
 4. Fix inside scope → `ohno verify`  
-5. Many FAILs → STUCK: fix contract/test or short new plan / `ohno change`
+5. Many FAILs → STUCK: fix contract/test or `ohno change` / new plan  
 
 `OHNO_CONTINUE` / Stop `decision: block` = **continue**, not “work blocked”.
 
@@ -77,7 +72,7 @@ Do **not** stop to ask the Owner.
 | 下一步 | `oh-no-next` |
 | 开工 | `oh-no-task` |
 | 验收 | `oh-no-verify` only |
-| 短计划 | `oh-no-plan` |
+| 计划 | `oh-no-plan` |
 | 需求变了 | `oh-no-change` |
 | 看板 | `oh-no-cockpit` |
 
@@ -85,6 +80,6 @@ Do **not** stop to ask the Owner.
 
 1. Never claim done without **`ohno verify` PASS**.  
 2. Soft black boxes refused without `--allow-weak-plan`.  
-3. Plans >5 need `--allow-long-plan` (Owner only).  
+3. **No plan task-count cap** — length is Owner/model choice.  
 4. Authority = this cwd `.ohno/state.json`.  
 5. `PROJECT_COMPLETE` = this plan only.  

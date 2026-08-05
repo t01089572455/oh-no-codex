@@ -90,8 +90,8 @@ const usageText = [
   "  ohno cockpit [--port <n>] [--replace] | ohno cockpit stop",
   "",
   "advanced:",
-  "  ohno plan propose --file <review.json> [--allow-long-plan]",
-  "  ohno plan accept --revision <sha256> --diff <sha256> [--allow-weak-plan] [--allow-long-plan]",
+  "  ohno plan propose --file <review.json>",
+  "  ohno plan accept --revision <sha256> --diff <sha256> [--allow-weak-plan]",
   "  ohno projectors refresh [--no-agents]",
   "  ohno requirements note --text <owner words> | ohno requirements show",
   "  ohno preferences show | set | reset",
@@ -418,36 +418,34 @@ async function main(): Promise<void> {
     return;
   }
 
-  if (command === "plan" && subcommand === "propose") {
-    const allowLongPlan = args.includes("--allow-long-plan");
-    const filtered = args.filter((a) => a !== "--allow-long-plan");
-    if (filtered.length === 2 && filtered[0] === "--file") {
-      const source = requiredValue(filtered, "--file");
-      const proposal = await proposePlan(projectPath, source, { allowLongPlan });
-      process.stdout.write([
-        `PLAN_REVISION: ${proposal.planRevision}`,
-        `DIFF_DIGEST: ${proposal.diffDigest}`,
-        `HEAD: ${proposal.head}`,
-        `PROPOSED_AT: ${proposal.proposedAt}`,
-        `ACCEPTANCE_SOURCE: ${proposal.acceptanceSourcePath}`,
-        `ACCEPTANCE_DIGEST: ${proposal.acceptanceSourceDigest}`,
-        `EXACT_PLAN_DIFF_BYTES: ${
-          Buffer.byteLength(proposal.exactDiff, "utf8")
-        }`,
-        ...(proposal.warnings ?? []).map((line) => line),
-        "",
-        proposal.exactDiff,
-      ].join("\n"));
-      return;
-    }
+  if (
+    command === "plan"
+    && subcommand === "propose"
+    && args.length === 2
+    && args[0] === "--file"
+  ) {
+    const source = requiredValue(args, "--file");
+    const proposal = await proposePlan(projectPath, source);
+    process.stdout.write([
+      `PLAN_REVISION: ${proposal.planRevision}`,
+      `DIFF_DIGEST: ${proposal.diffDigest}`,
+      `HEAD: ${proposal.head}`,
+      `PROPOSED_AT: ${proposal.proposedAt}`,
+      `ACCEPTANCE_SOURCE: ${proposal.acceptanceSourcePath}`,
+      `ACCEPTANCE_DIGEST: ${proposal.acceptanceSourceDigest}`,
+      `EXACT_PLAN_DIFF_BYTES: ${
+        Buffer.byteLength(proposal.exactDiff, "utf8")
+      }`,
+      ...(proposal.warnings ?? []).map((line) => line),
+      "",
+      proposal.exactDiff,
+    ].join("\n"));
+    return;
   }
 
   if (command === "plan" && subcommand === "accept") {
     const allowWeakPlan = args.includes("--allow-weak-plan");
-    const allowLongPlan = args.includes("--allow-long-plan");
-    const filtered = args.filter(
-      (a) => a !== "--allow-weak-plan" && a !== "--allow-long-plan",
-    );
+    const filtered = args.filter((a) => a !== "--allow-weak-plan");
     if (
       filtered.length === 4
       && filtered[0] === "--revision"
@@ -457,13 +455,12 @@ async function main(): Promise<void> {
         projectPath,
         requiredValue(filtered, "--revision"),
         requiredValue(filtered, "--diff"),
-        { allowWeakPlan, allowLongPlan },
+        { allowWeakPlan },
       );
       await appendRequirementsNote(
         projectPath,
         `Plan accepted revision=${requiredValue(filtered, "--revision")}`
-          + (allowWeakPlan ? " allow_weak_plan=true" : "")
-          + (allowLongPlan ? " allow_long_plan=true" : ""),
+          + (allowWeakPlan ? " allow_weak_plan=true" : ""),
         "plan-accept",
       ).catch(() => undefined);
       await refreshProjectors(projectPath).catch(() => undefined);

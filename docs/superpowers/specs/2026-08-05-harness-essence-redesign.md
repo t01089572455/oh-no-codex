@@ -78,7 +78,8 @@ No newlines in single-line display fields remain (injection safety).
 
 ## Plan shape
 
-- Prefer **≤ 5** `ordered_tasks` (hard refuse without `--allow-long-plan`).
+- **Plan task count is unrestricted** (Owner choice; do not cap model ability).
+  Prefer clear vertical slices when useful; never hard-refuse on length alone.
 - Weak / playbook-deferral black boxes still hard-refuse without
   `--allow-weak-plan`.
 - `acceptance_source` **optional on propose**: if omitted, harness writes
