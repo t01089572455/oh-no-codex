@@ -123,7 +123,7 @@ Requires Node.js **22.20 or newer**. Current release: **`0.1.10`**.
 npm install -g oh-no-codex
 
 cd your-git-repo
-ohno init --goal "Owner project goal"
+ohno init
 ohno install
 ohno doctor
 ```
@@ -150,7 +150,7 @@ old truth, completed work, or the correct plan from Git history.
 5. Accept the reviewed plan; Codex then starts the cursor, works inside its boundary, repairs proof, verifies, and advances automatically.
 
 ```bash
-ohno init --goal "Current-stage Owner goal"
+ohno init
 ohno install
 ohno doctor
 ohno requirements note --text "What is already true in this repository"

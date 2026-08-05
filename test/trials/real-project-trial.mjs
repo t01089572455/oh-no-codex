@@ -788,14 +788,13 @@ async function measureLargestAcceptedCapsule() {
   const projectPath = await mkdtemp(resolve(tmpdir(), "ohno-task7-p04-"));
   try {
     runGit(projectPath, ["init", "--quiet"]);
-    const maximumGoal = asciiValueAtLimit(256, "Goal ");
     const maximumId = asciiValueAtLimit(96, "active-");
     const maximumExpected = asciiValueAtLimit(512, "Expected ");
     const maximumNextId = asciiValueAtLimit(96, "next-");
     await writeFile(resolve(projectPath, "subject.txt"), "bounded\n", "utf8");
     await writeFile(resolve(projectPath, "fail.mjs"), "process.exit(9);\n", "utf8");
     requireSuccess(
-      runInit(projectPath, maximumGoal),
+      runInit(projectPath),
       "P04 ohno init",
     );
     const maximumTest = paddedCommand(

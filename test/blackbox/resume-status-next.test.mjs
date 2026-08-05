@@ -305,7 +305,7 @@ test("idle status, resume, and next agree on the derived plan action", async (t)
   assert.deepEqual(model, {
     schema_version: 2,
     availability: "AVAILABLE",
-    goal: ownerGoal,
+    goal: null,
     status: "IDLE",
     plan_revision: null,
     cursor: 0,
@@ -345,7 +345,7 @@ test("active read surfaces expose the exact contract without running its test", 
   assert.deepEqual(model, {
     schema_version: 2,
     availability: "AVAILABLE",
-    goal: ownerGoal,
+    goal: null,
     status: "ACTIVE",
     plan_revision: model.plan_revision,
     cursor: 0,
@@ -414,20 +414,18 @@ test("a prior PASS is historical when a different task becomes active", async (t
   assert.equal(model.proof_freshness, "NONE");
   assert.equal(model.blocker, "NONE");
   assert.equal(model.next_action, "CONTINUE_ACTIVE:task-b");
-  assert.equal(model.goal, ownerGoal);
+  assert.equal(model.goal, null);
   assertAllSurfacesAgree(projectPath, model);
 });
 
-test("init without --goal creates no state", async (t) => {
+test("init without arguments creates empty project goal", async (t) => {
   const projectPath = await createProject(t);
 
   const result = runCli(projectPath, ["init"]);
-  assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /usage: ohno init --goal/i);
-  await assert.rejects(
-    access(resolve(projectPath, ".ohno", "state.json")),
-    (error) => error.code === "ENOENT",
-  );
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Initialized/i);
+  const state = await readState(projectPath);
+  assert.equal(state.goal, "");
 });
 
 const oversizedTaskFields = [
@@ -592,7 +590,7 @@ test("a failed exact command is projected as blocker with RUN_EXACT_TEST next", 
   assert.equal(model.proof_freshness, "FAIL");
   assert.equal(model.blocker, "EXACT_TEST_FAILED");
   assert.equal(model.next_action, `RUN_EXACT_TEST:${taskId}`);
-  assert.equal(model.goal, ownerGoal);
+  assert.equal(model.goal, null);
   assertAllSurfacesAgree(projectPath, model);
 });
 
@@ -611,7 +609,7 @@ test("a completed fresh PASS exposes only its plan-derived next action", async (
   assert.deepEqual(model, {
     schema_version: 2,
     availability: "AVAILABLE",
-    goal: ownerGoal,
+    goal: null,
     status: "IDLE",
     plan_revision: model.plan_revision,
     cursor: 1,
@@ -663,7 +661,7 @@ test("a maximum stable next task id remains exact in a bounded resume", async (t
   assert.equal(verified.stdout, `${maximumNext}\n`);
 
   const model = statusJson(projectPath);
-  assert.equal(model.goal, ownerGoal);
+  assert.equal(model.goal, null);
   assert.equal(model.proof_freshness, "FRESH");
   assert.equal(model.next_action, maximumNext);
   const resumed = runCli(projectPath, ["resume"]);
@@ -671,7 +669,7 @@ test("a maximum stable next task id remains exact in a bounded resume", async (t
   assert.ok(Buffer.byteLength(resumed.stdout, "utf8") < 4_096);
   assert.match(
     resumed.stdout,
-    new RegExp(`^GOAL: ${escapeRegExp(ownerGoal)}$`, "m"),
+    /^GOAL: NONE$/m,
   );
   assert.ok(resumed.stdout.includes(`NEXT: ${maximumNext}\n`));
   assertAllSurfacesAgree(projectPath, model);
@@ -725,7 +723,7 @@ test("pending document sync has one authoritative next action", async (t) => {
   assert.deepEqual(model, {
     schema_version: 2,
     availability: "AVAILABLE",
-    goal: ownerGoal,
+    goal: null,
     status: "BLOCKED_DOC_SYNC",
     plan_revision: null,
     cursor: 0,
@@ -804,7 +802,7 @@ test("resume stays below 4096 UTF-8 bytes and prioritizes the current contract a
     Buffer.byteLength(resumed.stdout, "utf8") < 4_096,
     `resume capsule was ${Buffer.byteLength(resumed.stdout, "utf8")} bytes`,
   );
-  assert.match(resumed.stdout, new RegExp(`^GOAL: ${escapeRegExp(ownerGoal)}$`, "m"));
+  assert.match(resumed.stdout, /^GOAL: NONE$/m);
   assert.ok(resumed.stdout.includes(`TASK: ${maximumId}\n`));
   assert.ok(resumed.stdout.includes(`EXPECTED: ${maximumExpected}\n`));
   assert.ok(resumed.stdout.includes(`TEST: ${command}\n`));

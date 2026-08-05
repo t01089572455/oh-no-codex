@@ -120,7 +120,7 @@ Oh No, Codex! 在现有开发流程外加一层很小的本机护栏。它让 Ow
 npm install -g oh-no-codex
 
 cd your-git-repo
-ohno init --goal "Owner 项目目标"
+ohno init
 ohno install
 ohno doctor
 ```
@@ -147,7 +147,7 @@ Oh No 可以安装在现有代码旁边，但它不会根据 Git 历史自动猜
 5. 接受审阅后的计划；Codex 随后自动启动 cursor、在边界内工作、修复证明、验证并推进。
 
 ```bash
-ohno init --goal "当前阶段 Owner 目标"
+ohno init
 ohno install
 ohno doctor
 ohno requirements note --text "这个仓库里已经成立的事实"

@@ -196,11 +196,13 @@ the final Owner decision. Oh No-generated continuation prompts begin with
 Initialization is explicit:
 
 ```text
-ohno init --goal <owner-authored project goal>
+ohno init
 ```
 
-It refuses to replace an existing project state. Changing the goal later uses
-the requirement-change loop rather than a silent re-init.
+It refuses to replace an existing project state. There is no install-time
+project slogan flag: `state.goal` starts empty. Real Owner intent is captured
+through plan task goals, trusted `OWNER-INPUTS`, and requirements notes—not a
+one-line `init --goal`.
 
 The plan is reviewed before a task can start:
 

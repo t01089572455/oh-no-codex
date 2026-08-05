@@ -41,7 +41,7 @@ workflow without re-accepting the plan.
 ```bash
 npm install -g oh-no-codex
 cd <git-repo>
-ohno init --goal "Owner project goal"
+ohno init
 ohno install          # hooks + day-to-day oh-no-* skills
 ```
 

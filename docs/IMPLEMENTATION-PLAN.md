@@ -914,7 +914,7 @@ Branch `fix/release-honesty-0.1.7`. Codex review of first Correction 3 commit
 required a follow-up; do not treat the first commit alone as complete.
 
 - **Public labels:** `ANTI_DRIFT_CORE_WORKS` + `RELEASE_CHANGES_REQUIRED`.
-- **Owner goal:** `ohno init --goal` required again (A01/DESIGN); surfaces use
+- **Owner goal:** `ohno init` no longer takes `--goal` (empty project goal; intent on plan tasks / notes); surfaces use
   project goal only (no task-goal substitution).
 - **Truth seed:** present high-risk paths (not AGENTS-only).
 - **Denominator:** contract-internal WARN + optional plan
