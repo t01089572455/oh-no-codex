@@ -97,7 +97,7 @@ Oh No, Codex! 在现有开发流程外加一层很小的本机护栏。它�?Own
 <a id="install-use"></a>
 
 ## 安装与使�?
-需�?Node.js **22.20 或更高版�?*。当前版本：**`0.3.1`**�?### 新仓库或空仓�?
+需�?Node.js **22.20 或更高版�?*。当前版本：**`0.3.2`**�?### 新仓库或空仓�?
 ```bash
 npm install -g oh-no-codex
 
@@ -201,7 +201,7 @@ Oh No 是协作式本机护栏，不是自�?Agent OS 或安全边界。它无�
 它不会用 NLP 自动判断文案语义，不会自动重建半成品项目，也不保证所有仓�?都绝对正确、绝对快速。驾驶舱进度�?`cursor / task_count`，不是产品完�?百分比�?自动执行只移�?Oh No 自己的对话确认仪式；它不能压�?Codex 或操作系统的安全审批�?
 | 公开事实 | 当前证据 |
 | --- | --- |
-| npm �?| [`oh-no-codex@0.3.1`](https://www.npmjs.com/package/oh-no-codex) 已发�?|
+| npm �?| [`oh-no-codex@0.3.2`](https://www.npmjs.com/package/oh-no-codex) 已发�?|
 | 核心闭环 | `ANTI_DRIFT_CORE_WORKS`，有本机公开黑盒覆盖 |
 | Harness �?| `0.2.0+`：id+expect+test+scope、scope 钩子、硬黑盒、短 `OHNO_CONTINUE`�?*不限�?plan 任务�?*；放宽写作字数；acceptance_source 可省�?|
 | 真实项目试验 | 当前本地 Correction 5 package subject 已在三个具名一次性副本上获得同批�?LIVE `TRIAL_PASS`（`live-20260805T064039Z-834bc92`）；这不是普遍速度或已发布包声�?|

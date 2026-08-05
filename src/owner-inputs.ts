@@ -110,7 +110,7 @@ async function atomicWrite(path: string, body: string): Promise<void> {
 export async function appendOwnerInput(
   projectPath: string,
   input: OwnerInput,
-): Promise<string> {
+): Promise<{ path: string; id: string; created: boolean }> {
   const directory = resolve(projectPath, ".ohno");
   await mkdir(directory, { recursive: true });
   const lockPath = resolve(directory, "owner-inputs.lock");
@@ -139,14 +139,14 @@ export async function appendOwnerInput(
 
     const id = ownerInputId(input);
     if (new RegExp("^## Input `" + id + "`$", "mu").test(existing)) {
-      return ".ohno/OWNER-INPUTS.md";
+      return { path: ".ohno/OWNER-INPUTS.md", id, created: false };
     }
     const separator = existing.endsWith("\n") ? "" : "\n";
     await atomicWrite(
       path,
       `${existing}${separator}${renderEntry(input, new Date().toISOString())}`,
     );
-    return ".ohno/OWNER-INPUTS.md";
+    return { path: ".ohno/OWNER-INPUTS.md", id, created: true };
   } finally {
     await releasePidTokenLock(lockPath, token);
   }

@@ -1,42 +1,44 @@
 ---
 name: oh-no-control
 description: >
-  Hub for Oh No anti-drift harness. Bind Codex to Truth. Pipeline:
-  clarify → seal → design → plan → execute → verify; change re-walks.
+  Oh No Truth-bound harness. Pipeline: clarify → seal → design → plan → execute;
+  FAIL requires truth-read mode A/B; Owner change auto-revokes execution.
 ---
 
-# Oh No — real harness (0.3)
+# Oh No harness (Owner vision)
 
-**Owner almost never runs CLI.** After `ohno setup`, they talk to you.
+**Owner:** `ohno setup` then talk. You (Codex) run the pipeline.
 
-## Your job as Codex
+## Pipeline
 
-1. **DISCOVER (PM)** — ask until demand details are clear. Tech/arch: you decide.  
-   - Append Owner words into requirements; raw prompts go to OWNER-INPUTS via hook.  
-   - **No product code** until seals exist (hooks deny `src/**` etc.).  
-2. **Seal requirements** — when intent is substantial in `.ohno/REQUIREMENTS.md`:  
-   `ohno phase seal-requirements` → phase DESIGN  
-3. **DESIGN** — write full route to `.ohno/DESIGN.md` (one-shot full plan OK).  
-   `ohno phase seal-design` → PLAN_READY  
-4. **PLAN + EXECUTE** — plan propose/accept (id+expect+hard test+scope), task start, work in scope, `ohno verify`.  
-5. **RECOVER on FAIL** — hooks clear truth-read; **must** cover required paths:  
-   `ohno truth-read --paths .ohno/REQUIREMENTS.md,.ohno/DESIGN.md`  
-   (receipt must include both when design was sealed). Then fix **implement** OR **plan/design**.  
-   Shell write mutations also denied until then.  
-6. **CHANGE** — Owner says 需求变了 / new requirements: hook may **auto**  
-   `declare-change`. Or run  
-   `ohno phase declare-change --summary "…"`  
-   then re-seal + new plan/tests. Old plan no longer authorizes code.
+1. **DISCOVER (PM)** — ask until demand is clear. Tech/arch: you decide.  
+   Hooks block product code. Every Owner prompt → OWNER-INPUTS +  
+   `REQUIREMENTS.md` **Latest Owner words (latest wins)**.
+
+2. **`ohno phase seal-requirements`** — REQUIREMENTS must include goal/acceptance  
+   signals + Owner ledger. → DESIGN
+
+3. **Write `.ohno/DESIGN.md`** (full route OK) then  
+   **`ohno phase seal-design`** → PLAN_READY
+
+4. **Plan** with `id + expect + hard test + scope` → accept → EXECUTE  
+   task start → work in scope → **`ohno verify`**
+
+5. **FAIL → RECOVER**  
+   - PATH **A** (implement):  
+     `ohno truth-read --paths .ohno/REQUIREMENTS.md,.ohno/DESIGN.md --mode A`  
+     then edit **scope only**  
+   - PATH **B** (plan/design wrong):  
+     `ohno truth-read --paths .ohno/REQUIREMENTS.md,.ohno/DESIGN.md --mode B`  
+     then edit design/plan/expects  
+   Product writes without matching mode are **denied**.
+
+6. **CHANGE** — Owner says 需求变了 / etc → hook **auto** CHANGE (revoke).  
+   Or `ohno phase declare-change --summary "…"`.  
+   Re-clarify → re-seal → new plan/tests.
 
 ## Truth
 
-- All Owner prompts = raw Truth (latest wins).  
-- Never decide without reading Truth after FAIL.  
-- Done = real black-box + user-visible function, not prose.
-
-## Owner commands
-
-```bash
-ohno setup
-ohno          # optional glance
-```
+- All Owner prompts raw in OWNER-INPUTS.  
+- Latest auto-section in REQUIREMENTS wins on conflict.  
+- Never freestyle without reading Truth after FAIL.

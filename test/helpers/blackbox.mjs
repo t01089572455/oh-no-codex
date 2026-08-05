@@ -172,6 +172,14 @@ export function sealHarnessForTests(cwd) {
       + "Components: subject under allowed_files.\n",
     "utf8",
   );
+  // Minimal Owner ledger so seal-requirements sees real prompts.
+  writeFileSync(
+    resolve(cwd, ".ohno", "OWNER-INPUTS.md"),
+    "# Oh No Owner inputs\n\n## Input `testfixture0000000000000000000000000000000000000000000000000000`\n\n"
+      + "```json\n{\"sessionId\":\"t\",\"turnId\":\"t\"}\n```\n\n"
+      + "```text\nShip the fixture black box for this test.\n```\n",
+    "utf8",
+  );
   const sealedReq = runCli(cwd, ["phase", "seal-requirements"]);
   assert.equal(sealedReq.status, 0, sealedReq.stderr);
   const sealedDes = runCli(cwd, ["phase", "seal-design"]);

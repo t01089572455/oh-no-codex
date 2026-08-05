@@ -297,22 +297,41 @@ async function handlePreToolUse(
     );
   }
 
-  // RECOVER: must re-read required Truth paths before mutating product again.
-  if (
-    state.harness?.phase === "RECOVER"
-    && !truthReadSatisfiesRecover(state)
-  ) {
+  // RECOVER: PATH A = product (implement); PATH B = plan/design Truth files.
+  if (state.harness?.phase === "RECOVER") {
     const productHits = targets.filter(({ relativePath }) =>
       relativePath !== null && looksLikeProductPath(relativePath)
     );
+    const planHits = targets.filter(({ relativePath }) =>
+      relativePath !== null
+      && !looksLikeProductPath(relativePath)
+      && isPrepareAllowedPath(
+        relativePath,
+        prepareAllowedRelativePaths(state),
+      )
+    );
+    const receipt = effectiveHarness(state).truth_read;
+    const okRead = truthReadSatisfiesRecover(state);
     if (productHits.length > 0) {
-      const need = requiredTruthReadPaths(state).join(",");
-      return denial(
-        "phase RECOVER: run "
-          + `\`ohno truth-read --paths ${need}\` `
-          + "before product code (receipt must cover REQUIREMENTS+DESIGN). "
-          + "Then fix implement (scope) OR plan/design from Truth.",
-      );
+      if (!okRead || receipt?.mode !== "A") {
+        const need = requiredTruthReadPaths(state).join(",");
+        return denial(
+          "RECOVER PATH A (implement): run "
+            + `\`ohno truth-read --paths ${need} --mode A\` `
+            + "then edit only active scope. "
+            + "PATH B (plan/design): use --mode B and edit Truth/plan only.",
+        );
+      }
+    }
+    if (planHits.length > 0 && productHits.length === 0) {
+      if (!okRead || (receipt?.mode !== "B" && receipt?.mode !== "A")) {
+        const need = requiredTruthReadPaths(state).join(",");
+        return denial(
+          "RECOVER PATH B (plan/design): run "
+            + `\`ohno truth-read --paths ${need} --mode B\` `
+            + "then update design/plan/expects from Truth.",
+        );
+      }
     }
   }
 
@@ -729,13 +748,20 @@ export async function handleCodexHook(
       );
     }
     if (!input.prompt.startsWith(`${automaticContinuationPrefix}\n`)) {
-      // Keep prompt-log hashing/locking off ordinary status/next/resume startup.
       const { appendOwnerInput } = await import("../owner-inputs.js");
-      await appendOwnerInput(projectPath, {
+      const {
+        projectLatestOwnerWords,
+      } = await import("../harness.js");
+      const logged = await appendOwnerInput(projectPath, {
         sessionId: input.session_id,
         turnId: input.turn_id,
         prompt: input.prompt,
       });
+      await projectLatestOwnerWords(
+        projectPath,
+        input.prompt,
+        logged.id,
+      ).catch(() => undefined);
       const autoChange = await maybeAutoDeclareChangeFromPrompt(
         projectPath,
         input.prompt,

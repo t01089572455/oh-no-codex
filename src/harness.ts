@@ -36,15 +36,34 @@ export function defaultHarness(): HarnessControl {
     requirements_digest: null,
     design_digest: null,
     truth_read: null,
+    owner_head: null,
   };
 }
 
 export function effectiveHarness(state: ProjectState): HarnessControl {
-  return state.harness ?? {
-    phase: "OPEN",
-    requirements_digest: null,
-    design_digest: null,
-    truth_read: null,
+  if (state.harness == null) {
+    return {
+      phase: "OPEN",
+      requirements_digest: null,
+      design_digest: null,
+      truth_read: null,
+      owner_head: null,
+    };
+  }
+  const read = state.harness.truth_read;
+  return {
+    phase: state.harness.phase,
+    requirements_digest: state.harness.requirements_digest,
+    design_digest: state.harness.design_digest,
+    owner_head: state.harness.owner_head ?? null,
+    truth_read: read == null
+      ? null
+      : {
+        read_at: read.read_at,
+        paths: read.paths,
+        paths_digest: read.paths_digest,
+        mode: read.mode === "B" ? "B" : "A",
+      },
   };
 }
 
@@ -263,7 +282,22 @@ export async function sealRequirements(projectPath: string): Promise<string> {
   if (!nonTrivialMarkdown(requirements)) {
     throw new Error(
       `${REQUIREMENTS_PATH} is too thin for seal; clarify demand details `
-        + "(need substantial Owner-intent prose, not only init boilerplate)",
+        + "(need substantial Owner-intent prose: goal/acceptance/non-goals)",
+    );
+  }
+  // Prefer real Owner prompts on ledger; allow Latest Owner section as proxy.
+  let ownerInputs = "";
+  try {
+    ownerInputs = await readFile(resolve(projectPath, OWNER_INPUTS_PATH), "utf8");
+  } catch {
+    ownerInputs = "";
+  }
+  const hasLedger = /^## Input `/mu.test(ownerInputs)
+    || /## Latest Owner words/u.test(requirements);
+  if (!hasLedger) {
+    throw new Error(
+      "no Owner prompt ledger yet; talk to Codex first so prompts land in "
+        + "OWNER-INPUTS / Latest Owner words, then seal",
     );
   }
   const digest = await combinedDigest(projectPath, [
@@ -277,6 +311,7 @@ export async function sealRequirements(projectPath: string): Promise<string> {
       requirements_digest: digest,
       design_digest: null,
       truth_read: null,
+      owner_head: effectiveHarness(state).owner_head,
     },
   });
   if (!ok) {
@@ -285,6 +320,7 @@ export async function sealRequirements(projectPath: string): Promise<string> {
   return (
     `SEALED_REQUIREMENTS: ${digest}\n`
     + "PHASE: DESIGN\n"
+    + `OWNER_HEAD: ${effectiveHarness(state).owner_head ?? "none"}\n`
     + "Next: write detailed design to .ohno/DESIGN.md then "
     + "`ohno phase seal-design`\n"
   );
@@ -334,6 +370,7 @@ export async function sealDesign(projectPath: string): Promise<string> {
       requirements_digest: requirementsDigest,
       design_digest: digest,
       truth_read: null,
+      owner_head: current.owner_head,
     },
   });
   if (!ok) {
@@ -348,17 +385,23 @@ export async function sealDesign(projectPath: string): Promise<string> {
 
 /**
  * Record that Truth paths were actually read (file bytes hashed).
+ * mode A = fix implementation; mode B = fix plan/design.
  */
 export async function recordTruthRead(
   projectPath: string,
   relativePaths: string[],
+  mode: "A" | "B" = "A",
 ): Promise<string> {
-  if (relativePaths.length === 0) {
+  const state = await readState(projectPath);
+  let paths = relativePaths.map((path) => path.replaceAll("\\", "/"));
+  if (paths.length === 0) {
+    paths = requiredTruthReadPaths(state);
+  }
+  if (paths.length === 0) {
     throw new Error("truth-read needs at least one project-relative path");
   }
-  const normalized = relativePaths.map((path) => path.replaceAll("\\", "/"));
   const digests: string[] = [];
-  for (const relative of normalized) {
+  for (const relative of paths) {
     const digest = await fileDigest(projectPath, relative);
     if (digest === null) {
       throw new Error(`cannot read Truth path: ${relative}`);
@@ -370,31 +413,86 @@ export async function recordTruthRead(
     .digest("hex");
   const receipt: TruthReadReceipt = {
     read_at: new Date().toISOString(),
-    paths: normalized,
+    paths,
     paths_digest: pathsDigest,
+    mode,
   };
-  const state = await readState(projectPath);
-  const harness = {
+  const nextHarness: HarnessControl = {
     ...effectiveHarness(state),
     truth_read: receipt,
   };
-  if (harness.phase === "OPEN" && state.harness == null) {
-    // Keep OPEN but attach receipt for optional use
+  if (state.harness == null) {
+    nextHarness.phase = "OPEN";
   }
   const ok = await compareAndSwapStateAtomic(projectPath, state, {
     ...state,
-    harness: state.harness == null && harness.phase === "OPEN"
-      ? { ...defaultHarness(), phase: "OPEN", truth_read: receipt }
-      : harness,
+    harness: nextHarness,
   });
   if (!ok) {
     throw new Error("state changed while recording truth-read");
   }
   return (
     `TRUTH_READ: ${pathsDigest}\n`
-    + `PATHS: ${normalized.join(", ")}\n`
+    + `MODE: ${mode} (${mode === "A" ? "fix implementation" : "fix plan/design"})\n`
+    + `PATHS: ${paths.join(", ")}\n`
     + `AT: ${receipt.read_at}\n`
   );
+}
+
+/**
+ * Project every Owner prompt into REQUIREMENTS (latest-wins log).
+ * Raw full text remains in OWNER-INPUTS; this is the working Truth surface.
+ */
+export async function projectLatestOwnerWords(
+  projectPath: string,
+  prompt: string,
+  inputId: string,
+): Promise<void> {
+  const reqPath = resolve(projectPath, REQUIREMENTS_PATH);
+  await mkdir(dirname(reqPath), { recursive: true });
+  let existing = "";
+  try {
+    existing = await readFile(reqPath, "utf8");
+  } catch {
+    existing = "# Requirements\n\n";
+  }
+  const stamp = new Date().toISOString();
+  const block = [
+    "",
+    "## Latest Owner words (auto, latest wins)",
+    "",
+    `- **at:** ${stamp}`,
+    `- **input_id:** \`${inputId}\``,
+    "",
+    "```text",
+    prompt.trim().slice(0, 4_000),
+    "```",
+    "",
+    "> Older Owner words remain above/in OWNER-INPUTS. **Latest entry wins** on conflict.",
+    "",
+  ].join("\n");
+  // Replace previous auto section or append.
+  const marker = "## Latest Owner words (auto, latest wins)";
+  const idx = existing.indexOf(marker);
+  const base = idx === -1 ? existing : existing.slice(0, idx).trimEnd();
+  await writeFile(reqPath, `${base}\n${block}`, "utf8");
+
+  // Bind owner_head on harness when present.
+  try {
+    const state = await readState(projectPath);
+    if (state.harness == null) {
+      return;
+    }
+    await compareAndSwapStateAtomic(projectPath, state, {
+      ...state,
+      harness: {
+        ...effectiveHarness(state),
+        owner_head: inputId,
+      },
+    });
+  } catch {
+    // non-fatal
+  }
 }
 
 export function truthReadIsFresh(
@@ -537,6 +635,7 @@ export async function declareHarnessChange(
       requirements_digest: null,
       design_digest: null,
       truth_read: null,
+      owner_head: effectiveHarness(state).owner_head,
     },
   });
   if (!ok) {

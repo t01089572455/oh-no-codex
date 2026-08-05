@@ -342,14 +342,16 @@ async function main(): Promise<void> {
   }
   if (command === "truth-read" && subcommand === undefined) {
     const pathsFlag = args.indexOf("--paths");
-    if (pathsFlag === -1 || args[pathsFlag + 1] === undefined) {
-      throw new Error("usage: ohno truth-read --paths path1,path2,…");
-    }
-    const list = String(args[pathsFlag + 1])
-      .split(",")
-      .map((path) => path.trim())
-      .filter(Boolean);
-    process.stdout.write(await recordTruthRead(projectPath, list));
+    const modeFlag = args.indexOf("--mode");
+    const modeRaw = modeFlag === -1 ? "A" : String(args[modeFlag + 1] ?? "A");
+    const mode = modeRaw.toUpperCase() === "B" ? "B" as const : "A" as const;
+    const list = pathsFlag === -1 || args[pathsFlag + 1] === undefined
+      ? []
+      : String(args[pathsFlag + 1])
+        .split(",")
+        .map((path) => path.trim())
+        .filter(Boolean);
+    process.stdout.write(await recordTruthRead(projectPath, list, mode));
     return;
   }
 

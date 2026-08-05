@@ -115,7 +115,7 @@ one next action without creating a second source of truth.
 
 ## Install and use
 
-Requires Node.js **22.20 or newer**. Current release: **`0.3.1`**.
+Requires Node.js **22.20 or newer**. Current release: **`0.3.2`**.
 
 ### New or empty repository
 
@@ -281,7 +281,7 @@ it cannot suppress Codex or operating-system approval prompts.
 
 | Public fact | Current evidence |
 | --- | --- |
-| Package | [`oh-no-codex@0.3.1`](https://www.npmjs.com/package/oh-no-codex) is published |
+| Package | [`oh-no-codex@0.3.2`](https://www.npmjs.com/package/oh-no-codex) is published |
 | Core loop | `ANTI_DRIFT_CORE_WORKS` with local public black-box coverage |
 | Harness surface | `0.2.0+`: id+expect+test+scope, scope hook, hard black box, short `OHNO_CONTINUE`; plan **length unrestricted** (no task-count cap); raised authoring limits; optional acceptance_source |
 | Real-project trial | The current local Correction 5 package subject earned same-batch LIVE `TRIAL_PASS` on three named disposable copies (`live-20260805T064039Z-834bc92`); this is not a universal speed or published-package claim |

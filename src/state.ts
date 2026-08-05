@@ -185,6 +185,8 @@ export interface TruthReadReceipt {
   read_at: string;
   paths: string[];
   paths_digest: string;
+  /** A = fix implementation; B = fix plan/design. */
+  mode: "A" | "B";
 }
 
 /** Optional control block: missing on pre-0.3 state files (legacy OPEN). */
@@ -193,6 +195,8 @@ export interface HarnessControl {
   requirements_digest: string | null;
   design_digest: string | null;
   truth_read: TruthReadReceipt | null;
+  /** Latest Owner prompt id (sha256) for latest-wins binding. */
+  owner_head: string | null;
 }
 
 export interface ProjectState {
@@ -755,14 +759,23 @@ const projectStateRequiredKeys = [
 ] as const;
 
 function isHarnessControl(value: unknown): value is HarnessControl {
+  if (!isRecord(value)) {
+    return false;
+  }
+  const required = [
+    "phase",
+    "requirements_digest",
+    "design_digest",
+    "truth_read",
+  ] as const;
+  if (!required.every((key) => key in value)) {
+    return false;
+  }
   if (
-    !isRecord(value)
-    || !hasExactKeys(value, [
-      "phase",
-      "requirements_digest",
-      "design_digest",
-      "truth_read",
-    ])
+    Object.keys(value).some(
+      (key) =>
+        !(required as readonly string[]).includes(key) && key !== "owner_head",
+    )
   ) {
     return false;
   }
@@ -784,6 +797,13 @@ function isHarnessControl(value: unknown): value is HarnessControl {
   ) {
     return false;
   }
+  if (
+    value.owner_head !== undefined
+    && value.owner_head !== null
+    && !isSha256(value.owner_head)
+  ) {
+    return false;
+  }
   if (value.truth_read === null) {
     return true;
   }
@@ -793,6 +813,13 @@ function isHarnessControl(value: unknown): value is HarnessControl {
     || !Array.isArray(value.truth_read.paths)
     || !value.truth_read.paths.every((path) => typeof path === "string")
     || !isSha256(value.truth_read.paths_digest)
+  ) {
+    return false;
+  }
+  if (
+    value.truth_read.mode !== undefined
+    && value.truth_read.mode !== "A"
+    && value.truth_read.mode !== "B"
   ) {
     return false;
   }
@@ -976,6 +1003,7 @@ export function initialState(
       requirements_digest: null,
       design_digest: null,
       truth_read: null,
+      owner_head: null,
     },
   };
 }

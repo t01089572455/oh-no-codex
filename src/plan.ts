@@ -508,10 +508,11 @@ export async function acceptPlan(
     last_verification: null,
   };
   if (state.harness != null) {
-    (acceptedState as { harness: typeof state.harness }).harness = {
+    (acceptedState as { harness: NonNullable<typeof state.harness> }).harness = {
       ...state.harness,
       phase: "EXECUTE",
       truth_read: null,
+      owner_head: state.harness.owner_head ?? null,
     };
   }
   const accepted = await compareAndSwapStateAtomic(
