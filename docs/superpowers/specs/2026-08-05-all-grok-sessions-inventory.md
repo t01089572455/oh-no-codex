@@ -335,7 +335,7 @@ Generate tokenCancel  只有这些内容
 
 ## U037 | oh-no-codex | 019fb706-5e92-7b01-908f-fd31b3e5566b | 2026-07-31T17:22:03.601255900Z
 
-你看看我最开始申请的那个token有可选，我点开后有可选项：oh-no-codex-publishnpm_RLur......lUft
+你看看我最开始申请的那个token有可选，我点开后有可选项：oh-no-codex-publishnpm_…REDACTED…
 Publish oh-no-codex from local machine
 
 Created on Friday, July 31, 2026
