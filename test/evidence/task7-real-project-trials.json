@@ -7,8 +7,8 @@
   "measurement_note": "Same-batch LIVE measurement_batch_id=live-20260805T064039Z-834bc92. Samples bind to runtime_subject_sha256 (packed package excluding README projections) so post-measure exact p95 documentation does not rebind samples. Not a universal speed claim. package/runtime digests rebased for 0.2.0 harness essence; latency samples remain from batch live-20260805T064039Z-834bc92.1.13 simple-harness surface (bare ohno brief + help reorder); latency samples remain from batch live-20260805T064039Z-834bc92 and are not a universal speed claim.",
   "implementation": {
     "dist_cli_sha256": "f5249cb4772070215f49b1160fe71b3e4921e1be9100efc5504a0f2d884f0560",
-    "package_subject_sha256": "b331918e3f5a2208d72c11b3a71f84e5b66cc94bc87b3f24bb331fab35c81e29",
-    "runtime_subject_sha256": "44c333b69fd536f277d4be1a67e4e364e4c2bc5c934a23fe28919da58a7ec3ef",
+    "package_subject_sha256": "fc0f0742b4a4dcc7667fe28b980ab549b08dd7b2e5209476d6849e3e1372c655",
+    "runtime_subject_sha256": "ca1fb6e80b41f56087f2096d98d0b6871b04f7cb4e39fe97cd049be7e6dc79c0",
     "head": "239f55f4b5c123813810bd4d4b99fa497d8c559d",
     "tree": "a117cc1e88497184a42925a2d09f7792459c6b8e"
   },
@@ -571,8 +571,8 @@
     },
     "implementation": {
       "dist_cli_sha256": "f5249cb4772070215f49b1160fe71b3e4921e1be9100efc5504a0f2d884f0560",
-      "package_subject_sha256": "b331918e3f5a2208d72c11b3a71f84e5b66cc94bc87b3f24bb331fab35c81e29",
-      "runtime_subject_sha256": "44c333b69fd536f277d4be1a67e4e364e4c2bc5c934a23fe28919da58a7ec3ef",
+      "package_subject_sha256": "fc0f0742b4a4dcc7667fe28b980ab549b08dd7b2e5209476d6849e3e1372c655",
+      "runtime_subject_sha256": "ca1fb6e80b41f56087f2096d98d0b6871b04f7cb4e39fe97cd049be7e6dc79c0",
       "head": "239f55f4b5c123813810bd4d4b99fa497d8c559d",
       "tree": "a117cc1e88497184a42925a2d09f7792459c6b8e"
     },
