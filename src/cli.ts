@@ -11,6 +11,7 @@ import {
   displayFieldByteLimits,
   displayTextIssue,
   initialState,
+  readState as readProjectState,
   stateExists,
   writeStateAtomic,
 } from "./state.js";
@@ -72,6 +73,7 @@ import {
 } from "./resume.js";
 import {
   serializeHarnessBrief,
+  serializeHarnessBriefAsync,
   serializeStatus,
 } from "./status.js";
 import { startTask } from "./task-start.js";
@@ -80,29 +82,28 @@ import { verifyTask } from "./verify.js";
 import { migrateAcceptanceBasis } from "./migrate-acceptance.js";
 import {
   declareHarnessChange,
+  formatPipelineNext,
   recordTruthRead,
   sealDesign,
   sealRequirements,
+  tryPipelineAdvance,
 } from "./harness.js";
 
 const usageText = [
   "usage: (Owner)",
   "  ohno setup                        # once: init + install + skills",
-  "  ohno                              # where am I",
+  "  ohno                              # where am I + pipeline",
+  "  ohno pipeline                     # exact next Agent commands",
   "",
-  "pipeline (Codex / internal — Owner usually never types these):",
-  "  ohno phase seal-requirements      # after demand is clear",
-  "  ohno phase seal-design            # after .ohno/DESIGN.md written",
-  "  ohno plan propose|accept …        # then task start + verify",
-  "  ohno truth-read --paths a,b,…     # required after FAIL before code",
-  "  ohno phase declare-change --summary <words>  # new/changed requirements",
-  "  ohno verify",
+  "pipeline (Codex runs these):",
+  "  ohno phase advance                # try seal-requirements or seal-design",
+  "  ohno phase seal-requirements | seal-design",
+  "  ohno plan propose|accept …  |  ohno task start  |  ohno verify",
+  "  ohno truth-read [--paths a,b] --mode A|B   # after FAIL (A=code B=plan)",
+  "  ohno phase declare-change --summary <words>",
   "",
-  "more: status|next|resume|task|doctor|cockpit|change|requirements|…",
-  "",
-  "Harness: DISCOVER→DESIGN→PLAN→EXECUTE; FAIL→RECOVER needs truth-read;",
-  "CHANGE revokes execution. Soft black boxes refused.",
-  "Hook classification: COOPERATIVE_GUARDRAIL (not a hostile security boundary).",
+  "Harness: DISCOVER→DESIGN→PLAN→EXECUTE; FAIL→RECOVER A/B; CHANGE re-walks.",
+  "Hook classification: COOPERATIVE_GUARDRAIL.",
   "",
 ].join("\n");
 
@@ -264,17 +265,30 @@ async function main(): Promise<void> {
     return;
   }
 
-  // Bare `ohno`: one-screen simple harness (Owner-first), not the long capsule.
+  // Bare `ohno`: one-screen + live pipeline next commands.
   if (command === undefined) {
     try {
       const model = await readModel(projectPath);
-      process.stdout.write(serializeHarnessBrief(model));
+      process.stdout.write(
+        await serializeHarnessBriefAsync(projectPath, model),
+      );
       if (model.availability === "UNAVAILABLE") {
         process.exitCode = 1;
       }
     } catch {
       process.stdout.write(usageText);
     }
+    return;
+  }
+
+  if (
+    command === "pipeline"
+    && subcommand === undefined
+    && args.length === 0
+  ) {
+    const state = await readProjectState(projectPath);
+    const model = await readModel(projectPath);
+    process.stdout.write(formatPipelineNext(state, model.next_action));
     return;
   }
 
@@ -333,6 +347,10 @@ async function main(): Promise<void> {
   }
   if (command === "phase" && subcommand === "seal-design") {
     process.stdout.write(await sealDesign(projectPath));
+    return;
+  }
+  if (command === "phase" && subcommand === "advance" && args.length === 0) {
+    process.stdout.write(await tryPipelineAdvance(projectPath));
     return;
   }
   if (command === "phase" && subcommand === "declare-change") {

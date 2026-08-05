@@ -16,6 +16,10 @@ import {
 } from "./preferences.js";
 import { readModel } from "./read-model.js";
 import { skillInstallStatus } from "./skill-install.js";
+import {
+  effectiveHarness,
+  truthReadSatisfiesRecover,
+} from "./harness.js";
 import { readState, stateExists } from "./state.js";
 
 export interface DoctorReport {
@@ -56,6 +60,27 @@ export async function runDoctor(projectPath: string): Promise<DoctorReport> {
           detail:
             `AVAILABLE status=${model.status} cursor=${model.cursor}/`
             + `${model.task_count} proof=${model.proof_freshness}`,
+        });
+      }
+      try {
+        const st = await readState(projectPath);
+        const h = effectiveHarness(st);
+        checks.push({
+          id: "harness_phase",
+          status: h.phase === "OPEN" && st.harness == null ? "WARN" : "PASS",
+          detail:
+            `phase=${h.phase} req_sealed=${h.requirements_digest != null} `
+            + `design_sealed=${h.design_digest != null} `
+            + `truth_read_ok=${truthReadSatisfiesRecover(st)}`,
+        });
+        if (st.harness != null && h.phase !== "OPEN") {
+          modelNext = `PIPELINE:${h.phase}`;
+        }
+      } catch {
+        checks.push({
+          id: "harness_phase",
+          status: "WARN",
+          detail: "could not read harness phase",
         });
       }
       checks.push({

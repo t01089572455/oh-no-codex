@@ -513,10 +513,54 @@ test("Stop automatically continues accepted active work without requiring a comp
   }
 });
 
-test("Stop still allows PREPARE to stop when no plan is accepted", async (t) => {
+test("Stop injects pipeline during DISCOVER when no plan is accepted", async (t) => {
   const projectPath = await createProject(t);
   await initialize(projectPath);
-  assert.deepEqual(stopHook(projectPath, "Planning is not accepted."), {});
+  // Fixture init auto-seals; force DISCOVER to assert pipeline injection.
+  const statePath = resolve(projectPath, ".ohno", "state.json");
+  const state = JSON.parse(await readFile(statePath, "utf8"));
+  state.harness = {
+    phase: "DISCOVER",
+    requirements_digest: null,
+    design_digest: null,
+    truth_read: null,
+    owner_head: null,
+  };
+  await writeFile(statePath, `${JSON.stringify(state, null, 2)}\n`, "utf8");
+  const out = stopHook(projectPath, "Planning is not accepted.");
+  assert.equal(out.decision, "block");
+  assert.match(out.reason, /OHNO_PIPELINE|seal-requirements|DISCOVER/i);
+});
+
+test("UserPromptSubmit injects OHNO_PIPELINE and SessionStart names phase", async (t) => {
+  const projectPath = await createProject(t);
+  await initialize(projectPath);
+  const statePath = resolve(projectPath, ".ohno", "state.json");
+  const state = JSON.parse(await readFile(statePath, "utf8"));
+  state.harness = {
+    phase: "DISCOVER",
+    requirements_digest: null,
+    design_digest: null,
+    truth_read: null,
+    owner_head: null,
+  };
+  await writeFile(statePath, `${JSON.stringify(state, null, 2)}\n`, "utf8");
+
+  const session = parseHookResult(runHook(projectPath, "SessionStart", {}));
+  assert.match(
+    session.hookSpecificOutput?.additionalContext ?? "",
+    /HARNESS_PHASE:\s*DISCOVER/i,
+  );
+
+  const submit = parseHookResult(runHook(projectPath, "UserPromptSubmit", {
+    session_id: "field-sess",
+    turn_id: "field-turn-1",
+    prompt: "I want a todo CLI with export to markdown",
+  }));
+  const ctx = submit.hookSpecificOutput?.additionalContext ?? "";
+  assert.match(ctx, /OHNO_PIPELINE/);
+  assert.match(ctx, /phase:\s*DISCOVER/i);
+  assert.match(ctx, /seal-requirements|phase advance/i);
 });
 
 test("Stop continues on an exact marker with the wrong task id", async (t) => {
@@ -592,8 +636,8 @@ test("CLI help names cooperative coverage without authority claims", async (t) =
   assert.equal(result.status, 0, result.stderr);
   assert.equal(result.stderr, "");
   assert.match(result.stdout, /COOPERATIVE_GUARDRAIL/);
-  assert.match(result.stdout, /ohno setup|Harness.*Truth/i);
-  assert.match(result.stdout, /not a hostile security boundary|PREPARE|soft boxes/i);
+  assert.match(result.stdout, /ohno setup|pipeline/i);
+  assert.match(result.stdout, /DISCOVER|RECOVER|seal-requirements|truth-read/i);
   assert.doesNotMatch(
     result.stdout,
     /\bproduction\b|\bfully enforced\b|\bsecure\b|\brelease ready\b/i,

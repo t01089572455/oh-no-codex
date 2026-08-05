@@ -1,5 +1,7 @@
+import { effectiveHarness, formatPipelineNext } from "./harness.js";
 import type { ReadModel } from "./read-model.js";
 import { serializeResume } from "./resume.js";
+import { readState } from "./state.js";
 
 export function serializeStatus(
   model: ReadModel,
@@ -20,8 +22,7 @@ export function serializeHarnessBrief(model: ReadModel): string {
       "Oh No harness",
       "",
       "status: UNAVAILABLE",
-      "do: ohno init   # once per git repo",
-      "    ohno install",
+      "do: ohno setup   # once per git repo",
       "",
       "more: ohno --help",
       "",
@@ -35,29 +36,8 @@ export function serializeHarnessBrief(model: ReadModel): string {
       ? model.next_action.slice("FREEZE_TASK:".length)
       : "—");
 
-  let doLine = "ohno verify          # only claim done after this passes";
-  if (model.next_action === "PROPOSE_PLAN") {
-    doLine =
-      "clarify requirements → Truth/design → plan expect+test+scope → accept → start";
-  } else if (model.next_action.startsWith("START_TASK:")) {
-    doLine = "ohno task start      # then work in scope, then ohno verify";
-  } else if (model.next_action.startsWith("FREEZE_TASK:")) {
-    doLine = "freeze outline with expect+test+scope, then task start + verify";
-  } else if (model.next_action.startsWith("REOPEN_TASK:")) {
-    doLine = "ohno task reopen     # then fix, then ohno verify";
-  } else if (model.next_action === "PROJECT_COMPLETE") {
-    doLine = "this linear plan is done (not whole product)";
-  } else if (
-    model.proof_freshness === "FAIL"
-    || model.proof_freshness === "UNKNOWN"
-    || model.proof_freshness === "STALE"
-  ) {
-    doLine =
-      "REPAIR in scope (expect+test) → ohno verify — do not ask Owner to invent scope";
-  }
-
   return [
-    "Oh No harness — Truth-bound (reins, not a second product)",
+    "Oh No harness — Truth-bound",
     "",
     `status:  ${model.status}`,
     `task:    ${task}`,
@@ -66,12 +46,31 @@ export function serializeHarnessBrief(model: ReadModel): string {
     `next:    ${model.next_action}`,
     `board:   ${model.cursor}/${model.task_count} of THIS plan`,
     "",
-    "loop:  clarify → seal → design → plan → execute → verify",
-    `do:    ${doLine}`,
-    "",
-    "owner: ohno setup | ohno",
-    "gates: ohno phase seal-requirements | seal-design | truth-read | declare-change",
-    "task:  id + expect + test + scope",
+    "owner: ohno setup | ohno | ohno pipeline",
+    "agent: ohno pipeline   # exact next commands",
     "",
   ].join("\n");
+}
+
+/** Async brief with live phase pipeline (preferred for bare `ohno`). */
+export async function serializeHarnessBriefAsync(
+  projectPath: string,
+  model: ReadModel,
+): Promise<string> {
+  const head = serializeHarnessBrief(model);
+  if (model.availability === "UNAVAILABLE") {
+    return head;
+  }
+  try {
+    const state = await readState(projectPath);
+    const phase = effectiveHarness(state).phase;
+    return (
+      head
+      + `phase: ${phase}\n`
+      + "\n"
+      + formatPipelineNext(state, model.next_action)
+    );
+  } catch {
+    return head;
+  }
 }

@@ -3,11 +3,21 @@ name: oh-no-control
 description: >
   Oh No Truth-bound harness. Pipeline: clarify → seal → design → plan → execute;
   FAIL requires truth-read mode A/B; Owner change auto-revokes execution.
+  Always run `ohno pipeline` when unsure of the exact next commands.
 ---
 
 # Oh No harness (Owner vision)
 
-**Owner:** `ohno setup` then talk. You (Codex) run the pipeline.
+**Owner:** `ohno setup` then talk. You (Codex) run the pipeline.  
+Every Owner message and every Stop injects **OHNO_PIPELINE** — obey it.
+
+## Locator (always)
+
+```text
+ohno pipeline          # exact next commands for current phase
+ohno phase advance     # try seal-requirements or seal-design when files ready
+ohno                   # one-screen where-am-I + pipeline
+```
 
 ## Pipeline
 
@@ -15,11 +25,12 @@ description: >
    Hooks block product code. Every Owner prompt → OWNER-INPUTS +  
    `REQUIREMENTS.md` **Latest Owner words (latest wins)**.
 
-2. **`ohno phase seal-requirements`** — REQUIREMENTS must include goal/acceptance  
-   signals + Owner ledger. → DESIGN
+2. **`ohno phase seal-requirements`** (or `ohno phase advance`) — REQUIREMENTS  
+   must include goal/acceptance signals + Owner ledger. → DESIGN  
+   (creates DESIGN stub; you must expand it)
 
-3. **Write `.ohno/DESIGN.md`** (full route OK) then  
-   **`ohno phase seal-design`** → PLAN_READY
+3. **Expand `.ohno/DESIGN.md`** (full route OK) then  
+   **`ohno phase seal-design`** (or advance) → PLAN_READY
 
 4. **Plan** with `id + expect + hard test + scope` → accept → EXECUTE  
    task start → work in scope → **`ohno verify`**
@@ -42,3 +53,4 @@ description: >
 - All Owner prompts raw in OWNER-INPUTS.  
 - Latest auto-section in REQUIREMENTS wins on conflict.  
 - Never freestyle without reading Truth after FAIL.
+- Only `ohno verify` proves done.

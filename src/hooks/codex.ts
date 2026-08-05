@@ -1,6 +1,7 @@
 import {
   bashLooksLikeMutation,
   effectiveHarness,
+  formatPipelineNext,
   looksLikeProductPath,
   maybeAutoDeclareChangeFromPrompt,
   phaseAllowsProductCode,
@@ -469,7 +470,22 @@ function continuation(reason: string): HookOutput {
  */
 export const STUCK_FAIL_THRESHOLD = 5;
 
-function continueMode(model: ReadModel, failCount: number): string {
+function continueMode(
+  model: ReadModel,
+  failCount: number,
+  harnessPhase?: string,
+): string {
+  if (harnessPhase === "RECOVER") {
+    return failCount >= STUCK_FAIL_THRESHOLD ? "STUCK" : "REPAIR";
+  }
+  if (
+    harnessPhase === "DISCOVER"
+    || harnessPhase === "CHANGE"
+    || harnessPhase === "DESIGN"
+    || harnessPhase === "PLAN_READY"
+  ) {
+    return "PREPARE";
+  }
   if (model.next_action === "PROJECT_COMPLETE") {
     return "DONE";
   }
@@ -538,8 +554,10 @@ function automaticContinuation(
   model: ReadModel,
   note?: string,
   failCount = 0,
+  pipelineBlock?: string,
+  harnessPhase?: string,
 ): HookOutput {
-  const mode = continueMode(model, failCount);
+  const mode = continueMode(model, failCount, harnessPhase);
   const task = model.current_task?.id
     ?? (model.next_action.includes(":")
       ? model.next_action.split(":").slice(1).join(":")
@@ -553,6 +571,9 @@ function automaticContinuation(
     `next: ${model.next_action}`,
     `do: ${oneLineDo(mode, model)}`,
   ];
+  if (pipelineBlock !== undefined && pipelineBlock.trim() !== "") {
+    lines.push("", pipelineBlock.trimEnd());
+  }
   if (mode === "REPAIR" || mode === "VERIFY" || mode === "STUCK") {
     const hint = topTruthHint(model);
     lines.push(
@@ -616,7 +637,21 @@ async function handleStop(
   const completedId = state.completed.at(-1)?.id;
   const model = await readModel(projectPath);
   const failCount = state.last_verification?.consecutive_failures ?? 0;
-  const cont = (note?: string) => automaticContinuation(model, note, failCount);
+  const harnessPhase = effectiveHarness(state).phase;
+  const pipelineBlock = formatPipelineNext(state, model.next_action);
+  const cont = (note?: string) =>
+    automaticContinuation(model, note, failCount, pipelineBlock, harnessPhase);
+
+  // Non-EXECUTE phases: always inject pipeline (do not freestyle product work).
+  if (
+    state.harness != null
+    && harnessPhase !== "OPEN"
+    && harnessPhase !== "EXECUTE"
+    && markers.length === 0
+    && inputMarkers.length === 0
+  ) {
+    return cont(`phase ${harnessPhase}: follow OHNO_PIPELINE exactly`);
+  }
 
   // NEEDS_INPUT is not an Owner-handoff stop. Under an accepted plan it only
   // adds recovery guidance; the turn must continue (re-read Truth, re-approach).
@@ -712,8 +747,8 @@ async function handleStop(
 }
 
 async function capsule(projectPath: string): Promise<string> {
-  // DESIGN: SessionStart/PostCompact are read-only on the normal path.
-  // Projector refresh is explicit (`ohno projectors refresh`), not a hook write.
+  // DESIGN: SessionStart/PostCompact are read-only; keep resume under 4KiB.
+  // HARNESS_PHASE is in the capsule; full OHNO_PIPELINE on Stop / UserPromptSubmit / `ohno pipeline`.
   return serializeResumeWithWorktrees(
     await readModel(projectPath),
     projectPath,
@@ -747,35 +782,49 @@ export async function handleCodexHook(
         "UserPromptSubmit requires session_id, turn_id, and prompt",
       );
     }
-    if (!input.prompt.startsWith(`${automaticContinuationPrefix}\n`)) {
-      const { appendOwnerInput } = await import("../owner-inputs.js");
-      const {
-        projectLatestOwnerWords,
-      } = await import("../harness.js");
-      const logged = await appendOwnerInput(projectPath, {
-        sessionId: input.session_id,
-        turnId: input.turn_id,
-        prompt: input.prompt,
-      });
-      await projectLatestOwnerWords(
-        projectPath,
-        input.prompt,
-        logged.id,
-      ).catch(() => undefined);
-      const autoChange = await maybeAutoDeclareChangeFromPrompt(
-        projectPath,
-        input.prompt,
-      );
-      if (autoChange !== null) {
-        return {
-          hookSpecificOutput: {
-            hookEventName: "UserPromptSubmit",
-            additionalContext: autoChange,
-          },
-        };
-      }
+    // Synthetic Stop-continue prompts are not Owner Truth and must not log.
+    if (input.prompt.startsWith(`${automaticContinuationPrefix}\n`)) {
+      return {};
     }
-    return {};
+    const { appendOwnerInput } = await import("../owner-inputs.js");
+    const {
+      projectLatestOwnerWords,
+    } = await import("../harness.js");
+    const logged = await appendOwnerInput(projectPath, {
+      sessionId: input.session_id,
+      turnId: input.turn_id,
+      prompt: input.prompt,
+    });
+    await projectLatestOwnerWords(
+      projectPath,
+      input.prompt,
+      logged.id,
+    ).catch(() => undefined);
+    const parts: string[] = [];
+    const autoChange = await maybeAutoDeclareChangeFromPrompt(
+      projectPath,
+      input.prompt,
+    );
+    if (autoChange !== null) {
+      parts.push(autoChange.trimEnd());
+    }
+    // Every real Owner prompt re-binds the Agent to the live pipeline phase.
+    try {
+      const state = await readState(projectPath);
+      const model = await readModel(projectPath);
+      parts.push(formatPipelineNext(state, model.next_action).trimEnd());
+    } catch {
+      // state missing: still return change note if any
+    }
+    if (parts.length === 0) {
+      return {};
+    }
+    return {
+      hookSpecificOutput: {
+        hookEventName: "UserPromptSubmit",
+        additionalContext: parts.join("\n\n"),
+      },
+    };
   }
   if (input.hook_event_name === "PreToolUse") {
     return handlePreToolUse(projectPath, input);

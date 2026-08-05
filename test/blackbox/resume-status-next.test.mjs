@@ -887,12 +887,12 @@ test("bare ohno prints one-screen harness brief; help puts Owner setup first", a
   assert.match(bare.stdout, /Oh No harness/i);
   assert.match(bare.stdout, /status:\s+IDLE/i);
   assert.match(bare.stdout, /next:\s+PROPOSE_PLAN/i);
-  assert.match(bare.stdout, /owner:|gates:|loop:/i);
+  assert.match(bare.stdout, /owner:|pipeline|phase:/i);
   assert.doesNotMatch(bare.stdout, /^GOAL:/m);
 
   const missing = runCli(await createProject(t), []);
   assert.notEqual(missing.status, 0);
-  assert.match(missing.stdout, /ohno init/i);
+  assert.match(missing.stdout, /ohno setup|ohno init/i);
 
   const help = runCli(projectPath, ["--help"]);
   assert.equal(help.status, 0, help.stderr);

@@ -1,4 +1,6 @@
+import { effectiveHarness } from "./harness.js";
 import type { ReadModel } from "./read-model.js";
+import { readState } from "./state.js";
 import {
   formatSiblingWorktreesNote,
   listSiblingOhnoWorktrees,
@@ -260,14 +262,25 @@ export async function serializeResumeWithWorktrees(
   projectPath: string,
 ): Promise<string> {
   const base = serializeResume(model).replace(/\n$/u, "");
+  const extras: string[] = [];
+  try {
+    const state = await readState(projectPath);
+    const phase = effectiveHarness(state).phase;
+    extras.push(`HARNESS_PHASE: ${phase} | agent: ohno pipeline`);
+  } catch {
+    // state unreadable — omit phase line
+  }
   try {
     const siblings = await listSiblingOhnoWorktrees(projectPath);
     const note = formatSiblingWorktreesNote(siblings);
     if (note !== null) {
-      return clampResumeCapsule(`${base}\n${note}\n`);
+      extras.push(note.replace(/\n$/u, ""));
     }
   } catch {
     // ignore git/worktree probe failures
   }
-  return clampResumeCapsule(`${base}\n`);
+  if (extras.length === 0) {
+    return clampResumeCapsule(`${base}\n`);
+  }
+  return clampResumeCapsule(`${base}\n${extras.join("\n")}\n`);
 }

@@ -317,12 +317,14 @@ export async function sealRequirements(projectPath: string): Promise<string> {
   if (!ok) {
     throw new Error("state changed while sealing requirements");
   }
+  // Give Codex a design file to fill (not seal-ready stub alone).
+  await ensureDesignStub(projectPath);
   return (
     `SEALED_REQUIREMENTS: ${digest}\n`
     + "PHASE: DESIGN\n"
     + `OWNER_HEAD: ${effectiveHarness(state).owner_head ?? "none"}\n`
-    + "Next: write detailed design to .ohno/DESIGN.md then "
-    + "`ohno phase seal-design`\n"
+    + "Next: expand .ohno/DESIGN.md (full route OK) then "
+    + "`ohno phase seal-design` (or `ohno phase advance`)\n"
   );
 }
 
@@ -709,8 +711,113 @@ export function harnessBriefLines(state: ProjectState): string[] {
     `harness.phase: ${h.phase}`,
     `harness.requirements_sealed: ${h.requirements_digest != null}`,
     `harness.design_sealed: ${h.design_digest != null}`,
-    `harness.truth_read_fresh: ${truthReadIsFresh(state)}`,
+    `harness.truth_read_ok: ${truthReadSatisfiesRecover(state)}`,
+    `harness.owner_head: ${h.owner_head ?? "none"}`,
   ];
+}
+
+/**
+ * Exact next commands for Agent (and SessionStart/Stop injection).
+ * This is the "internal autopilot script" surface.
+ */
+export function formatPipelineNext(
+  state: ProjectState,
+  nextAction = "NONE",
+): string {
+  const h = effectiveHarness(state);
+  const need = requiredTruthReadPaths(state).join(",");
+  const lines = [
+    "OHNO_PIPELINE",
+    `phase: ${h.phase}`,
+    `plan_next: ${nextAction}`,
+  ];
+  switch (h.phase) {
+    case "DISCOVER":
+    case "CHANGE":
+      lines.push(
+        "role: product manager — clarify ALL demand details; tech/arch you decide",
+        "write: .ohno/REQUIREMENTS.md (Owner prompts auto-log to OWNER-INPUTS + Latest)",
+        "forbid: product code (src/** etc.) until seals",
+        "run: ohno phase seal-requirements",
+        "or: ohno phase advance   # auto-seal when REQUIREMENTS is ready",
+      );
+      break;
+    case "DESIGN":
+      lines.push(
+        "role: designer — detailed design + full route from Truth (one-shot OK)",
+        "write: .ohno/DESIGN.md (expand stub; not seal-ready until real design)",
+        "run: ohno phase seal-design",
+        "or: ohno phase advance",
+      );
+      break;
+    case "PLAN_READY":
+      lines.push(
+        "role: planner — tasks with id+expect+hard test+scope (full board OK)",
+        "run: ohno plan propose --file .ohno/review-plan.json",
+        "run: ohno plan accept --revision <sha> --diff <sha>",
+        "run: ohno task start",
+      );
+      break;
+    case "EXECUTE":
+      lines.push(
+        "role: implementer — only active scope; no freestyle",
+        `run: work then ohno verify   (canonical next: ${nextAction})`,
+      );
+      break;
+    case "RECOVER":
+      lines.push(
+        "role: recover — MUST read Truth before deciding",
+        `PATH_A implement: ohno truth-read --paths ${need} --mode A`,
+        "  then fix files in active allowed_files only; ohno verify",
+        `PATH_B plan/design: ohno truth-read --paths ${need} --mode B`,
+        "  then update DESIGN/plan/expects from Truth; re-accept if needed; verify",
+      );
+      break;
+    case "OPEN":
+      lines.push("legacy OPEN: phase gates off; prefer re-setup for full harness");
+      break;
+    default:
+      lines.push(`run: ohno pipeline`);
+  }
+  return `${lines.join("\n")}\n`;
+}
+
+/**
+ * Try to advance seals automatically when files are ready (Agent convenience).
+ */
+export async function tryPipelineAdvance(
+  projectPath: string,
+): Promise<string> {
+  const state = await readState(projectPath);
+  const h = effectiveHarness(state);
+  if (h.phase === "OPEN" && state.harness == null) {
+    return "PHASE: OPEN (legacy)\n";
+  }
+  if (h.phase === "DISCOVER" || h.phase === "CHANGE") {
+    try {
+      return await sealRequirements(projectPath);
+    } catch (error) {
+      return (
+        `BLOCKED_SEAL_REQUIREMENTS: ${
+          error instanceof Error ? error.message : String(error)
+        }\n`
+        + formatPipelineNext(state)
+      );
+    }
+  }
+  if (h.phase === "DESIGN") {
+    try {
+      return await sealDesign(projectPath);
+    } catch (error) {
+      return (
+        `BLOCKED_SEAL_DESIGN: ${
+          error instanceof Error ? error.message : String(error)
+        }\n`
+        + formatPipelineNext(state)
+      );
+    }
+  }
+  return formatPipelineNext(state);
 }
 
 export async function ensureDesignStub(projectPath: string): Promise<void> {

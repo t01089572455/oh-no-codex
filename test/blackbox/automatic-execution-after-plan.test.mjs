@@ -198,7 +198,12 @@ test("trusted UserPromptSubmit preserves one exact multiline Owner prompt and ex
     turn_id: turnId,
     prompt,
   });
-  assert.deepEqual(parseHookResult(submitted), {});
+  const submittedOut = parseHookResult(submitted);
+  // Real Owner prompts inject live OHNO_PIPELINE (phase next commands).
+  assert.match(
+    submittedOut.hookSpecificOutput?.additionalContext ?? "",
+    /OHNO_PIPELINE/,
+  );
 
   const ownerInputsPath = resolve(projectPath, ".ohno", "OWNER-INPUTS.md");
   const first = await readFile(ownerInputsPath, "utf8");
@@ -218,7 +223,11 @@ test("trusted UserPromptSubmit preserves one exact multiline Owner prompt and ex
     turn_id: turnId,
     prompt,
   });
-  assert.deepEqual(parseHookResult(retried), {});
+  const retriedOut = parseHookResult(retried);
+  assert.match(
+    retriedOut.hookSpecificOutput?.additionalContext ?? "",
+    /OHNO_PIPELINE/,
+  );
   assert.equal(
     await readFile(ownerInputsPath, "utf8"),
     first,
@@ -259,7 +268,10 @@ test("concurrent prompt submissions preserve every successful exact entry", asyn
     results.map(({ stderr }) => stderr).filter(Boolean).join("\n"),
   );
   for (const result of results) {
-    assert.deepEqual(JSON.parse(result.stdout), {});
+    const parsed = JSON.parse(result.stdout);
+    // Successful Owner prompts inject OHNO_PIPELINE; empty only if state unreadable.
+    const ctx = parsed.hookSpecificOutput?.additionalContext ?? "";
+    assert.match(ctx, /OHNO_PIPELINE/, result.stdout);
   }
 
   const body = await readFile(
