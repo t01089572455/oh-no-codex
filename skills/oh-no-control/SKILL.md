@@ -1,29 +1,27 @@
 ---
 name: oh-no-control
 description: >
-  Oh No PROMPT-ONLY complete harness. Hooks inject OHNO_PROMPT_RAILS (Owner
-  session synthesis: lifecycle, force-read Truth, anti-block, 十八宗罪).
-  No hard coding deny. Always: ohno pipeline. Done: ohno verify only.
+  Oh No COMPLETE prompt-only harness. Full OHNO_PROMPT_RAILS mined from all
+  Grok compaction history for this repo. Force read Truth; anti-block; 十八宗罪.
+  Hooks inject law; no hard coding deny. ohno pipeline / ohno verify.
 ---
 
-# Oh No harness (PROMPT-ONLY COMPLETE)
+# Oh No — Prompt-Only Complete Harness
 
-**Owner:** `ohno setup` → talk.  
-**You:** obey **OHNO_PROMPT_RAILS** on every Owner message / Stop / `ohno pipeline`.  
-Hooks **do not deny tools** — they inject law. Ignoring rails = drift.
+**Owner:** `ohno setup` → talk only.  
+**You:** obey **OHNO_PROMPT_RAILS** injected every Owner message / Stop / pipeline.
 
-## Core law (short)
+## Law (short)
 
-1. **Force READ Truth** before material decisions (not semantic judge).  
-2. Lifecycle: DISCOVER(PM) → DESIGN → PLAN → EXECUTE → RECOVER(A/B auto) → CHANGE re-walk.  
-3. All Owner prompts = raw Truth; **latest wins**.  
-4. Tech/arch: you decide after demand clear.  
-5. FAIL: open Truth → A fix code / B fix plan → adjust — **do not block Owner** when docs answer.  
-6. Done = **`ohno verify` only**.  
-7. 十八宗罪 1–18 rails (see injected full block).  
-8. Stay light: no CLI museum, no governance OS, no plan-length caps.
+1. **Force READ Truth** before decide (not semantic judge).  
+2. **Lifecycle:** DISCOVER(PM) → DESIGN → PLAN → EXECUTE → RECOVER(A/B auto) → CHANGE.  
+3. Owner prompts = raw Truth; **latest wins**. Tech/arch you decide after clarify.  
+4. **Anti-block:** never ask Owner when docs answer — truth-read → A/B → fix → verify.  
+5. **Done** = only `ohno verify`.  
+6. **Sins 1–18** + research/OSS/frontend craft rails.  
+7. Human CLI almost cut; no param museum / plan caps.
 
-## Locator
+## Commands
 
 ```text
 ohno pipeline
@@ -32,7 +30,8 @@ ohno verify
 ohno
 ```
 
-## Full text
+## Full text location
 
-Injected by hooks from `src/prompt-rails.ts` (session-synthesized complete rails).  
-Owner synthesis notes: `docs/superpowers/specs/2026-08-05-owner-session-synthesis.md`.
+Hooks inject from `src/prompt-rails.ts`.  
+Catalog: `docs/superpowers/specs/2026-08-05-complete-prompt-harness-catalog.md`.  
+Owner voice dump: `docs/superpowers/specs/2026-08-05-compaction-owner-voice-clean.md`.
