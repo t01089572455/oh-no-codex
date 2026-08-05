@@ -1,11 +1,21 @@
 # Owner session synthesis → complete prompt-only harness
 
 **Branch intent:** `prompt-only-harness`  
-**Sources:**  
-- `~/.grok/sessions/.../oh-no-codex/prompt_history.jsonl` (255 unique Owner prompts)  
-- Full extraction: `2026-08-05-owner-session-prompts-extracted.md`  
-- Canonical Owner vision turns (2026-08-05 lifecycle text, repeated many times)  
+**Sources (full Grok inventory):**  
+- Workspace `D:\python_workspace\oh-no-codex` Grok sessions on disk:  
+  **only** `019fb706-5e92-7b01-908f-fd31b3e5566b`  
+  (verified: folder listing + `session_search.sqlite` `cwd LIKE %oh-no-codex%`)  
+- That session’s full `prompt_history` + chat + compaction segments 000–011  
+  (compaction = same session history shards, **not** extra sessions)  
+- Related field-trial Grok workspace LoveBuddy-v11 session  
+  `019fb717-ed6a-72c2-aeef-e462e2498e68` (6 Oh No–related prompts)  
+- Full dump: `2026-08-05-all-grok-sessions-inventory.md`  
+- Earlier dump: `2026-08-05-owner-session-prompts-extracted.md`  
 - `docs/CODEX-SINS.md` + Owner field-trial commentary  
+
+**If you expected more Grok sessions “for this repo”:** Grok binds sessions to  
+**cwd**. Only one session was ever opened with cwd = oh-no-codex. Other product  
+talk lives in LoveBuddy / other cwd sessions (mined when they mention Oh No).
 
 **Product rule for this branch:** do **not** add coding hard-gates.  
 Hooks/harness only **inject** `OHNO_PROMPT_RAILS` so Codex self-restricts by reading Truth.
