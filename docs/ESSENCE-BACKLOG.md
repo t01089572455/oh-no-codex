@@ -15,8 +15,8 @@ What **was** sampled for essence decisions:
 | **0.6.0** | published npm package under `vibetether-npm-cache-v060` | Truth map, AGENTS markers, doctor, bootstrap, checkpoints |
 | **0.6.3** | `vibetether-1.0.0-review/baseline-v0.6.3-*` | Same thin control surface |
 | **1.0 RC** | `vibetether-1.0.0-review/acceptance` | `<!-- vibetether:start/end -->`, TRUTH.md, launcher AGENTS inject |
-| **RC3 / R3 / B-v3** | `vibetether-rc3-hardening-v1` + sessions `019fb159`, `019fb3b4`, R3 threads | PROGRESS.md, cockpit ambition, **overdesign failure** |
-| **Oh No pivot + V1** | `oh-no-codex` + session `019fb362` | What already exists |
+| **RC3 / R3 / B-v3** | late VibeTether hardening lines (sampled) | PROGRESS.md, cockpit ambition, **overdesign failure** |
+| **Oh No pivot + V1** | this product repo (sampled) | What already exists |
 
 **Judgment on “other versions”:** after 0.6 → 1.0 → R3, later lines mostly add
 Gateway / providers / deep permits / gate matrices — **not** new lightweight

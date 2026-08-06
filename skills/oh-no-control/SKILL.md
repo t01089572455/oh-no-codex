@@ -1,9 +1,9 @@
 ---
 name: oh-no-control
 description: >
-  Oh No COMPLETE prompt-only harness. Full OHNO_PROMPT_RAILS mined from all
-  Grok compaction history for this repo. Force read Truth; anti-block; 十八宗罪.
-  Hooks inject law; no hard coding deny. ohno pipeline / ohno verify.
+  Oh No COMPLETE prompt-only harness. Full OHNO_PROMPT_RAILS from Owner product
+  law. Force read Truth; anti-block; 十八宗罪. Hooks inject law; no hard coding
+  deny. ohno pipeline / ohno verify.
 ---
 
 # Oh No — Prompt-Only Complete Harness
@@ -33,5 +33,4 @@ ohno
 ## Full text location
 
 Hooks inject from `src/prompt-rails.ts`.  
-Catalog: `docs/superpowers/specs/2026-08-05-complete-prompt-harness-catalog.md`.  
-Owner voice dump: `docs/superpowers/specs/2026-08-05-compaction-owner-voice-clean.md`.
+Catalog: `docs/superpowers/specs/2026-08-05-complete-prompt-harness-catalog.md`.

@@ -7,3 +7,8 @@ coverage/
 !.env.example
 .DS_Store
 Thumbs.db
+
+# local field-trial dumps (never commit)
+_session_*.json
+_tf.txt
+

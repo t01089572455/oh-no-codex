@@ -148,7 +148,7 @@ Requirements changed: re-clarify → update design → update plan → update ex
 
 ## Field notes (honest)
 
-On real long sessions (e.g. LoveBuddy-v11), you can see it:
+On real long Codex sessions you can see it:
 
 - advance on the current task board  
 - catch fake acceptance and replace with real tests  
@@ -173,14 +173,16 @@ Also clear:
 
 ---
 
-## Cockpit (optional)
+## Cockpit (optional, still useful)
 
-A local read-only board of the same state the CLI uses.  
-Cursor progress is “this plan,” not whole-product done.
+A **local read-only board** in the browser: same data as `ohno` / `ohno status`, no write APIs.  
+Handy when you want to glance at the plan without reading the terminal. Skip it if CLI is enough.
 
 ```bash
 ohno cockpit
 ```
+
+Progress on the board is “this plan,” not whole-product done.
 
 <p align="center">
   <img

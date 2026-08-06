@@ -1,12 +1,8 @@
 /**
  * COMPLETE prompt-only harness law.
  *
- * Built by mining Grok session 019fb706 compaction segments 000–011
- * (all historical shards) + prompt_history for workspace oh-no-codex.
- *
+ * Built from Owner product requirements (session extracts stay out of tree).
  * Catalog: docs/superpowers/specs/2026-08-05-complete-prompt-harness-catalog.md
- * Owner voice: docs/superpowers/specs/2026-08-05-compaction-owner-voice-clean.md
- * Full extract: docs/superpowers/specs/2026-08-05-compaction-full-extract.md
  *
  * Mode: PROMPT-ONLY — hooks inject this text; coding does not hard-deny tools.
  */
@@ -17,7 +13,7 @@ export function formatOwnerPromptRails(): string {
     "╔════════════════════════════════════════════════════════════════╗",
     "║ OHNO_PROMPT_RAILS — COMPLETE (prompt-only harness management) ║",
     "║ Standing law every turn. NOT OS security. NOT semantic judge. ║",
-    "║ Source: full compaction 000–011 + Owner prompts of this repo. ║",
+    "║ Source: Owner product law for this harness (prompt-only).    ║",
     "╚════════════════════════════════════════════════════════════════╝",
     "",
     "## 0. Management mode (Owner decision)",

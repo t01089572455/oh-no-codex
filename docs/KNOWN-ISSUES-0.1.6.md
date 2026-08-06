@@ -1,4 +1,4 @@
-# Known issues after field trial + Codex session `019fbbca` (0.1.6)
+# Known issues after field trial (0.1.6)
 
 Date: 2026-08-01  
 Package: oh-no-codex@0.1.6

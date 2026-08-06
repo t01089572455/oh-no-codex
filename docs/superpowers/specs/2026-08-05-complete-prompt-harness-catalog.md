@@ -1,13 +1,6 @@
 # 完整版 Prompt-Only Harness 目录
 
-**数据来源（本仓库 Grok session 019fb706 全部压缩分片 + prompt_history）：**
-
-| 来源 | 说明 |
-| --- | --- |
-| compaction segment_000…011 | 同一次会话的全部历史压缩分片（已全文抽取） |
-| `2026-08-05-compaction-owner-voice-clean.md` | Owner 净原话 ~173 条 |
-| `2026-08-05-compaction-full-extract.md` | 分片摘要 + Human 全文 |
-| `prompt_history.jsonl` | 当前工作区全部 Owner 提交提示 |
+**数据来源：** Owner 对本产品的要求与场测结论（原 session 全文已从仓库移除，不入库）。
 
 **产品决策：** 不做编码硬拦截；只用 harness + hooks **内嵌提示词** 约束模型。  
 **实现：** `src/prompt-rails.ts` → hooks 注入 `OHNO_PROMPT_RAILS`。
