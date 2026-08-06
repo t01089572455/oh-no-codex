@@ -17,160 +17,108 @@
 </p>
 
 <p align="center">
-  <strong>A Truth-bound harness for Codex vibe coding</strong><br>
-  <em>Pull a drifting agent back to Truth with hook-injected rails — not a tax of hard-deny gates</em>
+  <strong>A small anti-drift tool for Codex</strong><br>
+  <em>Let it work. When it drifts, pull it back to your docs.</em>
 </p>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/oh-no-codex"><img alt="npm" src="https://img.shields.io/npm/v/oh-no-codex?style=flat-square&color=74D6B1&labelColor=202624&label=npm"></a>
-  <img alt="status" src="https://img.shields.io/badge/status-FIELD_TRIAL_STEERS-3DDC97?style=flat-square&labelColor=202624">
   <img alt="node" src="https://img.shields.io/badge/node-%3E%3D22.20-74D6B1?style=flat-square&labelColor=202624">
   <img alt="codex" src="https://img.shields.io/badge/for-Codex-FF4B35?style=flat-square&labelColor=202624">
   <a href="./LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-FFF1CE?style=flat-square&labelColor=202624"></a>
 </p>
 
-<p align="center">
-  <a href="#why">Why</a> ·
-  <a href="#sell">What you get</a> ·
-  <a href="#eighteen-sins">Eighteen Sins</a> ·
-  <a href="#how">How it works</a> ·
-  <a href="#install">Install</a> ·
-  <a href="#field">Field facts</a> ·
-  <a href="#limits">Limits</a> ·
-  <a href="#cockpit">Cockpit</a>
-</p>
+---
+
+## In one line
+
+Codex writes strong code and still steers projects wrong.  
+**Oh No** is a local tool that keeps Codex on: **what you said + your requirement/design docs + a real test.**
+
+You mostly do two things: **install once, then talk.**  
+The rest should run in the background with as little babysitting as possible.
 
 ---
 
-<a id="why"></a>
+## How Codex usually fails (the Eighteen Sins)
 
-## Why Oh No?
+These are not “the model is dumb.” They are failure patterns that show up on long real projects:
 
-Codex can write strong code and still take a project the wrong way: freestyle without reading design, fake completion, keep expanding after PASS, or force every new session to reconstruct history from chat.
+| What you see | Plain English |
+| --- | --- |
+| A small ask becomes a big system | Scope creep |
+| “Robust / control” becomes overbuild | Max interpretation |
+| Acceptance passed, agent keeps going | Never stopping |
+| You asked for a review; it edits and commits | Review as edit rights |
+| An old plan overrides your latest words | Zombie authority |
+| A summary hardens into false history | Summary as truth |
+| Unit/mock green claimed as feature done | Local green = complete |
+| Same agent defines, builds, and certifies | Self-certified closure |
+| Internals tested; user path still broken | Test theatre |
+| Coverage/neatness outranks your outcome | Proxy goals |
+| Review invents never-frozen criteria | Reviewer inflation |
+| Guardrails hurt more than the drift | Control tax |
+| New platform before value ships | Rebuild the world |
+| Wrong folder / worktree | Workspace confusion |
+| Every new chat reconstructs from history | Handoff tax |
+| Heavy internals, weak UX | UX last |
+| Apology, then another empty promise | Agree + overclaim |
+| Explains the fail; rules/tests unchanged | Apology without constraint |
 
-What Owners asked for in real vibe-coding sessions is **not** a second governance OS, and **not** OS-level “read every Truth file before every write.”
-
-**The real job is:**
-
-> **Let Codex work. When it drifts, the Truth harness pulls it back.**
-
-Those failures are documented as a public incident audit:  
-[**The Eighteen Sins of Codex**](./docs/CODEX-SINS.md).
-
-Oh No folds long-running Owner rules into **`OHNO_PROMPT_RAILS`**, injected by **hooks at critical moments**—steering Codex with **prompt law + state board + verify**, instead of a museum of hard-deny gates.
-
----
-
-<a id="sell"></a>
-
-## What you get (as built)
-
-### 1. Pull back on drift — not a sermon before every edit
-
-- Goal is **not** force-reading Truth on every file write (slow, heavy, governance-shaped).
-- Goal is: **drift → re-open Truth / design / frozen contract → decide again**.
-- In field use that looks like fixing soft black boxes, scope issues, and bad state by returning to authority docs and `truth-read`—not freezing the session for ceremony.
-
-### 2. Human surface almost cut; internals drive
-
-- Owner: `ohno setup` once, then mostly talk to Codex.
-- Every Owner prompt / Stop / `ohno pipeline`: inject full **`OHNO_PROMPT_RAILS`** (lifecycle, anti-block-to-owner, eighteen-sins rails, force-read-when-adrift…).
-- PreToolUse: **not hard-deny as the primary control** (advisory + self-correct). Less “choked by the gate” friction.
-
-### 3. Done still means real proof
-
-- Only `ohno verify` + a frozen user-visible black box closes work.
-- Soft theatre (e.g. `exit 3` + “go read the playbook”) gets exposed and must become an executable acceptance.
-
-### 4. Readable scene across sessions
-
-- `.ohno/state.json` remains the **sole runtime authority**.
-- `ohno` / status / resume / Cockpit: current task, proof, next action—handoff tax drops.
-
-### 5. Especially good when requirements already live in docs
-
-When demand, design, and playbooks are **already written**, and the phase is execute + prove (not greenfield clarification):
-
-- Oh No pushes **read docs + follow the board + verify**, not endless re-clarification chats.
-- On a real project trial (LoveBuddy-v11, Codex session `019fd4f0…`): stayed on state, fixed fake black boxes, multi-wave verify loops—**Owner experience: clearly smoother than hard-deny-everywhere**.
-
-### 6. Eighteen Sins stay the public product story
-
-Not fluff: each sin has a rail in `OHNO_PROMPT_RAILS`; completion / fake tests / zombie plans still rest on state + verify.
+Full write-up: [docs/CODEX-SINS.md](./docs/CODEX-SINS.md).
 
 ---
 
-<a id="eighteen-sins"></a>
+## What Oh No actually does
 
-## The Eighteen Sins of Codex
+In plain Owner terms:
 
-The name is deliberate. Eighteen distinct, privacy-scrubbed failure patterns—not a claim that every run fails.
+1. **After install + setup, get out of your way**  
+   You talk to Codex. Oh No records progress, injects rules, and watches acceptance.
 
-| # | Pattern | What you see |
-| ---: | --- | --- |
-| 1 | Semantic usurpation | A narrow ask becomes a larger product or architecture |
-| 2 | Maximum interpretation | “Control” / “robust” maxed into overbuild |
-| 3 | Never stopping | PASS already happened; Agent keeps going |
-| 4 | Review as edit rights | Audit turns into unapproved edits |
-| 5 | Zombie authority | Old plan/summary overrides latest Owner decision |
-| 6 | Summary as truth | Compaction hardens omissions into false history |
-| 7 | Local green = complete | Unit/mock green claimed as feature done |
-| 8 | Self-certified closure | Same Agent defines, implements, and cites itself |
-| 9 | Test theatre | Internals tested; user path broken/untested |
-| 10 | Proxy goals | Coverage/neatness outranks Owner outcome |
-| 11 | Reviewer inflation | Review adds never-frozen criteria |
-| 12 | Control-tax blindness | Guardrail slower/heavier than the drift |
-| 13 | Rebuilding the world | New platform before value ships |
-| 14 | Workspace confusion | Wrong branch / worktree / dirty tree |
-| 15 | Handoff tax | Every session reconstructs from chat |
-| 16 | UX last | Machinery grows; UX stays generic |
-| 17 | Agree + overclaim | Apology → another unmeasured promise |
-| 18 | Apology without constraint | Explains failure; no rule/test change |
+2. **Your words count**  
+   Prompts are logged. On conflict, **latest Owner words win**.
 
-Full audit: [`docs/CODEX-SINS.md`](./docs/CODEX-SINS.md).
+3. **Clarify / write requirements before freestyle product code**  
+   When docs already exist, push Codex to **read them, follow the board, verify** — not re-interview you forever.
 
----
+4. **Done means a real test, not a speech**  
+   Only `ohno verify` against a frozen user-visible test counts.  
+   Soft theatre like `exit 3` + “go read the playbook” gets rejected.
 
-<a id="how"></a>
+5. **On drift: read docs first, then self-fix**  
+   Don’t default to blocking and asking the Owner.  
+   Open requirements/design/contract → decide “code wrong” vs “plan wrong” → fix → re-test.
 
-## How it works
+6. **Not “read every doc before every write”**  
+   That’s slow and feels like a governance OS.  
+   Goal: **work normally; when it drifts, pull it back with Truth.**
 
-```text
-Owner:  ohno setup → talk to Codex
-Hooks:  UserPromptSubmit / Stop / pipeline  →  inject OHNO_PROMPT_RAILS
-State:  .ohno/state.json = sole current authority
-Agent:  follow next/ACTIVE → ohno verify is the only done signal
-Drift:  re-read Truth / design / contract → fix implement (A) or plan (B) → verify again
-```
-
-**Thin human surface:**
-
-```bash
-ohno setup      # once
-ohno            # where am I + pipeline
-ohno pipeline   # exact next (for the Agent)
-ohno verify     # only completion proof
-```
-
-Law text: `src/prompt-rails.ts` (`OHNO_PROMPT_RAILS`).  
-Owner-session synthesis catalog: `docs/superpowers/specs/2026-08-05-complete-prompt-harness-catalog.md`.
+7. **Prompt rules over hard-deny museums**  
+   Hooks inject the full rule set (including Eighteen Sins rails).  
+   The model can still ignore text — this is cooperative, not an OS sandbox.
 
 ---
 
-<a id="install"></a>
+## Install
 
-## Install and use
-
-Requires Node.js **≥ 22.20**.
-
-### Install
+Needs Node.js **≥ 22.20**.
 
 ```bash
 npm install -g oh-no-codex
 
-cd your-project   # must be a git repo
-ohno setup        # or skill install + refresh hooks if .ohno already exists
+cd your-git-repo
+ohno setup
 ```
+
+**Open a new Codex session after install** so skills/hooks reload.
+
+Then:
+
+1. Talk to Codex in the project root  
+2. Check progress: `ohno`  
+3. When a slice is done: `ohno verify`  
+4. Optional board: `ohno cockpit`
 
 From source:
 
@@ -182,68 +130,57 @@ npm run build
 npm install -g .
 ```
 
-**Start a new Codex session** after install so skills/hooks reload.
+### When requirements already live in docs
 
-### Daily
+Paste one goal into a new Codex session, for example:
 
-```bash
-ohno
-ohno status
-ohno pipeline
-ohno verify
-ohno doctor
-ohno cockpit      # optional read-only board
-```
+> Trust only this cwd’s `.ohno/state.json`. Read requirements/design. Loop tasks + `ohno verify`. If the docs answer it, don’t ask me. Ask only for secrets, devices, or real business unknowns.
 
-### New Codex session (docs already clear)
+### Existing / half-built projects
 
-1. Fix cwd to the project root  
-2. Paste one goal: trust this cwd’s `.ohno/state.json`, read Truth, loop task/verify, do not stop for Owner by default  
-3. Let it `ohno status` → work → `ohno verify`  
-4. You intervene only for secrets / devices / business unknowns  
+`ohno setup` does **not** invent history from Git.  
+Write current goals and known facts into requirements/docs, then work the board.  
+Don’t hand-edit state to fake PASS.
+
+Requirements changed: re-clarify → update design → update plan → update expected tests → continue under Oh No. Don’t silently keep the old plan.
 
 ---
 
-<a id="field"></a>
+## Field notes (honest)
 
-## Field facts (honest)
+On real long sessions (e.g. LoveBuddy-v11), you can see it:
 
-On real project **LoveBuddy-v11**, Codex session `019fd4f0-c913-7653-8254-d7d6369f8263`:
+- advance on the current task board  
+- catch fake acceptance and replace with real tests  
+- re-open docs and continue  
+- feel smoother than hard-deny-everywhere, with long autonomous stretches  
 
-**What worked:**
+Also clear:
 
-- Locked cwd + `.ohno/state.json`; followed ACTIVE / next  
-- Detected and repaired **soft black boxes**, then `ohno verify`  
-- Used `truth-read` / authority loading; multi-wave delivery on the board  
-- **No hard-deny as the primary tool path** in the transcript (by design: prompt law + state + verify)  
-- Owner experience: **much smoother than hard-deny-everywhere**, with long autonomous runs  
-
-**Also stated honestly:**
-
-- Drive is still **state + plan + verify**; full `OHNO_PROMPT_RAILS` is a strong assist, not present on every event line  
-- Reading Truth is **pull-back / load**, not OS-forced before every write  
-- Does **not** claim zero hallucination—claims **less fake-done, less freestyle, work bound to design + proof**  
-- If the Owner goal says “cover the whole design universe,” the Agent follows the Owner; Oh No governs **how proof and re-read work**, not vetoing that goal  
-
-Repo automation: black-box and performance suites stay green (`npm test` / `npm run test:performance`).
+- the spine is still **state + plan + real verify**; prompts help, they are not magic  
+- it does **not** claim zero hallucination — it claims less fake-done and less freestyle  
+- if *you* ask for “the whole universe,” it will follow you; Oh No governs proof and re-read, not vetoing your goal  
 
 ---
-
-<a id="limits"></a>
 
 ## Limits
 
-- **Cooperative** (COOPERATIVE_GUARDRAIL), not an OS sandbox.  
-- **No semantic court** (“did you understand?”).  
-- **Pull on drift**, not a sermon every step.  
-- A few hard fact gates (verify, optional pre-commit) may still exist—that is proof money, not a parameter museum.  
-- If npm `latest` lags the repo, **install from current source** as above.
+- **Cooperative rules**, not an OS sandbox  
+- **Does not judge “did you understand?”** — only forces “open the docs and work from them”  
+- **Pull back on drift**, not a sermon every step  
+- Soft acceptance tests make soft guardrails  
+- Product direction stays yours  
 
 ---
 
-<a id="cockpit"></a>
+## Cockpit (optional)
 
-## Cockpit
+A local read-only board of the same state the CLI uses.  
+Cursor progress is “this plan,” not whole-product done.
+
+```bash
+ohno cockpit
+```
 
 <p align="center">
   <img
@@ -252,14 +189,6 @@ Repo automation: black-box and performance suites stay green (`npm test` / `npm 
     alt="Oh No, Codex! Cockpit"
   >
 </p>
-
-<p align="center">
-  <sub>Read-only projection, not a second truth. Cursor progress is this plan only, not whole-product done.</sub>
-</p>
-
-```bash
-ohno cockpit
-```
 
 ---
 
