@@ -44,7 +44,7 @@ The rest should run in the background with as little babysitting as possible.
 
 These are not “the model is dumb.” They are failure patterns that show up on long real projects:
 
-| What you see | Plain English |
+| What you see | In short |
 | --- | --- |
 | A small ask becomes a big system | Scope creep |
 | “Robust / control” becomes overbuild | Max interpretation |
