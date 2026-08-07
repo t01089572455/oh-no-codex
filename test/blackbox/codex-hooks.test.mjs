@@ -151,26 +151,25 @@ function stopHook(projectPath, lastAssistantMessage) {
   }));
 }
 
-/** Prompt-only branch: harness injects advisory context, does not deny. */
+/** Background PreToolUse: short hard deny, no session lecture. */
 function assertDenied(output, expectedReason) {
   assert.equal(
     output.hookSpecificOutput?.hookEventName,
     "PreToolUse",
   );
-  assert.notEqual(
+  assert.equal(
     output.hookSpecificOutput?.permissionDecision,
     "deny",
-    "prompt-only harness must not hard-deny tools",
+    "clear phase/scope violations hard-deny silently",
   );
-  const ctx = String(
-    output.hookSpecificOutput?.additionalContext
-      ?? output.hookSpecificOutput?.permissionDecisionReason
-      ?? "",
+  const reason = String(
+    output.hookSpecificOutput?.permissionDecisionReason ?? "",
   );
-  // Short one-line advisory only — no stamp / full rails spam.
-  assert.match(ctx, /OHNO:/i);
-  assert.doesNotMatch(ctx, /OHNO_PROMPT_RAILS_STAMP|Standing law every turn/);
-  assert.match(ctx, expectedReason);
+  assert.doesNotMatch(
+    reason,
+    /OHNO_PROMPT_RAILS|Standing law every turn|OHNO_PROMPT_ADVISORY/i,
+  );
+  assert.match(reason, expectedReason);
 }
 
 async function setPendingDocumentSync(projectPath) {
@@ -392,7 +391,7 @@ test("PreToolUse allows required doc sync and denies unrelated mutation", async 
   });
   assertDenied(
     unrelated,
-    /document sync.*SYNC_GOVERNING_DOCUMENTS.*required.*docs\/PLAN\.md/i,
+    /document sync pending|outside:.*implementation/i,
   );
 
   const mixed = preToolUse(projectPath, "apply_patch", {
@@ -403,7 +402,7 @@ test("PreToolUse allows required doc sync and denies unrelated mutation", async 
   });
   assertDenied(
     mixed,
-    /document sync.*outside required.*src\/implementation\.ts/i,
+    /document sync pending|outside:.*implementation/i,
   );
 });
 
@@ -437,7 +436,7 @@ test("PreToolUse denies one out-of-scope target in a multi-file patch", async (t
     applyPatchMoveCommand("src/source.ts", "README.md"),
   ]) {
     const output = preToolUse(projectPath, "apply_patch", { command });
-    assertDenied(output, /outside.*README\.md.*src\/\*\*/i);
+    assertDenied(output, /outside task scope:.*README\.md/i);
   }
 
   for (const unsafeCommand of [
@@ -561,11 +560,8 @@ test("UserPromptSubmit injects OHNO_PIPELINE and SessionStart names phase", asyn
   assert.match(ctx, /OHNO_PIPELINE/);
   assert.match(ctx, /phase:\s*DISCOVER/i);
   assert.match(ctx, /seal-requirements|phase advance/i);
-  // Default inject is SHORT stamp only — full ~8KB rails every turn is spam.
-  assert.match(ctx, /OHNO_PROMPT_RAILS_STAMP/);
-  assert.match(ctx, /force.?read|READ Truth|open Truth/i);
-  assert.doesNotMatch(ctx, /OHNO_PROMPT_RAILS — COMPLETE|Standing law every turn/);
-  assert.doesNotMatch(ctx, /越俎代庖|自证闭环/);
+  // Hooks inject next action only — no stamp/full law spam.
+  assert.doesNotMatch(ctx, /OHNO_PROMPT_RAILS|Standing law every turn|越俎代庖/);
 });
 
 test("Stop continues on an exact marker with the wrong task id", async (t) => {
