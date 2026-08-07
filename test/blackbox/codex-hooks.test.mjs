@@ -167,7 +167,9 @@ function assertDenied(output, expectedReason) {
       ?? output.hookSpecificOutput?.permissionDecisionReason
       ?? "",
   );
-  assert.match(ctx, /OHNO_PROMPT_ADVISORY|PROMPT/i);
+  // Short one-line advisory only — no stamp / full rails spam.
+  assert.match(ctx, /OHNO:/i);
+  assert.doesNotMatch(ctx, /OHNO_PROMPT_RAILS_STAMP|Standing law every turn/);
   assert.match(ctx, expectedReason);
 }
 
@@ -483,19 +485,15 @@ test("PreToolUse fails closed when state is missing or corrupt", async (t) => {
   }
 });
 
-test("ambiguous shell targeting is allowed with an honest limitation", async (t) => {
+test("ambiguous shell targeting is allowed silently (no stamp spam)", async (t) => {
   const projectPath = await createProject(t);
   await initialize(projectPath);
 
   const output = preToolUse(projectPath, "Bash", {
     command: "node -e \"require('node:fs').writeFileSync(process.argv[1], 'x')\" mystery.txt",
   });
-  assert.equal(output.hookSpecificOutput?.permissionDecision, undefined);
-  assert.equal(output.hookSpecificOutput?.hookEventName, "PreToolUse");
-  assert.match(
-    output.hookSpecificOutput?.additionalContext ?? "",
-    /OHNO_PROMPT_ADVISORY.*cannot parse arbitrary shell|call allowed/i,
-  );
+  // Background allow: empty output — do not inject rails on every shell.
+  assert.deepEqual(output, {});
 });
 
 test("Stop automatically continues accepted active work without requiring a completion marker", async (t) => {

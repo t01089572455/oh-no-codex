@@ -76,34 +76,30 @@ export async function readHookInput(): Promise<HookInput> {
 }
 
 /**
- * Prompt-only branch: do not hard-deny mutations.
- * Inject advanced rails so the model self-restricts.
+ * Prompt-only PreToolUse: do not hard-deny.
+ *
+ * Field trial (x4): stamping OHNO_PROMPT_RAILS on *every* Bash via
+ * "limitation" flooded the session (~2.8k times). Owner wants **silent**
+ * background control — not a lecture on every tool call.
+ *
+ * - Allowed / unparseable shell → empty hook output (no additionalContext).
+ * - Real phase/scope violation → one short line only (no stamp, no full law).
+ * Primary control stays: short Stop/UserPromptSubmit pipeline + verify.
  */
 function advisory(reason: string): HookOutput {
+  const oneLine = reason.replace(/\s+/gu, " ").trim().slice(0, 400);
   return {
     hookSpecificOutput: {
       hookEventName: "PreToolUse",
-      additionalContext: [
-        "OHNO_PROMPT_ADVISORY  # PROMPT-ONLY harness: tool NOT denied",
-        "You SHOULD abort/self-correct to obey rails; coding will not block you.",
-        reason,
-        "",
-        formatOwnerPromptRailsStamp(),
-      ].join("\n"),
+      additionalContext:
+        `OHNO: ${oneLine} (tool not denied; self-correct | ohno pipeline)`,
     },
   };
 }
 
-function limitation(reason: string): HookOutput {
-  return {
-    hookSpecificOutput: {
-      hookEventName: "PreToolUse",
-      additionalContext: [
-        `OHNO_PROMPT_ADVISORY limitation: ${reason}; call allowed.`,
-        formatOwnerPromptRailsStamp(),
-      ].join("\n"),
-    },
-  };
+/** Silent allow — never paste stamp/rails on ordinary tool traffic. */
+function allowQuietly(): HookOutput {
+  return {};
 }
 
 function applyPatchTargets(input: HookInput): string[] | null {
@@ -210,7 +206,8 @@ async function handlePreToolUse(
           );
         }
       }
-      return limitation("cannot parse arbitrary shell targeting");
+      // Shell targeting is opaque; allow without session spam.
+      return allowQuietly();
     }
     if (
       input.tool_name === "apply_patch"
@@ -219,7 +216,7 @@ async function handlePreToolUse(
     ) {
       return advisory("unsafe or unparseable apply_patch mutation target");
     }
-    return limitation("unsupported or unparseable mutation targeting");
+    return allowQuietly();
   }
 
   const targets = rawTargets.map((target) =>
