@@ -454,11 +454,12 @@ test("structural contract, acceptance basis, scope, and fresh-PASS protections r
   });
   assert.equal(runCli(hookProject, ["task", "start"]).status, 0);
   const denied = preToolUse(hookProject, "README.md");
-  // Prompt-only branch: advisory inject, not hard deny.
-  assert.notEqual(denied.hookSpecificOutput?.permissionDecision, "deny");
+  // Hybrid control: short hard deny on clear out-of-scope writes (no rails dump).
+  // Semantic anti-drift stays prompt-only; structural scope remains a gate.
+  assert.equal(denied.hookSpecificOutput?.permissionDecision, "deny");
   assert.match(
-    denied.hookSpecificOutput?.additionalContext ?? "",
-    /outside active task scope.*README\.md|PROMPT: outside/iu,
+    denied.hookSpecificOutput?.permissionDecisionReason ?? "",
+    /outside task scope:.*README\.md/iu,
   );
 
   const notFresh = stop(hookProject, "OHNO_COMPLETE:hook-hard");

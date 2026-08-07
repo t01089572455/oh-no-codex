@@ -94,8 +94,9 @@ In plain Owner terms:
    That’s slow and feels like a governance OS.  
    Goal: **work normally; when it drifts, pull it back with Truth.**
 
-7. **Prompt rules over hard-deny museums**  
-   Hooks inject the full rule set (including Eighteen Sins rails).  
+7. **Prompt-first, not hard-deny museums**
+   Everyday control is short next-action prompts + Latest Owner words.
+   Clear structure (phase / scope / sync) can still get a **short** hard deny — never a law dump on every tool.
    The model can still ignore text — this is cooperative, not an OS sandbox.
 
 ---

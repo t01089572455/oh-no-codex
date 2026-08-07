@@ -564,6 +564,49 @@ test("UserPromptSubmit injects OHNO_PIPELINE and SessionStart names phase", asyn
   assert.doesNotMatch(ctx, /OHNO_PROMPT_RAILS|Standing law every turn|越俎代庖/);
 });
 
+test("Owner pause stops auto-continue and injects OWNER_PAUSE", async (t) => {
+  const projectPath = await createProject(t);
+  await initialize(projectPath);
+  await startTask(projectPath);
+
+  const submit = parseHookResult(runHook(projectPath, "UserPromptSubmit", {
+    session_id: "pause-sess",
+    turn_id: "pause-turn-1",
+    prompt: "等一下 你先别做计划的，先别自己瞎猜",
+  }));
+  const ctx = submit.hookSpecificOutput?.additionalContext ?? "";
+  assert.match(ctx, /OWNER_PAUSE/);
+  assert.match(ctx, /Do NOT plan accept|task start/i);
+
+  // Under pause, Stop must not OHNO_AUTO_CONTINUE (radar field).
+  const pausedStop = stopHook(projectPath, "Work is still in progress.");
+  assert.deepEqual(pausedStop, {});
+
+  // Clear pause with a clear resume phrase.
+  parseHookResult(runHook(projectPath, "UserPromptSubmit", {
+    session_id: "pause-sess",
+    turn_id: "pause-turn-2",
+    prompt: "继续未完成的工作",
+  }));
+  const resumed = stopHook(projectPath, "Work is still in progress.");
+  assert.equal(resumed.decision, "block");
+  assert.match(resumed.reason, /^OHNO_AUTO_CONTINUE/m);
+});
+
+test("Stop anti-ask continues when agent waits for design/case confirm", async (t) => {
+  const projectPath = await createProject(t);
+  await initialize(projectPath);
+  await startTask(projectPath);
+
+  const output = stopHook(
+    projectPath,
+    "请确认这个设计草案。回复「确认」后我再实现。",
+  );
+  assert.equal(output.decision, "block");
+  assert.match(output.reason, /ANTI_ASK|OHNO_AUTO_CONTINUE/i);
+  assert.match(output.reason, /secrets|devices|account/i);
+});
+
 test("Stop continues on an exact marker with the wrong task id", async (t) => {
   const projectPath = await createProject(t);
   await initialize(projectPath);

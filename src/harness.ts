@@ -849,7 +849,8 @@ export function harnessBriefLines(state: ProjectState): string[] {
 
 /**
  * Full Owner prompt rails (lifecycle + 十八宗罪 + solutions).
- * Prompt-only branch: this is the law; coding denies are advisory elsewhere.
+ * Prompt-first hybrid: this is the semantic law text; structural PreToolUse
+ * short hard-deny remains for clear phase/scope/sync/recover only.
  */
 export function formatHarnessRulesPrompt(): string {
   return formatOwnerPromptRails();

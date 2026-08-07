@@ -2,8 +2,10 @@
 
 **数据来源：** Owner 对本产品的要求与场测结论（原 session 全文已从仓库移除，不入库）。
 
-**产品决策：** 不做编码硬拦截；只用 harness + hooks **内嵌提示词** 约束模型。  
-**实现：** `src/prompt-rails.ts` → hooks 注入 `OHNO_PROMPT_RAILS`。
+**产品决策：** **PROMPT-FIRST hybrid** — 语义靠 harness + hooks 内嵌提示词；
+仅对清晰结构违规（phase / scope / document-sync / RECOVER 未读 Truth）做 **短 hard deny**。
+禁止在每次工具调用上灌 full law。
+**实现：** `src/prompt-rails.ts` + `src/hooks/codex.ts`。
 
 ---
 
@@ -30,7 +32,7 @@
 | 17 | 驾驶舱/可见现场 | 只读 cockpit；非第二权威 | H#16 |
 | 18 | 发布/状态不诚实 | 无证据不宣称完成/已治十八罪 | H#17, H2 |
 | 19 | mega-plan 过大 | 全路线可设计，执行板宜小 MVP | H2, I |
-| 20 | 只做提示词、不做编码硬拦 | PROMPT_ONLY + advisory | 全文件头 + hooks |
+| 20 | 控制税 / 刷屏 vs 结构失控 | PROMPT_FIRST hybrid：语义 prompt；结构短 hard deny；默认无 full rails | hooks + prompt-rails |
 
 ---
 
@@ -47,21 +49,22 @@ Oh No 核心：**指导去读，禁止不看 Truth 的自主决策。**
 
 ---
 
-## 三、注入面（hook 管理，无 hard deny）
+## 三、注入面（hook 管理）
 
-| Hook / 表面 | 注入内容 |
+| Hook / 表面 | 行为 |
 | --- | --- |
-| UserPromptSubmit | 完整 `OHNO_PROMPT_RAILS` + 当前 `OHNO_PIPELINE` |
-| Stop 续跑 | 同上 |
-| `ohno pipeline` / 裸 `ohno` | 完整 rails |
-| SessionStart / resume | `OHNO_PROMPT_RAILS_STAMP`（≤4KiB） |
-| PreToolUse | `OHNO_PROMPT_ADVISORY`（允许工具 + 文字纠正） |
+| UserPromptSubmit | 短 `OHNO_PIPELINE` + Latest 重绑；Owner 暂停/继续标记 |
+| Stop 续跑 | 短 continue card；Owner 暂停则不自动续；anti-ask 可续 |
+| `ohno pipeline` | 短 next + stamp；`--full` 才完整 rails |
+| 裸 `ohno` | brief + 短 pipeline（无 full law） |
+| SessionStart / resume | stamp / 胶囊（≤4KiB） |
+| PreToolUse | 静默 allow，或一行 hard deny（无 rails 刷屏） |
 | skill `oh-no-control` | 短镜像 |
 
 ---
 
 ## 四、诚实边界
 
-- 合作式提示词，不是 OS 沙箱。  
-- 不做语义「是否读懂」裁判，只强制「去读文档」。  
-- 编码硬门在本分支策略上不再作为主手段。
+- 合作式护栏，不是 OS 沙箱。
+- 不做语义「是否读懂」裁判，只强制「去读文档」+ 结构门。
+- 真机 / 真猫 / 听感等用户体验不能被 unit 自动证明 — 用 LOCAL_PASS 诚实标签。

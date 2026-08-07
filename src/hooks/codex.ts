@@ -624,8 +624,56 @@ function looksLikeBannedOwnerAsk(text: string | undefined): boolean {
       return false;
     }
   }
-  return /请确认|需要你确认|请选择|等你回复|回复「确认|确认主推|请你决定|要不要我/iu
+  // Field (x4/radar): design draft / case board / “wait for your pick” soft stops.
+  return /请确认|需要你确认|请选择|等你回复|回复「确认|确认主推|请你决定|要不要我|回复[「"']按这个|需要你确认后|方便你直接选|待\s*Owner\s*批准|待你确认|等你选|等你决定/iu
     .test(text);
+}
+
+/**
+ * Field (radar): Owner said 先别做 / 先别计划 — auto-continue must not override.
+ * Resume phrases in a later Owner prompt clear the pause.
+ */
+export function looksLikeOwnerResume(text: string): boolean {
+  const t = text.trim();
+  if (t === "") {
+    return false;
+  }
+  return /^(继续|来吧|好的\s*继续|继续做|继续完成|恢复执行|可以继续|你继续|好了\s*继续|继续刚才)/mu
+    .test(t)
+    || /继续未完成|继续做完|继续完成目标|继续工作|开始循环/u.test(t);
+}
+
+export function looksLikeOwnerPause(text: string): boolean {
+  const t = text.trim();
+  if (t === "" || looksLikeOwnerResume(t)) {
+    return false;
+  }
+  return /先别做|先别执行|先别自己|现在先别|先别计划|先别开工|先不要做|先别写|先不要执行|先暂停|先别继续做|先别的/u
+    .test(t)
+    || /等一下\s*[，,]?\s*你先别/u.test(t)
+    || /先别.*瞎猜|先别.*计划|现在先别做/u.test(t);
+}
+
+/** Last decisive pause/resume in OWNER-INPUTS wins (scan a short tail). */
+async function ownerWorkIsPaused(projectPath: string): Promise<boolean> {
+  try {
+    const { readOwnerInputs } = await import("../owner-inputs.js");
+    const text = await readOwnerInputs(projectPath);
+    const blocks = [...text.matchAll(/```text\r?\n([\s\S]*?)\r?\n```/gu)];
+    const start = Math.max(0, blocks.length - 12);
+    for (let i = blocks.length - 1; i >= start; i -= 1) {
+      const body = blocks[i]?.[1] ?? "";
+      if (looksLikeOwnerResume(body)) {
+        return false;
+      }
+      if (looksLikeOwnerPause(body)) {
+        return true;
+      }
+    }
+    return false;
+  } catch {
+    return false;
+  }
 }
 
 async function handleStop(
@@ -663,6 +711,16 @@ async function handleStop(
   });
   const cont = (note?: string) =>
     automaticContinuation(model, note, failCount, pipelineBlock, harnessPhase);
+
+  // Field (radar): Owner pause beats auto-continue / phase inject / anti-ask.
+  // Completion markers still force the verify path (do not fake-done under pause).
+  if (
+    markers.length === 0
+    && inputMarkers.length === 0
+    && await ownerWorkIsPaused(projectPath)
+  ) {
+    return {};
+  }
 
   // Field (radar): Agent stopped to 请确认 cases/design — force continue.
   if (
@@ -860,6 +918,18 @@ export async function handleCodexHook(
       );
     } catch {
       // state missing: still return change note if any
+    }
+    // Field (radar): explicit pause must win over Stop auto-continue.
+    if (looksLikeOwnerPause(input.prompt)) {
+      parts.push(
+        "OWNER_PAUSE: Owner ordered a pause. Do NOT plan accept, task start, "
+          + "product code, or freestyle next steps until Owner clearly says "
+          + "continue. Documentation notes only if Owner asked for them.",
+      );
+    } else if (looksLikeOwnerResume(input.prompt)) {
+      parts.push(
+        "OWNER_RESUME: Owner released the pause — follow OHNO_PIPELINE + Latest.",
+      );
     }
     if (parts.length === 0) {
       return {};

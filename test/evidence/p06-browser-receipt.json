@@ -3,7 +3,8 @@
   "classification": "P06_BROWSER_RECEIPT",
   "generated_at": "2026-08-05T06:51:04.785Z",
   "measurement_batch_id": "live-20260805T064039Z-834bc92",
-  "measurement_binding": "LIVE",
+  "measurement_binding": "HISTORICAL",
+  "measurement_note": "HISTORICAL: browser P06 samples not re-run after 0.3.x harness edits; digests stay on original measured package. Not release proof for current HEAD.",
   "browser": "System Chrome/Edge via puppeteer-core",
   "sample_method": {
     "clock": "Date.now epoch ms (cross-process)",

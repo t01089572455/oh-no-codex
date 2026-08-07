@@ -1,22 +1,32 @@
-# Prompt-only harness branch
+# Prompt-first hybrid harness (current product)
 
-**Branch:** `prompt-only-harness`  
-**Owner decision:** do not add coding hard-gates for anti-drift; use hooks only to
-**inject advanced prompt rails** so Codex self-restricts by reading Truth.
+**Status:** supersedes the pure “no hard deny” experiment.
+**Owner decision (field-proven):** semantic anti-drift is **prompt + short pipeline**;
+**residual short hard-deny** only for clear structure. Never dump full law on every tool.
 
 ## What stays
 
-- `ohno setup`, state, plan/task/verify tools (optional commands Agents can run)
+- `ohno setup`, state, plan/task/verify tools
 - Hooks: SessionStart / UserPromptSubmit / Stop / PreToolUse / PostCompact
-- OWNER-INPUTS capture, pipeline phase text, full **OHNO_PROMPT_RAILS**
+- OWNER-INPUTS capture, pipeline phase text, full **OHNO_PROMPT_RAILS** on demand
 
-## What changes vs main (coding gates)
+## Control surfaces (honest)
 
-- PreToolUse **does not deny** (no `permissionDecision: deny` for harness rails)
-- Violations become **OHNO_PROMPT_ADVISORY** additionalContext only
-- Full Owner lifecycle + 十八宗罪 + Owner solutions live in `src/prompt-rails.ts`
+| Surface | Behavior |
+| --- | --- |
+| UserPromptSubmit | log Owner → Latest re-bind → short `OHNO_PIPELINE`; `OWNER_PAUSE` / `OWNER_RESUME` when phrasing matches |
+| Stop | short continue card under accepted work; **no** full rails; honor Owner pause; anti-ask continue for 请确认/请选择 design-case tech |
+| PreToolUse | **silent allow**, or **short hard deny** for phase / scope / sync / RECOVER-without-truth-read / unparseable patch |
+| `ohno pipeline` | short next + stamp; `--full` pastes complete law once |
+| skill `oh-no-control` | short mirror |
+
+## What is not claimed
+
+- Not OS security; cooperative guardrails only.
+- Not a semantic “did you understand” judge.
+- Not pure “prompt-only with zero hard deny” — field trials showed that advisory-only scope was the wrong trade for clear structure.
 
 ## Success criterion
 
-Model repeatedly sees and follows rails → reads Truth → verify-only done.  
-Not OS security; cooperative prompt binding only.
+Model sees short next action + Latest, reads Truth, uses `ohno verify` as sole proof;
+structural freestyle is blocked without context spam.

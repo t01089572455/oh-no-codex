@@ -4,7 +4,8 @@
  * Built from Owner product requirements (session extracts stay out of tree).
  * Catalog: docs/superpowers/specs/2026-08-05-complete-prompt-harness-catalog.md
  *
- * Mode: PROMPT-ONLY — hooks inject this text; coding does not hard-deny tools.
+ * Mode: PROMPT-FIRST hybrid — hooks inject this text for semantic control.
+ * Residual short hard-deny exists only for clear structure (phase/scope/sync).
  */
 
 /**
@@ -21,9 +22,12 @@ export function formatOwnerPromptRails(): string {
     "╚════════════════════════════════════════════════════════════════╝",
     "",
     "## 0. Management mode (Owner decision)",
-    "This product constrains you by **embedded prompts via harness + hooks**.",
-    "Do not rely on coding hard-deny as the main control. Self-restrict.",
+    "This product is **PROMPT-FIRST hybrid**:",
+    "- Semantic control: embedded prompts + short OHNO_PIPELINE (self-restrict).",
+    "- Residual short hard-deny: only clear phase / scope / document-sync /",
+    "  RECOVER-without-truth-read structure — never full-law spam on tools.",
     "If a tool is allowed but rails forbid it: STOP and follow rails.",
+    "If Owner says 先别做 / pause: stop accept/start/implement until continue.",
     "",
     "## 1. Why you exist (Owner pains from full session history)",
     "1. Long context → forget latest goal; keep doing from old docs (drift).",
@@ -172,9 +176,11 @@ export function formatOwnerPromptRails(): string {
 export function formatOwnerPromptRailsStamp(): string {
   return [
     "OHNO_PROMPT_RAILS_STAMP",
-    "mode: PROMPT_ONLY — short stamp only (full law is NOT re-pasted every turn)",
-    "core: force READ Truth; latest Owner wins; verify-only done; anti-block",
+    "mode: PROMPT_FIRST hybrid — short stamp (full law NOT every turn)",
+    "core: READ Truth; latest Owner wins; verify-only done; anti-block; anti-ask",
+    "structure: short hard-deny only for phase/scope/sync/recover gates",
     "flow: DISCOVER(PM)→DESIGN→PLAN→EXECUTE→RECOVER(A/B)→CHANGE re-walk",
+    "pause: Owner 先别做 → stop; resume only on clear continue",
     "when unsure: open Truth → smallest step → ohno verify",
     "full law once: ohno pipeline --full   (do not re-run every turn)",
   ].join("\n");

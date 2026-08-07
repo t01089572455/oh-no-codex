@@ -3,8 +3,8 @@
   "classification": "TRIAL_EVIDENCE",
   "generated_at": "2026-08-05T06:42:42.425Z",
   "measurement_batch_id": "live-20260805T064039Z-834bc92",
-  "measurement_binding": "LIVE",
-  "measurement_note": "Same-batch LIVE measurement_batch_id=live-20260805T064039Z-834bc92. Samples bind to runtime_subject_sha256 (packed package excluding README projections) so post-measure exact p95 documentation does not rebind samples. Not a universal speed claim. package/runtime digests rebased for 0.2.0 harness essence; latency samples remain from batch live-20260805T064039Z-834bc92.1.13 simple-harness surface (bare ohno brief + help reorder); latency samples remain from batch live-20260805T064039Z-834bc92 and are not a universal speed claim.",
+  "measurement_binding": "HISTORICAL",
+  "measurement_note": "HISTORICAL: latency/trial samples from measurement_batch_id=live-20260805T064039Z-834bc92 were not re-run after 0.3.x field-trial harness changes (silent PreToolUse, Latest re-bind, anti-ask, Owner pause, LOCAL_PASS). Digests intentionally remain on the original measured package subject and are not silently rebased. Not release speed proof for current HEAD; re-measure before claiming LIVE P01–P06 on a new package subject.",
   "implementation": {
     "dist_cli_sha256": "f5249cb4772070215f49b1160fe71b3e4921e1be9100efc5504a0f2d884f0560",
     "package_subject_sha256": "c6fe312dca6debd11f9565ff95c62a6f6ec1b7e0ec47330bec273e307d3754f5",
@@ -559,7 +559,7 @@
     "classification": "P06_BROWSER_RECEIPT",
     "generated_at": "2026-08-05T06:51:04.785Z",
     "measurement_batch_id": "live-20260805T064039Z-834bc92",
-    "measurement_binding": "LIVE",
+    "measurement_binding": "HISTORICAL",
     "browser": "System Chrome/Edge via puppeteer-core",
     "sample_method": {
       "clock": "Date.now epoch ms (cross-process)",
