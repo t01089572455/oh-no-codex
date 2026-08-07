@@ -233,7 +233,22 @@ export async function refreshTruthAtChangeBegin(
       !previousPaths.has(entry.path)
       && !current.truthTargets.has(entry.path)
     ) {
-      throw new Error(`UNCLASSIFIED_HIGH_RISK: ${entry.path}`);
+      // Setup may add harness-owned hook/config paths after init. Absorb those
+      // into inventory without blocking change begin (field: .codex/hooks.json).
+      // Do NOT auto-allow new AGENTS/README/governing docs — those still need
+      // Owner-visible change begin (see UNCLASSIFIED_HIGH_RISK tests).
+      if (
+        entry.classification === "AGENT_HOOK_CONFIG"
+        || entry.classification === "TRUTH_FILE"
+      ) {
+        continue;
+      }
+      throw new Error(
+        `UNCLASSIFIED_HIGH_RISK: ${entry.path}`
+          + " — add to .ohno/truth.json targets if it must govern work, "
+          + "or remove it before change begin"
+          + " | next: ohno pipeline",
+      );
     }
   }
   return current.inventory;

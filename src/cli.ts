@@ -3,6 +3,7 @@
 import { realpathSync } from "node:fs";
 import {
   access,
+  readFile,
   writeFile,
 } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -93,7 +94,8 @@ const usageText = [
   "usage: (Owner)",
   "  ohno setup                        # once: init + install + skills",
   "  ohno                              # where am I + pipeline",
-  "  ohno pipeline                     # exact next Agent commands",
+  "  ohno pipeline                     # exact next Agent commands (short)",
+  "  ohno pipeline --full              # next + full OHNO_PROMPT_RAILS once",
   "",
   "pipeline (Codex runs these):",
   "  ohno phase advance                # try seal-requirements or seal-design",
@@ -101,11 +103,51 @@ const usageText = [
   "  ohno plan propose|accept …  |  ohno task start  |  ohno verify",
   "  ohno truth-read [--paths a,b] --mode A|B   # after FAIL (A=code B=plan)",
   "  ohno phase declare-change --summary <words>",
+  "  ohno requirements note --text \"…\" | --file <path>",
   "",
   "Harness: DISCOVER→DESIGN→PLAN→EXECUTE; FAIL→RECOVER A/B; CHANGE re-walks.",
   "Hook classification: COOPERATIVE_GUARDRAIL.",
+  "When unsure: ohno pipeline   (do not invent flags)",
   "",
 ].join("\n");
+
+/** Field-trial: bare usage dumps caused agents to thrash. Always attach next. */
+function formatCliError(message: string): string {
+  const lines = [message.trimEnd()];
+  const m = message;
+  if (/usage:\s*\(Owner\)/iu.test(m) || m.includes("ohno setup")) {
+    lines.push("hint: run `ohno pipeline` for the exact next Agent command");
+  }
+  if (/task start takes no arguments/iu.test(m)) {
+    lines.push("hint: exact form is `ohno task start` (no ids/flags)");
+  }
+  if (/--text must be a single line/iu.test(m)) {
+    lines.push(
+      "hint: multi-line notes: `ohno requirements note --file <path.md>`",
+    );
+  }
+  if (/UNCLASSIFIED_HIGH_RISK/iu.test(m)) {
+    lines.push(
+      "hint: new governing path — add to `.ohno/truth.json` or drop the file",
+    );
+    lines.push("hint: then `ohno pipeline`");
+  }
+  if (/outside task scope/iu.test(m)) {
+    lines.push(
+      "hint: stay in active allowed_files, or `ohno truth-read --mode B` / change",
+    );
+  }
+  if (/no active task/iu.test(m)) {
+    lines.push("hint: `ohno task start` or `ohno pipeline`");
+  }
+  if (/not initialized/iu.test(m)) {
+    lines.push("hint: cd to the git repo root, then `ohno setup`");
+  }
+  if (!lines.some((line) => line.startsWith("hint:"))) {
+    lines.push("hint: `ohno pipeline`");
+  }
+  return lines.join("\n");
+}
 
 function requiredValue(args: string[], flag: string): string {
   const index = args.indexOf(flag);
@@ -284,11 +326,16 @@ async function main(): Promise<void> {
   if (
     command === "pipeline"
     && subcommand === undefined
-    && args.length === 0
+    && (args.length === 0 || (args.length === 1 && args[0] === "--full"))
   ) {
     const state = await readProjectState(projectPath);
     const model = await readModel(projectPath);
-    process.stdout.write(formatPipelineNext(state, model.next_action));
+    // Default: short next + stamp. --full pastes complete OHNO_PROMPT_RAILS once.
+    process.stdout.write(
+      formatPipelineNext(state, model.next_action, {
+        rails: args[0] === "--full" ? "full" : "stamp",
+      }),
+    );
     return;
   }
 
@@ -568,15 +615,30 @@ async function main(): Promise<void> {
     return;
   }
 
-  if (
-    command === "requirements"
-    && subcommand === "note"
-    && args.length === 2
-    && args[0] === "--text"
-  ) {
+  if (command === "requirements" && subcommand === "note") {
+    let noteText: string | undefined;
+    if (args.length >= 2 && args[0] === "--text") {
+      // Join remaining tokens so unquoted multi-word notes still work.
+      noteText = args.slice(1).join(" ");
+      if (noteText.startsWith("--")) {
+        throw new Error(
+          "--text requires a value"
+            + " | next: ohno requirements note --text \"…\" "
+            + "or --file <path>",
+        );
+      }
+    } else if (args.length === 2 && args[0] === "--file") {
+      const filePath = resolve(projectPath, requiredValue(args, "--file"));
+      noteText = await readFile(filePath, "utf8");
+    } else {
+      throw new Error(
+        "usage: ohno requirements note --text \"…\" | --file <path>"
+          + " | next: ohno pipeline",
+      );
+    }
     const path = await appendRequirementsNote(
       projectPath,
-      requiredValue(args, "--text"),
+      noteText,
       "owner-note",
     );
     process.stdout.write(`REQUIREMENTS: ${path}\n`);
@@ -741,6 +803,6 @@ async function main(): Promise<void> {
 
 main().catch((error: unknown) => {
   const message = error instanceof Error ? error.message : String(error);
-  process.stderr.write(`ohno: ${message}\n`);
+  process.stderr.write(`ohno: ${formatCliError(message)}\n`);
   process.exitCode = 1;
 });

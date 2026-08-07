@@ -20,7 +20,7 @@ import {
   type ReadModel,
   readModel,
 } from "./read-model.js";
-import { displayFieldByteLimits, displayTextIssue } from "./state.js";
+import { displayFieldByteLimits } from "./state.js";
 
 export const requirementsProjectionBegin =
   "<!-- ohno:requirements-projection-begin -->";
@@ -240,20 +240,26 @@ export async function appendRequirementsNote(
   text: string,
   source = "owner-note",
 ): Promise<string> {
-  const issue = displayTextIssue(text, displayFieldByteLimits.ownerNote);
-  if (issue === "LINE_BREAK") {
-    throw new Error("--text must be a single line");
-  }
-  if (issue === "TOO_LARGE") {
+  // Multiline Owner notes are allowed (field: agents hit --text single-line wall).
+  // Only enforce blank + byte budget; store multi-line as an indented block.
+  const trimmed = text.replace(/^\uFEFF/, "").trim();
+  if (trimmed === "") {
     throw new Error(
-      `--text exceeds ${displayFieldByteLimits.ownerNote} UTF-8 bytes `
-        + `(owner notes; use a research file for longer prose)`,
+      "--text cannot be blank"
+        + " | next: ohno requirements note --text \"…\" "
+        + "or ohno requirements note --file <path>",
     );
   }
-  const trimmed = text.trim();
-  if (trimmed === "") {
-    throw new Error("--text cannot be blank");
+  if (Buffer.byteLength(trimmed, "utf8") > displayFieldByteLimits.ownerNote) {
+    throw new Error(
+      `--text exceeds ${displayFieldByteLimits.ownerNote} UTF-8 bytes `
+        + `(owner notes; use a research file for longer prose)`
+        + " | next: ohno requirements note --file <path>",
+    );
   }
+  const textField = /[\r\n]/u.test(trimmed)
+    ? `|\n${trimmed.split(/\r?\n/u).map((line) => `  ${line}`).join("\n")}`
+    : trimmed;
 
   // Compute projection inputs outside the lock (no REQUIREMENTS I/O).
   const model = await readModel(projectPath);
@@ -275,7 +281,7 @@ export async function appendRequirementsNote(
       `### ${stamp}`,
       "",
       `- source: \`${source}\``,
-      `- text: ${trimmed}`,
+      `- text: ${textField}`,
       "",
     ].join("\n");
     // Owner CLI notes stay under Owner notes; harness events get a separate section.

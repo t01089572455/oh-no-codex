@@ -14,6 +14,7 @@ import { dirname, resolve } from "node:path";
 
 import {
   formatOwnerPromptRails,
+  formatOwnerPromptRailsStamp,
 } from "./prompt-rails.js";
 import {
   compareAndSwapStateAtomic,
@@ -732,14 +733,22 @@ export function formatHarnessRulesPrompt(): string {
   return formatOwnerPromptRails();
 }
 
+export type PipelineRailsMode = "none" | "stamp" | "full";
+
 /**
  * Exact next commands for Agent (and SessionStart/Stop injection).
  * This is the "internal autopilot script" surface.
+ *
+ * Rails policy (field-trial: full law every inject is spam):
+ * - hooks / bare `ohno` / Stop continue → default **stamp** (short)
+ * - explicit `ohno pipeline --full` → **full** law once
  */
 export function formatPipelineNext(
   state: ProjectState,
   nextAction = "NONE",
+  options: { rails?: PipelineRailsMode } = {},
 ): string {
+  const railsMode: PipelineRailsMode = options.rails ?? "stamp";
   const h = effectiveHarness(state);
   const need = requiredTruthReadPaths(state).join(",");
   const lines = [
@@ -795,7 +804,11 @@ export function formatPipelineNext(
     default:
       lines.push(`run: ohno pipeline`);
   }
-  lines.push("", formatHarnessRulesPrompt());
+  if (railsMode === "full") {
+    lines.push("", formatHarnessRulesPrompt());
+  } else if (railsMode === "stamp") {
+    lines.push("", formatOwnerPromptRailsStamp());
+  }
   return `${lines.join("\n")}\n`;
 }
 

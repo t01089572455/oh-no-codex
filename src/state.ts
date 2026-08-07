@@ -1037,6 +1037,63 @@ export async function readState(projectPath: string): Promise<ProjectState> {
   return parsed;
 }
 
+async function renameWithRetry(
+  from: string,
+  to: string,
+  attempts = 10,
+): Promise<void> {
+  let last: unknown;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      await rename(from, to);
+      return;
+    } catch (error) {
+      last = error;
+      const code = (error as NodeJS.ErrnoException).code;
+      // Windows can briefly hold the target or tmp during antivirus/indexers.
+      if (code !== "EPERM" && code !== "EACCES" && code !== "EBUSY") {
+        throw error;
+      }
+      await new Promise((resolveDelay) => {
+        setTimeout(resolveDelay, 15 * (attempt + 1));
+      });
+    }
+  }
+  throw last instanceof Error
+    ? last
+    : new Error(`cannot rename ${from} → ${to}`);
+}
+
+/** Best-effort cleanup of orphaned state write temps (Windows crashes, kills). */
+export async function cleanupStaleStateTemps(
+  projectPath: string,
+): Promise<void> {
+  const directory = stateDirectory(projectPath);
+  let names: string[] = [];
+  try {
+    const { readdir } = await import("node:fs/promises");
+    names = await readdir(directory);
+  } catch {
+    return;
+  }
+  const cutoff = Date.now() - 60_000;
+  for (const name of names) {
+    if (!/^state\.json\.\d+\.[0-9a-f-]+\.tmp$/iu.test(name)) {
+      continue;
+    }
+    const full = resolve(directory, name);
+    try {
+      const { stat } = await import("node:fs/promises");
+      const info = await stat(full);
+      if (info.mtimeMs < cutoff) {
+        await rm(full, { force: true });
+      }
+    } catch {
+      // ignore
+    }
+  }
+}
+
 export async function writeStateAtomic(
   projectPath: string,
   state: ProjectState,
@@ -1049,13 +1106,14 @@ export async function writeStateAtomic(
   );
   let handle: FileHandle | undefined;
   await mkdir(directory, { recursive: true });
+  await cleanupStaleStateTemps(projectPath).catch(() => undefined);
   try {
     handle = await open(temporaryPath, "wx", 0o600);
     await handle.writeFile(`${JSON.stringify(state, null, 2)}\n`, "utf8");
     await handle.sync();
     await handle.close();
     handle = undefined;
-    await rename(temporaryPath, currentPath);
+    await renameWithRetry(temporaryPath, currentPath);
   } finally {
     await handle?.close().catch(() => undefined);
     await rm(temporaryPath, { force: true }).catch(() => undefined);

@@ -563,10 +563,11 @@ test("UserPromptSubmit injects OHNO_PIPELINE and SessionStart names phase", asyn
   assert.match(ctx, /OHNO_PIPELINE/);
   assert.match(ctx, /phase:\s*DISCOVER/i);
   assert.match(ctx, /seal-requirements|phase advance/i);
-  // Full Owner prompt rails (lifecycle + 十八宗罪) ride with every pipeline inject.
-  assert.match(ctx, /OHNO_PROMPT_RAILS/);
-  assert.match(ctx, /force.?read|truth-read|READ Truth/i);
-  assert.match(ctx, /自证闭环|test theatre|zombie|越俎代庖/i);
+  // Default inject is SHORT stamp only — full ~8KB rails every turn is spam.
+  assert.match(ctx, /OHNO_PROMPT_RAILS_STAMP/);
+  assert.match(ctx, /force.?read|READ Truth|open Truth/i);
+  assert.doesNotMatch(ctx, /OHNO_PROMPT_RAILS — COMPLETE|Standing law every turn/);
+  assert.doesNotMatch(ctx, /越俎代庖|自证闭环/);
 });
 
 test("Stop continues on an exact marker with the wrong task id", async (t) => {

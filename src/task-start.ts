@@ -20,7 +20,9 @@ export async function startTask(
   if (args.length !== 0) {
     throw new Error(
       "ohno task start takes no arguments; caller overrides cannot replace "
-      + "the frozen plan contract",
+      + "the frozen plan contract"
+      + " | next: ohno task start"
+      + " | if no plan: ohno pipeline",
     );
   }
   const state = await readState(projectPath);

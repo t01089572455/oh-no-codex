@@ -7,7 +7,11 @@
  * Mode: PROMPT-ONLY — hooks inject this text; coding does not hard-deny tools.
  */
 
-/** Full law: inject on Owner turns, Stop, and `ohno pipeline`. */
+/**
+ * Full law (~8KB). Do **not** inject on every Stop / UserPromptSubmit —
+ * field trials showed that spam kills context and feels broken.
+ * Use: SessionStart rare refresh, or explicit `ohno pipeline --full`.
+ */
 export function formatOwnerPromptRails(): string {
   return [
     "╔════════════════════════════════════════════════════════════════╗",
@@ -162,14 +166,14 @@ export function formatOwnerPromptRails(): string {
   ].join("\n");
 }
 
-/** Short stamp for SessionStart / resume (≤4KiB budget). */
+/** Short stamp for hooks / Stop / resume (default — not the full law). */
 export function formatOwnerPromptRailsStamp(): string {
   return [
     "OHNO_PROMPT_RAILS_STAMP",
-    "mode: PROMPT_ONLY (hooks inject full law on Owner/Stop/pipeline)",
+    "mode: PROMPT_ONLY — short stamp only (full law is NOT re-pasted every turn)",
     "core: force READ Truth; latest Owner wins; verify-only done; anti-block",
     "flow: DISCOVER(PM)→DESIGN→PLAN→EXECUTE→RECOVER(A/B)→CHANGE re-walk",
-    "sins 1-18 + craft (research/OSS/frontend) active",
-    "when unsure: ohno pipeline → open Truth → smallest step → ohno verify",
+    "when unsure: open Truth → smallest step → ohno verify",
+    "full law once: ohno pipeline --full   (do not re-run every turn)",
   ].join("\n");
 }

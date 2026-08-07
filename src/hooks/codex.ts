@@ -10,7 +10,6 @@ import {
   truthReadSatisfiesRecover,
 } from "../harness.js";
 import {
-  formatOwnerPromptRails,
   formatOwnerPromptRailsStamp,
 } from "../prompt-rails.js";
 import { needsAcceptanceBasisMigration } from "../state.js";
@@ -586,10 +585,12 @@ function automaticContinuation(
     `next: ${model.next_action}`,
     `do: ${oneLineDo(mode, model)}`,
   ];
+  // Never paste the full ~8KB rails on every Stop — that spams the session.
+  // Short pipeline + stamp is enough; full law: `ohno pipeline --full`.
   if (pipelineBlock !== undefined && pipelineBlock.trim() !== "") {
     lines.push("", pipelineBlock.trimEnd());
   } else {
-    lines.push("", formatOwnerPromptRails());
+    lines.push("", formatOwnerPromptRailsStamp());
   }
   if (mode === "REPAIR" || mode === "VERIFY" || mode === "STUCK") {
     const hint = topTruthHint(model);
@@ -655,7 +656,9 @@ async function handleStop(
   const model = await readModel(projectPath);
   const failCount = state.last_verification?.consecutive_failures ?? 0;
   const harnessPhase = effectiveHarness(state).phase;
-  const pipelineBlock = formatPipelineNext(state, model.next_action);
+  const pipelineBlock = formatPipelineNext(state, model.next_action, {
+    rails: "stamp",
+  });
   const cont = (note?: string) =>
     automaticContinuation(model, note, failCount, pipelineBlock, harnessPhase);
 
@@ -828,7 +831,10 @@ export async function handleCodexHook(
     try {
       const state = await readState(projectPath);
       const model = await readModel(projectPath);
-      parts.push(formatPipelineNext(state, model.next_action).trimEnd());
+      parts.push(
+        formatPipelineNext(state, model.next_action, { rails: "stamp" })
+          .trimEnd(),
+      );
     } catch {
       // state missing: still return change note if any
     }
