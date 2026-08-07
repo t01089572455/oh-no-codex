@@ -55,7 +55,13 @@ function parseFlagValues(
       || value === undefined
       || values.has(flag)
     ) {
-      throw new Error("invalid or duplicate change command option");
+      throw new Error(
+        "invalid or duplicate change command option"
+          + " | next: ohno change begin --summary \"short reason\" "
+          + "[--concerns a,b]"
+          + " | then: ohno change diff"
+          + " | then: ohno change accept --change <id> --diff <sha>",
+      );
     }
     values.set(flag, value);
   }

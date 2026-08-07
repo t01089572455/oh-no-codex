@@ -3,6 +3,7 @@ import {
   loadStructuredAcceptanceBasis,
 } from "./acceptance-basis.js";
 import { assertMigrationNotRequired } from "./migration-guard.js";
+import { bindLatestOnTaskStart } from "./harness.js";
 import {
   compareAndSwapStateAtomic,
   contractDigestFor,
@@ -25,6 +26,8 @@ export async function startTask(
       + " | if no plan: ohno pipeline",
     );
   }
+  // Bind Latest Owner surface before activating a frozen task (radar field).
+  await bindLatestOnTaskStart(projectPath);
   const state = await readState(projectPath);
   assertMigrationNotRequired(state);
   if (state.active_task !== null) {

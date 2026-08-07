@@ -250,6 +250,43 @@ export function truthReadSatisfiesRecover(state: ProjectState): boolean {
   return true;
 }
 
+/** True when a fresh truth-read covers REQUIREMENTS (Latest surface). */
+export function truthReadCoversRequirements(state: ProjectState): boolean {
+  if (!truthReadIsFresh(state)) {
+    return false;
+  }
+  const receipt = effectiveHarness(state).truth_read;
+  if (receipt == null) {
+    return false;
+  }
+  const need = REQUIREMENTS_PATH.replaceAll("\\", "/");
+  return receipt.paths.some((path) => {
+    const p = path.replaceAll("\\", "/");
+    return p === need || p.endsWith(`/${need}`) || need.endsWith(`/${p}`);
+  });
+}
+
+/**
+ * Bind every task start to Owner Latest surface without ceremony.
+ * Field (radar): OWNER-INPUTS were large but execution ignored Latest.
+ * OPEN legacy harness: no-op.
+ */
+export async function bindLatestOnTaskStart(
+  projectPath: string,
+): Promise<string | null> {
+  const state = await readState(projectPath);
+  if (isOpenHarness(state)) {
+    return null;
+  }
+  if (truthReadCoversRequirements(state)) {
+    return null;
+  }
+  // Prefer full recover set when design is sealed; always include REQUIREMENTS.
+  const paths = requiredTruthReadPaths(state);
+  const out = await recordTruthRead(projectPath, paths, "A");
+  return out.trimEnd();
+}
+
 export function bashLooksLikeMutation(command: string): boolean {
   const cmd = command.trim();
   if (cmd === "") {
@@ -756,6 +793,18 @@ export function formatPipelineNext(
     `phase: ${h.phase}`,
     `plan_next: ${nextAction}`,
   ];
+  if (state.document_sync.status === "PENDING_REVIEW") {
+    lines.push(
+      "blocker: document sync PENDING_REVIEW (coding blocked until accept)",
+      "run: ohno change diff",
+      "run: ohno change accept --change <id> --diff <sha-from-diff>",
+      "rule: Latest Owner words win; do not freestyle product code",
+    );
+    if (railsMode === "full") {
+      lines.push("", formatHarnessRulesPrompt());
+    }
+    return `${lines.join("\n")}\n`;
+  }
   switch (h.phase) {
     case "DISCOVER":
     case "CHANGE":
@@ -786,6 +835,8 @@ export function formatPipelineNext(
     case "EXECUTE":
       lines.push(
         "role: implementer — only active scope; no freestyle",
+        "latest: open .ohno/REQUIREMENTS.md Latest before changing product direction",
+        "ask: never 请确认 for cases/design/tech — only secrets/devices/accounts",
         `run: work then ohno verify   (canonical next: ${nextAction})`,
       );
       break;

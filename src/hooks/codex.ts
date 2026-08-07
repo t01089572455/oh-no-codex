@@ -560,6 +560,10 @@ function automaticContinuation(
     `proof: ${model.proof_freshness}`,
     `next: ${model.next_action}`,
     `do: ${oneLineDo(mode, model)}`,
+    // Field (radar): Agent still spammed 请确认 — ban in short continue card.
+    "ask: ONLY secrets / physical devices / account-type / pure business unknowns",
+    "ask: NEVER 请确认/请选择/等你回复 for tech, case picks, design, or SOP",
+    "latest: re-open .ohno/REQUIREMENTS.md Latest before material decisions",
   ];
   // Continue card only: next action. No stamp/law dump (Owner: background).
   if (pipelineBlock !== undefined && pipelineBlock.trim() !== "") {
@@ -598,8 +602,7 @@ function automaticContinuation(
     );
   } else if (mode !== "DONE") {
     lines.push(
-      "auto-adjust under harness; ask Owner only for secrets/devices/business facts; "
-        + "only ohno verify proves done.",
+      "auto-adjust under harness; only ohno verify proves done",
     );
   }
   return continuation(lines.join("\n"));

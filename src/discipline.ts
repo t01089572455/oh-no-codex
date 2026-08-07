@@ -122,6 +122,38 @@ export function planLooksLikeCommitLicense(tasks: Array<{
   return false;
 }
 
+/**
+ * Field (x4/radar): expect claims real device / real cat / listen, but test is
+ * only local unit runners — mark LOCAL_PASS risk (not product done).
+ */
+export function localPassHonestyGap(
+  expectedBehavior: string,
+  testCommand: string,
+): string | null {
+  const expect = expectedBehavior.trim();
+  const test = testCommand.trim();
+  if (expect === "" || test === "") {
+    return null;
+  }
+  const claimsUserPath =
+    /真机|真猫|听感|人耳|观感|开发者工具|体验版|扫码|平板实测|微信.*预览|用户可见路径|真人|音色|口播/iu
+      .test(expect)
+    || /\b(real\s*device|real\s*cat|devtools|preview|listen|ear|voice)\b/iu
+      .test(expect);
+  const testIsLocalOnly =
+    /\b(node\s+--test|pytest|jest|vitest|mocha|cargo\s+test|go\s+test)\b/iu
+      .test(test)
+    && !/\b(devtools|miniprogram-ci|preview|playwright|puppeteer|adb|真机)\b/iu
+      .test(test);
+  if (claimsUserPath && testIsLocalOnly) {
+    return (
+      "LOCAL_PASS risk: expected_behavior claims device/real-user/listen path "
+      + "but test_command looks unit-local only — do not claim product done"
+    );
+  }
+  return null;
+}
+
 export function weakBlackboxSummary(testCommand: string): string | null {
   if (!looksLikeTrivialBlackbox(testCommand)) {
     return null;
@@ -290,6 +322,13 @@ export function planSoftWarnings(
     const weak = weakBlackboxSummary(task.test_command ?? "");
     if (weak !== null) {
       warnings.push(`WARN: task ${task.id}: ${weak}`);
+    }
+    const localGap = localPassHonestyGap(
+      task.expected_behavior ?? "",
+      task.test_command ?? "",
+    );
+    if (localGap !== null) {
+      warnings.push(`WARN: task ${task.id}: ${localGap}`);
     }
     if (options.skipDenominator !== true) {
       const shrink = denominatorShrinkSummary(task, external);

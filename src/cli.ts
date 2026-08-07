@@ -143,6 +143,17 @@ function formatCliError(message: string): string {
   if (/not initialized/iu.test(m)) {
     lines.push("hint: cd to the git repo root, then `ohno setup`");
   }
+  if (/invalid or duplicate change|document sync is pending|PENDING_REVIEW/iu.test(m)) {
+    lines.push(
+      "hint: ohno change diff → ohno change accept --change <id> --diff <sha>",
+    );
+  }
+  if (/replacement plan is required|not an Owner Truth target/iu.test(m)) {
+    lines.push(
+      "hint: put plan path on Truth targets, or pass --candidates "
+        + ".ohno/review-plan.json after registering it",
+    );
+  }
   if (!lines.some((line) => line.startsWith("hint:"))) {
     lines.push("hint: `ohno pipeline`");
   }

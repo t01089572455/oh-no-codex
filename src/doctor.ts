@@ -4,6 +4,7 @@ import { spawnSync } from "node:child_process";
 
 import {
   denominatorShrinkSummary,
+  localPassHonestyGap,
   looksLikeTrivialBlackbox,
   planLooksLikeCommitLicense,
   weakBlackboxSummary,
@@ -141,6 +142,17 @@ export async function runDoctor(projectPath: string): Promise<DoctorReport> {
               ? `${weak} — risk of test theatre (FT-02)`
               : "active test_command present",
           });
+          const localGap = localPassHonestyGap(
+            active.expected_behavior,
+            active.test_command,
+          );
+          if (localGap !== null) {
+            checks.push({
+              id: "local_pass_honesty",
+              status: "WARN",
+              detail: localGap,
+            });
+          }
           const planTask = state.ordered_tasks.find((t) => t.id === active.id);
           const shrink = denominatorShrinkSummary({
             id: active.id,
