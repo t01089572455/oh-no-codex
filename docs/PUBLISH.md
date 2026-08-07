@@ -131,5 +131,17 @@ In the same release line (or the immediate follow-up docs commit):
 | Step | Result |
 | --- | --- |
 | Cockpit UX | scroll panels, silent refresh, EN/ZH, wider MISSION, no right profile chip |
-| 
-pm publish | oh-no-codex@0.1.8 |
+| npm publish | oh-no-codex@0.1.8 |
+
+## 0.3.6 record (field-trial harness close-out)
+
+| Step | Result |
+| --- | --- |
+| Scope | PROMPT-FIRST hybrid: silent PreToolUse / short structure deny; Latest re-bind; anti-ask; Owner pause; LOCAL_PASS honesty |
+| Gate | `typecheck` + `build` + blackbox **158/158** + performance honesty tests; `npm pack --dry-run` |
+| Performance evidence | Task7/P06 remain **`HISTORICAL`** (not re-measured LIVE on this package subject) — not speed-release proof |
+| Release tip | `69f17d9` on `main` (pushed before publish) |
+| `npm publish` → npmjs.org | `oh-no-codex@0.3.6` (`latest`), account `fearless33124` |
+| Post-check | `npm view … version` = `0.3.6`; global install `oh-no-codex@0.3.6` |
+| Git tag | `v0.3.6` → same tip |
+| Explicit non-claim | No `V1_TRIAL_ACCEPTED`; no universal speed claim; three field sessions not re-run under 0.3.6 |
