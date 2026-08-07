@@ -608,22 +608,48 @@ function automaticContinuation(
   return continuation(lines.join("\n"));
 }
 
+/** Agent asked Owner for a non-secret decision — continue with hard anti-ask. */
+function looksLikeBannedOwnerAsk(text: string | undefined): boolean {
+  if (text === undefined || text.trim() === "") {
+    return false;
+  }
+  // Allow rare secret/device language without treating as banned product ask.
+  if (
+    /密钥|secret|API[_ ]?KEY|密码|token|设备|平板|真机|AppID|账号类型|登录/iu
+      .test(text)
+    && !/请确认主推|请确认案例|请选择方案|请确认设计|请确认.*skill/iu.test(text)
+  ) {
+    // Still ban if it is clearly a case/design confirm even with device words.
+    if (!/请确认|请选择|需要你确认|等你回复|是否保留/iu.test(text)) {
+      return false;
+    }
+  }
+  return /请确认|需要你确认|请选择|等你回复|回复「确认|确认主推|请你决定|要不要我/iu
+    .test(text);
+}
+
 async function handleStop(
   projectPath: string,
   input: HookInput,
 ): Promise<HookOutput> {
   const markers = completionMarkers(input.last_assistant_message);
   const inputMarkers = needsInputMarkers(input.last_assistant_message);
+  const bannedAsk = looksLikeBannedOwnerAsk(
+    typeof input.last_assistant_message === "string"
+      ? input.last_assistant_message
+      : undefined,
+  );
 
   let state;
   try {
     state = await readState(projectPath);
   } catch {
-    if (markers.length === 0 && inputMarkers.length === 0) {
+    if (markers.length === 0 && inputMarkers.length === 0 && !bannedAsk) {
       return {};
     }
     return continuation(
-      "Oh No state is unavailable; repair it before using a completion marker.",
+      "Oh No state is unavailable; repair .ohno/state.json in this cwd "
+        + "(git rev-parse --show-toplevel) then ohno doctor.",
     );
   }
 
@@ -637,6 +663,19 @@ async function handleStop(
   });
   const cont = (note?: string) =>
     automaticContinuation(model, note, failCount, pipelineBlock, harnessPhase);
+
+  // Field (radar): Agent stopped to 请确认 cases/design — force continue.
+  if (
+    bannedAsk
+    && markers.length === 0
+    && state.plan_revision !== null
+  ) {
+    return cont(
+      "ANTI_ASK: do not wait for Owner confirm on cases/design/tech/SOP — "
+        + "self-decide smallest path under Latest REQUIREMENTS, implement, "
+        + "ohno verify. Ask only secrets/devices/account-type.",
+    );
+  }
 
   // Non-EXECUTE phases: always inject pipeline (do not freestyle product work).
   if (
@@ -795,6 +834,10 @@ export async function handleCodexHook(
       input.prompt,
       logged.id,
     ).catch(() => undefined);
+    // Mid-task Latest re-bind: Owner spoke → REQUIREMENTS changed → refresh
+    // truth-read so verify cannot pass on obsolete Latest (radar field).
+    const { rebindLatestAfterOwnerPrompt } = await import("../harness.js");
+    await rebindLatestAfterOwnerPrompt(projectPath).catch(() => undefined);
     const parts: string[] = [];
     const autoChange = await maybeAutoDeclareChangeFromPrompt(
       projectPath,
@@ -810,6 +853,10 @@ export async function handleCodexHook(
       parts.push(
         formatPipelineNext(state, model.next_action, { rails: "none" })
           .trimEnd(),
+      );
+      parts.push(
+        "latest: REQUIREMENTS re-bound after this Owner message — "
+          + "follow Latest; do not keep obsolete case/SOP choices",
       );
     } catch {
       // state missing: still return change note if any

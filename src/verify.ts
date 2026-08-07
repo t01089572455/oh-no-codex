@@ -22,6 +22,7 @@ import {
   readGitHead,
 } from "./subject-digest.js";
 import {
+  ensureLatestBoundForVerify,
   enterRecoverAfterFail,
   markExecuteAfterPass,
 } from "./harness.js";
@@ -206,9 +207,16 @@ async function assertLastPassFresh(
 async function verifyTaskWithLock(
   projectPath: string,
 ): Promise<VerificationOutcome> {
-  const state = await readState(projectPath);
+  let state = await readState(projectPath);
   assertMigrationNotRequired(state);
-  const task = state.active_task;
+  let task = state.active_task;
+  if (task === null) {
+    return assertLastPassFresh(projectPath, state);
+  }
+  // Re-bind Latest if REQUIREMENTS moved (Owner prompt / projectors).
+  await ensureLatestBoundForVerify(projectPath);
+  state = await readState(projectPath);
+  task = state.active_task;
   if (task === null) {
     return assertLastPassFresh(projectPath, state);
   }

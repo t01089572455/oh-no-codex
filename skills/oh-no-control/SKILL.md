@@ -1,36 +1,47 @@
 ---
 name: oh-no-control
 description: >
-  Oh No COMPLETE prompt-only harness. Full OHNO_PROMPT_RAILS from Owner product
-  law. Force read Truth; anti-block; 十八宗罪. Hooks inject law; no hard coding
-  deny. ohno pipeline / ohno verify.
+  Oh No cooperative harness for Codex. Short OHNO_PIPELINE on Owner turns and
+  Stop. PreToolUse is silent (allow or short hard deny). Force Latest
+  REQUIREMENTS; anti-ask; ohno verify only proves done. Full law:
+  ohno pipeline --full.
 ---
 
-# Oh No — Prompt-Only Complete Harness
+# Oh No — Control (current product)
 
-**Owner:** `ohno setup` → talk only.  
-**You:** obey **OHNO_PROMPT_RAILS** injected every Owner message / Stop / pipeline.
+**Owner:** `ohno setup` once → talk.  
+**You:** follow **state + short pipeline + Latest REQUIREMENTS**, not freestyle.
 
-## Law (short)
+## How control actually works
 
-1. **Force READ Truth** before decide (not semantic judge).  
-2. **Lifecycle:** DISCOVER(PM) → DESIGN → PLAN → EXECUTE → RECOVER(A/B auto) → CHANGE.  
-3. Owner prompts = raw Truth; **latest wins**. Tech/arch you decide after clarify.  
-4. **Anti-block:** never ask Owner when docs answer — truth-read → A/B → fix → verify.  
-5. **Done** = only `ohno verify`.  
-6. **Sins 1–18** + research/OSS/frontend craft rails.  
-7. Human CLI almost cut; no param museum / plan caps.
+| Surface | Behavior |
+| --- | --- |
+| UserPromptSubmit | log Owner words → update Latest → re-bind truth-read → short `OHNO_PIPELINE` |
+| Stop | short continue card (`next` / `do` / anti-ask) — **not** full rails every time |
+| PreToolUse | **silent** allow, or **short hard deny** — never stamp/law spam |
+| Full law text | only `ohno pipeline --full` when you need the long rails |
+
+## Standing rules
+
+1. **Latest wins** — open `.ohno/REQUIREMENTS.md` Latest before material decisions.  
+2. **Lifecycle:** DISCOVER → DESIGN → PLAN → EXECUTE → RECOVER(A/B) → CHANGE.  
+3. **Anti-ask:** never 请确认/请选择 for tech, cases, design, SOP. Ask only secrets / devices / account-type / pure business unknowns.  
+4. **Done** = only `ohno verify` (Gate/skill green alone is not proof).  
+5. **LOCAL_PASS:** unit tests ≠ true device/cat/listen path — narrow expect or upgrade test, or Owner `--allow-local-pass`.  
+6. Prefer thin board; no parameter museum.
 
 ## Commands
 
 ```text
-ohno pipeline
+ohno pipeline              # short next
+ohno pipeline --full       # next + full OHNO_PROMPT_RAILS once
 ohno truth-read --paths .ohno/REQUIREMENTS.md,.ohno/DESIGN.md --mode A|B
+ohno task start
 ohno verify
 ohno
 ```
 
-## Full text location
+## Full law source
 
-Hooks inject from `src/prompt-rails.ts`.  
+`src/prompt-rails.ts` via `ohno pipeline --full`.  
 Catalog: `docs/superpowers/specs/2026-08-05-complete-prompt-harness-catalog.md`.

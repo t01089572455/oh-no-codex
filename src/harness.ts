@@ -278,13 +278,98 @@ export async function bindLatestOnTaskStart(
   if (isOpenHarness(state)) {
     return null;
   }
-  if (truthReadCoversRequirements(state)) {
+  if (
+    truthReadCoversRequirements(state)
+    && await truthReadContentMatches(projectPath, state)
+  ) {
     return null;
   }
   // Prefer full recover set when design is sealed; always include REQUIREMENTS.
   const paths = requiredTruthReadPaths(state);
   const out = await recordTruthRead(projectPath, paths, "A");
   return out.trimEnd();
+}
+
+/**
+ * Re-hash receipt paths; false when Latest/REQUIREMENTS changed since last read.
+ */
+export async function truthReadContentMatches(
+  projectPath: string,
+  state: ProjectState,
+): Promise<boolean> {
+  const receipt = effectiveHarness(state).truth_read;
+  if (receipt == null || receipt.paths.length === 0) {
+    return false;
+  }
+  const digests: string[] = [];
+  for (const relative of receipt.paths) {
+    const digest = await fileDigest(projectPath, relative);
+    if (digest === null) {
+      return false;
+    }
+    digests.push(`${relative.replaceAll("\\", "/")}=${digest}`);
+  }
+  const now = createHash("sha256").update(digests.join("\n")).digest("hex");
+  return now === receipt.paths_digest;
+}
+
+/**
+ * After every real Owner prompt: rewrite Latest (caller) then re-bind receipts
+ * so ACTIVE work cannot keep an obsolete REQUIREMENTS digest.
+ */
+export async function rebindLatestAfterOwnerPrompt(
+  projectPath: string,
+): Promise<string | null> {
+  const state = await readState(projectPath);
+  if (isOpenHarness(state)) {
+    return null;
+  }
+  const phase = effectiveHarness(state).phase;
+  if (
+    phase !== "EXECUTE"
+    && phase !== "RECOVER"
+    && phase !== "PLAN_READY"
+    && state.active_task === null
+  ) {
+    // DISCOVER/DESIGN still benefit from REQUIREMENTS bind when sealing soon.
+    if (phase !== "DISCOVER" && phase !== "CHANGE" && phase !== "DESIGN") {
+      return null;
+    }
+  }
+  const paths = requiredTruthReadPaths(state);
+  const mode =
+    phase === "RECOVER" && effectiveHarness(state).truth_read?.mode === "B"
+      ? "B" as const
+      : "A" as const;
+  const out = await recordTruthRead(projectPath, paths, mode);
+  return out.trimEnd();
+}
+
+/**
+ * Ensure Latest is bound before verify. Auto-rebinds when receipts are missing
+ * or REQUIREMENTS content moved (including projector rewrites after task start).
+ * Does not throw for OPEN harness.
+ */
+export async function ensureLatestBoundForVerify(
+  projectPath: string,
+): Promise<string | null> {
+  const state = await readState(projectPath);
+  if (isOpenHarness(state)) {
+    return null;
+  }
+  if (
+    truthReadCoversRequirements(state)
+    && await truthReadContentMatches(projectPath, state)
+  ) {
+    return null;
+  }
+  const paths = requiredTruthReadPaths(state);
+  const mode =
+    effectiveHarness(state).phase === "RECOVER"
+    && effectiveHarness(state).truth_read?.mode === "B"
+      ? "B" as const
+      : "A" as const;
+  return (await recordTruthRead(projectPath, paths, mode)).trimEnd();
 }
 
 export function bashLooksLikeMutation(command: string): boolean {

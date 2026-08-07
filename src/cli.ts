@@ -571,7 +571,10 @@ async function main(): Promise<void> {
 
   if (command === "plan" && subcommand === "accept") {
     const allowWeakPlan = args.includes("--allow-weak-plan");
-    const filtered = args.filter((a) => a !== "--allow-weak-plan");
+    const allowLocalPass = args.includes("--allow-local-pass");
+    const filtered = args.filter(
+      (a) => a !== "--allow-weak-plan" && a !== "--allow-local-pass",
+    );
     if (
       filtered.length === 4
       && filtered[0] === "--revision"
@@ -581,7 +584,7 @@ async function main(): Promise<void> {
         projectPath,
         requiredValue(filtered, "--revision"),
         requiredValue(filtered, "--diff"),
-        { allowWeakPlan },
+        { allowWeakPlan, allowLocalPass },
       );
       await appendRequirementsNote(
         projectPath,

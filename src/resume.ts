@@ -43,6 +43,9 @@ function boardLine(model: ReadModel, byteLimit: number): string {
 
 function honestyLines(model: ReadModel): string[] {
   const lines: string[] = [];
+  lines.push(
+    "PROOF: only `ohno verify` closes a task — Gate/skill/self-review is not proof",
+  );
   if (model.next_action === "PROJECT_COMPLETE") {
     lines.push(
       "PLAN_COMPLETE_NOTE: linear plan cursor finished "

@@ -26,16 +26,15 @@ export async function startTask(
       + " | if no plan: ohno pipeline",
     );
   }
-  // Bind Latest Owner surface before activating a frozen task (radar field).
-  await bindLatestOnTaskStart(projectPath);
-  const state = await readState(projectPath);
+  let state = await readState(projectPath);
   assertMigrationNotRequired(state);
   if (state.active_task !== null) {
     throw new Error(`active task ${state.active_task.id} already exists`);
   }
   if (state.document_sync.status === "PENDING_REVIEW") {
     throw new Error(
-      "document sync is pending; next action is SYNC_GOVERNING_DOCUMENTS",
+      "document sync is pending; next action is SYNC_GOVERNING_DOCUMENTS"
+        + " | next: ohno change diff → ohno change accept --change <id> --diff <sha>",
     );
   }
   if (state.plan_revision === null || state.plan_review === null) {
@@ -71,6 +70,16 @@ export async function startTask(
     throw new Error(
       `current task is OUTLINE; next action is FREEZE_TASK:${task.id}`,
     );
+  }
+
+  // Bind Latest only after start is allowed (do not mutate on refused starts).
+  await bindLatestOnTaskStart(projectPath);
+  state = await readState(projectPath);
+  if (state.active_task !== null) {
+    throw new Error(`active task ${state.active_task.id} already exists`);
+  }
+  if (state.plan_revision === null || state.ordered_tasks[state.cursor]?.id !== task.id) {
+    throw new Error("current state changed while binding Latest before task start");
   }
 
   const unsigned = {

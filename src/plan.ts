@@ -390,7 +390,7 @@ export async function acceptPlan(
   projectPath: string,
   revision: string,
   diffDigest: string,
-  options: { allowWeakPlan?: boolean } = {},
+  options: { allowWeakPlan?: boolean; allowLocalPass?: boolean } = {},
 ): Promise<string> {
   const state = await readState(projectPath);
   if (needsAcceptanceBasisMigration(state)) {
@@ -480,6 +480,7 @@ export async function acceptPlan(
 
   assertPlanDiscipline(source.proposal.ordered_tasks, {
     allowWeakPlan: options.allowWeakPlan === true,
+    allowLocalPass: options.allowLocalPass === true,
   });
   assertPlanAcceptAllowed(state);
 
@@ -527,8 +528,12 @@ export async function acceptPlan(
   const weakNote = options.allowWeakPlan
     ? "WEAK_PLAN_OVERRIDE: Owner passed --allow-weak-plan\n"
     : "";
+  const localNote = options.allowLocalPass
+    ? "LOCAL_PASS_OVERRIDE: Owner passed --allow-local-pass "
+      + "(unit/local proof only — not product done)\n"
+    : "";
   return (
-    `${weakNote}LOCAL_REVIEW_RECORDED: ${pending.plan_revision}\n`
+    `${weakNote}${localNote}LOCAL_REVIEW_RECORDED: ${pending.plan_revision}\n`
     + `ACCEPTANCE_SOURCE: ${pending.acceptance_source_path}\n`
     + `ACCEPTANCE_DIGEST: ${pending.acceptance_source_digest}\n`
     + (state.harness != null ? "PHASE: EXECUTE\n" : "")

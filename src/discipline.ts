@@ -368,7 +368,7 @@ export function assertPlanDiscipline(
     allowed_files?: string[];
     test_command?: string;
   }>,
-  options: { allowWeakPlan: boolean },
+  options: { allowWeakPlan: boolean; allowLocalPass?: boolean },
 ): void {
   // Soft handoff black boxes (echo+exit 3 / playbook deferral) hard-fail accept
   // so agents cannot freeze "go read the docs" as the only public proof.
@@ -384,6 +384,30 @@ export function assertPlanDiscipline(
       weak.map((entry) => entry.message).join("\n")
         + "\nRefuse accept: bind an executable black box, or pass "
         + "--allow-weak-plan after Owner review.",
+    );
+  }
+  if (options.allowLocalPass === true) {
+    return;
+  }
+  const localGaps: string[] = [];
+  for (const task of tasks) {
+    if (task.status !== "FROZEN") {
+      continue;
+    }
+    const gap = localPassHonestyGap(
+      task.expected_behavior ?? "",
+      task.test_command ?? "",
+    );
+    if (gap !== null) {
+      localGaps.push(`task ${task.id}: ${gap}`);
+    }
+  }
+  if (localGaps.length > 0) {
+    throw new Error(
+      localGaps.join("\n")
+        + "\nRefuse accept: narrow expected_behavior to what test_command proves, "
+        + "upgrade test_command to the user path, or pass --allow-local-pass "
+        + "after Owner review (LOCAL_PASS only — not product done).",
     );
   }
 }
