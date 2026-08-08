@@ -11,6 +11,10 @@ import { fileURLToPath } from "node:url";
 
 import { findProjectRoot } from "./hooks/project-root.js";
 import {
+  deriveHookActivation,
+  type HookActivation,
+} from "./hooks-runtime.js";
+import {
   installOhNoSkill,
   serializeSkillInstallResult,
 } from "./skill-install.js";
@@ -23,10 +27,27 @@ type IntegrationFileStatus =
 export interface HooksIntegrationStatus {
   classification: "COOPERATIVE_GUARDRAIL";
   codex_config: IntegrationFileStatus;
+  /**
+   * Desktop may still require manual /hooks review. Oh No never claims the
+   * Codex feature flag is proven.
+   */
   codex_feature: "UNVERIFIED";
-  codex_trust: "UNVERIFIED";
+  /**
+   * Trust/activation honesty for this project path (not a security proof).
+   * REVIEW_REQUIRED = installed but no ~/.codex hooks.state records.
+   * RUNTIME_UNVERIFIED = Desktop records exist, but this package has not
+   * observed a live hook fire for the current hooks.json digest.
+   * ACTIVE = live fire observed for current digest after review records.
+   */
+  codex_trust: HookActivation;
+  activation: HookActivation;
+  trusted_records: number;
+  config_digest: string | null;
+  runtime_observed_events: string[];
+  bootstrap_required: boolean;
   git_hook: IntegrationFileStatus;
   coverage: "SUPPORTED_LOCAL_PATHS_ONLY";
+  how_to_activate: string;
 }
 
 interface InstallFile {
@@ -263,12 +284,31 @@ export async function hooksIntegrationStatus(
     throw new Error("hook integration status is unavailable");
   }
 
+  const derived = await deriveHookActivation(projectPath, codex.status);
+  const how =
+    derived.activation === "MISSING"
+      ? "run: ohno setup   # write .codex/hooks.json"
+      : derived.activation === "REVIEW_REQUIRED"
+      || derived.activation === "CHANGED_REVIEW_REQUIRED"
+      ? "open Codex Desktop /hooks for this project; approve all 5 Oh No hooks "
+        + "(they run outside the sandbox)"
+      : derived.activation === "RUNTIME_UNVERIFIED"
+      ? "hooks trusted in config — open a NEW Codex session so SessionStart fires "
+        + "(then ohno hooks status should show ACTIVE)"
+      : "ACTIVE: live hook fire observed for current hooks.json digest";
+
   return {
     classification: "COOPERATIVE_GUARDRAIL",
     codex_config: codex.status,
     codex_feature: "UNVERIFIED",
-    codex_trust: "UNVERIFIED",
+    codex_trust: derived.activation,
+    activation: derived.activation,
+    trusted_records: derived.trusted_records,
+    config_digest: derived.config_digest,
+    runtime_observed_events: Object.keys(derived.runtime.last_events).sort(),
+    bootstrap_required: derived.runtime.bootstrap_required,
     git_hook: git.status,
     coverage: "SUPPORTED_LOCAL_PATHS_ONLY",
+    how_to_activate: how,
   };
 }

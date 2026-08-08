@@ -874,9 +874,16 @@ export function formatPipelineNext(
   const railsMode: PipelineRailsMode = options.rails ?? "none";
   const h = effectiveHarness(state);
   const need = requiredTruthReadPaths(state).join(",");
+  // Field (radar Desktop): IDLE + no active task must not inject "implementer"
+  // EXECUTE freestyle while phase leftover is still EXECUTE.
+  const idleBoard =
+    state.status === "IDLE"
+    && state.active_task === null
+    && (h.phase === "EXECUTE" || h.phase === "OPEN");
+  const displayPhase = idleBoard ? "IDLE" : h.phase;
   const lines = [
     "OHNO_PIPELINE",
-    `phase: ${h.phase}`,
+    `phase: ${displayPhase}`,
     `plan_next: ${nextAction}`,
   ];
   if (state.document_sync.status === "PENDING_REVIEW") {
@@ -888,6 +895,26 @@ export function formatPipelineNext(
     );
     if (railsMode === "full") {
       lines.push("", formatHarnessRulesPrompt());
+    }
+    return `${lines.join("\n")}\n`;
+  }
+  if (idleBoard) {
+    lines.push(
+      "role: idle / consult — board has no active task",
+      "forbid: freestyle product implementation as if a frozen task is open",
+      "latest: open .ohno/REQUIREMENTS.md Latest before changing direction",
+      "if Owner starts new product work: requirements note + phase declare-change "
+        + "→ design/plan freeze (do not silently revive completed slices)",
+      nextAction.startsWith("REOPEN_TASK:")
+        || nextAction.startsWith("START_TASK:")
+        ? `if continuing the plan board: ${nextAction} then ohno task start/reopen + verify`
+        : `locator: ${nextAction}`,
+      "PROJECT_COMPLETE / STALE proof is not a license to invent new scope",
+    );
+    if (railsMode === "full") {
+      lines.push("", formatHarnessRulesPrompt());
+    } else if (railsMode === "stamp") {
+      lines.push("", formatOwnerPromptRailsStamp());
     }
     return `${lines.join("\n")}\n`;
   }

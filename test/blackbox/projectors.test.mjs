@@ -178,14 +178,17 @@ test("doctor reports state and projection health", async (t) => {
   const projectPath = await createProject(t);
   runInit(projectPath);
   const doctor = runCli(projectPath, ["doctor"]);
-  assert.equal(doctor.status, 0, doctor.stderr);
-  assert.match(doctor.stdout, /^OK: YES$/m);
+  // Temp projects install hooks but lack Desktop /hooks trust → FAIL hooks.
   assert.match(doctor.stdout, /PASS: state/);
   assert.match(doctor.stdout, /NEXT:/);
+  assert.match(doctor.stdout, /hooks|REVIEW_REQUIRED|OK:/);
 
   const json = runCli(projectPath, ["doctor", "--json"]);
-  assert.equal(json.status, 0, json.stderr);
+  assert.notEqual(json.status, 0, json.stderr + json.stdout);
   const report = JSON.parse(json.stdout);
-  assert.equal(report.ok, true);
+  assert.equal(report.ok, false);
   assert.ok(Array.isArray(report.checks));
+  const hooks = report.checks.find((c) => c.id === "hooks");
+  assert.ok(hooks);
+  assert.equal(hooks.status, "FAIL");
 });

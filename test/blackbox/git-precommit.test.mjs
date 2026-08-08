@@ -261,27 +261,28 @@ test("install writes cross-platform templates, stays untrusted, and is idempoten
 
   const status = runCli(projectPath, ["hooks", "status", "--json"]);
   assert.equal(status.status, 0, status.stderr);
-  assert.deepEqual(JSON.parse(status.stdout), {
-    classification: "COOPERATIVE_GUARDRAIL",
-    codex_config: "INSTALLED_TEMPLATE",
-    codex_feature: "UNVERIFIED",
-    codex_trust: "UNVERIFIED",
-    git_hook: "INSTALLED_TEMPLATE",
-    coverage: "SUPPORTED_LOCAL_PATHS_ONLY",
-  });
+  const installed = JSON.parse(status.stdout);
+  assert.equal(installed.classification, "COOPERATIVE_GUARDRAIL");
+  assert.equal(installed.codex_config, "INSTALLED_TEMPLATE");
+  assert.equal(installed.codex_feature, "UNVERIFIED");
+  // Template installed but Desktop /hooks not reviewed for this temp project.
+  assert.equal(installed.codex_trust, "REVIEW_REQUIRED");
+  assert.equal(installed.activation, "REVIEW_REQUIRED");
+  assert.equal(installed.git_hook, "INSTALLED_TEMPLATE");
+  assert.equal(installed.coverage, "SUPPORTED_LOCAL_PATHS_ONLY");
 
   await writeFile(codexPath, `${codexBytes.toString("utf8")} `, "utf8");
   await writeFile(gitPath, `${gitBytes.toString("utf8")}# changed\n`, "utf8");
   const modifiedStatus = runCli(projectPath, ["hooks", "status", "--json"]);
   assert.equal(modifiedStatus.status, 0, modifiedStatus.stderr);
-  assert.deepEqual(JSON.parse(modifiedStatus.stdout), {
-    classification: "COOPERATIVE_GUARDRAIL",
-    codex_config: "MODIFIED_OR_CUSTOM",
-    codex_feature: "UNVERIFIED",
-    codex_trust: "UNVERIFIED",
-    git_hook: "MODIFIED_OR_CUSTOM",
-    coverage: "SUPPORTED_LOCAL_PATHS_ONLY",
-  });
+  const modified = JSON.parse(modifiedStatus.stdout);
+  assert.equal(modified.classification, "COOPERATIVE_GUARDRAIL");
+  assert.equal(modified.codex_config, "MODIFIED_OR_CUSTOM");
+  assert.equal(modified.codex_feature, "UNVERIFIED");
+  assert.equal(modified.codex_trust, "REVIEW_REQUIRED");
+  assert.equal(modified.activation, "REVIEW_REQUIRED");
+  assert.equal(modified.git_hook, "MODIFIED_OR_CUSTOM");
+  assert.equal(modified.coverage, "SUPPORTED_LOCAL_PATHS_ONLY");
 });
 
 test("install refuses an existing Codex hook without partial writes", async (t) => {

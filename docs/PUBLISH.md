@@ -133,6 +133,15 @@ In the same release line (or the immediate follow-up docs commit):
 | Cockpit UX | scroll panels, silent refresh, EN/ZH, wider MISSION, no right profile chip |
 | npm publish | oh-no-codex@0.1.8 |
 
+## 0.3.7 record (Correction 6 — Desktop hooks honesty)
+
+| Step | Result |
+| --- | --- |
+| Source | Codex session `019fe153` field audit of three cases + Desktop `019fe10a` |
+| Scope | hooks activation honesty; host-system capture filter; IDLE pipeline; mid-session bootstrap |
+| Gate | blackbox suite after hook/doctor test updates |
+| Explicit non-claim | Still requires Owner `npm publish` for registry; still cooperative not OS security |
+
 ## 0.3.6 record (field-trial harness close-out)
 
 | Step | Result |

@@ -151,6 +151,13 @@ function stopHook(projectPath, lastAssistantMessage) {
   }));
 }
 
+/** Normal Desktop path: SessionStart before Stop auto-continue. */
+function sessionStartHook(projectPath, sessionId = "test-session") {
+  return parseHookResult(runHook(projectPath, "SessionStart", {
+    session_id: sessionId,
+  }));
+}
+
 /** Background PreToolUse: short hard deny, no session lecture. */
 function assertDenied(output, expectedReason) {
   assert.equal(
@@ -499,6 +506,7 @@ test("Stop automatically continues accepted active work without requiring a comp
   const projectPath = await createProject(t);
   await initialize(projectPath);
   await startTask(projectPath);
+  sessionStartHook(projectPath);
 
   for (const message of [
     "Work is still in progress.",
@@ -515,6 +523,7 @@ test("Stop automatically continues accepted active work without requiring a comp
 test("Stop injects pipeline during DISCOVER when no plan is accepted", async (t) => {
   const projectPath = await createProject(t);
   await initialize(projectPath);
+  sessionStartHook(projectPath);
   // Fixture init auto-seals; force DISCOVER to assert pipeline injection.
   const statePath = resolve(projectPath, ".ohno", "state.json");
   const state = JSON.parse(await readFile(statePath, "utf8"));
@@ -568,6 +577,7 @@ test("Owner pause stops auto-continue and injects OWNER_PAUSE", async (t) => {
   const projectPath = await createProject(t);
   await initialize(projectPath);
   await startTask(projectPath);
+  sessionStartHook(projectPath, "pause-sess");
 
   const submit = parseHookResult(runHook(projectPath, "UserPromptSubmit", {
     session_id: "pause-sess",
@@ -597,6 +607,7 @@ test("Stop anti-ask continues when agent waits for design/case confirm", async (
   const projectPath = await createProject(t);
   await initialize(projectPath);
   await startTask(projectPath);
+  sessionStartHook(projectPath);
 
   const output = stopHook(
     projectPath,
@@ -611,6 +622,7 @@ test("Stop continues on an exact marker with the wrong task id", async (t) => {
   const projectPath = await createProject(t);
   await initialize(projectPath);
   await startTask(projectPath);
+  sessionStartHook(projectPath);
 
   const output = stopHook(projectPath, "OHNO_COMPLETE:another-task");
   assert.equal(output.decision, "block");
@@ -621,6 +633,7 @@ test("Stop continues on the current task marker until proof is fresh", async (t)
   const projectPath = await createProject(t);
   await initialize(projectPath);
   await startTask(projectPath);
+  sessionStartHook(projectPath);
 
   const output = stopHook(projectPath, `OHNO_COMPLETE:${taskId}`);
   assert.equal(output.decision, "block");
@@ -631,6 +644,7 @@ test("Stop accepts the just-completed task marker only with fresh proof", async 
   const projectPath = await createProject(t);
   await initialize(projectPath);
   await completeFreshTask(projectPath);
+  sessionStartHook(projectPath);
 
   assert.deepEqual(
     stopHook(projectPath, `Evidence: OHNO_COMPLETE:${taskId}`),
@@ -651,6 +665,7 @@ test("Stop continues when the just-completed task proof became stale", async (t)
   const projectPath = await createProject(t);
   await initialize(projectPath);
   await completeFreshTask(projectPath);
+  sessionStartHook(projectPath);
   await writeFile(resolve(projectPath, "subject.txt"), "stale\n", "utf8");
 
   const output = stopHook(projectPath, `OHNO_COMPLETE:${taskId}`);
@@ -664,14 +679,86 @@ test("hook status is always honest about cooperative coverage and trust", async 
   assert.equal(result.status, 0, result.stderr);
   assert.equal(result.stderr, "");
   const status = JSON.parse(result.stdout);
-  assert.deepEqual(status, {
-    classification: "COOPERATIVE_GUARDRAIL",
-    codex_config: "MISSING",
-    codex_feature: "UNVERIFIED",
-    codex_trust: "UNVERIFIED",
-    git_hook: "MISSING",
-    coverage: "SUPPORTED_LOCAL_PATHS_ONLY",
-  });
+  assert.equal(status.classification, "COOPERATIVE_GUARDRAIL");
+  assert.equal(status.codex_config, "MISSING");
+  assert.equal(status.codex_feature, "UNVERIFIED");
+  assert.equal(status.codex_trust, "MISSING");
+  assert.equal(status.activation, "MISSING");
+  assert.equal(status.git_hook, "MISSING");
+  assert.equal(status.coverage, "SUPPORTED_LOCAL_PATHS_ONLY");
+  assert.match(status.how_to_activate ?? "", /ohno setup|hooks\.json/i);
+});
+
+test("installed hooks without Desktop trust are REVIEW_REQUIRED not doctor PASS", async (t) => {
+  const projectPath = await createProject(t);
+  await initialize(projectPath);
+  assert.equal(runCli(projectPath, ["install"]).status, 0);
+  // install writes hooks templates; no trusted_hash in this temp home.
+  const status = JSON.parse(
+    runCli(projectPath, ["hooks", "status", "--json"]).stdout,
+  );
+  assert.equal(status.codex_config, "INSTALLED_TEMPLATE");
+  assert.equal(status.activation, "REVIEW_REQUIRED");
+  assert.equal(status.codex_trust, "REVIEW_REQUIRED");
+  assert.match(status.how_to_activate ?? "", /\/hooks|approve|trust/i);
+
+  const doctor = runCli(projectPath, ["doctor", "--json"]);
+  // FAIL hooks → doctor exits non-zero (not false-green).
+  assert.notEqual(doctor.status, 0, doctor.stderr + doctor.stdout);
+  const report = JSON.parse(doctor.stdout);
+  const hooksCheck = report.checks.find((c) => c.id === "hooks");
+  assert.ok(hooksCheck);
+  assert.equal(hooksCheck.status, "FAIL");
+  assert.match(hooksCheck.detail, /REVIEW_REQUIRED/);
+  assert.equal(report.ok, false);
+});
+
+test("UserPromptSubmit ignores host personalized-suggestion noise", async (t) => {
+  const projectPath = await createProject(t);
+  await initialize(projectPath);
+  const noise =
+    "Generate 0 to 3 hyperpersonalized suggestions for the user based on "
+    + "recent conversation context.";
+  const out = parseHookResult(runHook(projectPath, "UserPromptSubmit", {
+    session_id: "noise-sess",
+    turn_id: "noise-turn",
+    prompt: noise,
+  }));
+  assert.deepEqual(out, {});
+  // Must not land in OWNER-INPUTS.
+  try {
+    const raw = await readFile(
+      resolve(projectPath, ".ohno", "OWNER-INPUTS.md"),
+      "utf8",
+    );
+    assert.doesNotMatch(raw, /hyperpersonalized suggestions/i);
+  } catch (error) {
+    assert.equal(error.code, "ENOENT");
+  }
+});
+
+test("Stop mid-session without SessionStart requires bootstrap not old REOPEN", async (t) => {
+  const projectPath = await createProject(t);
+  await initialize(projectPath);
+  await startTask(projectPath);
+  // Fire Stop without SessionStart runtime evidence → bootstrap_required.
+  const out = stopHook(projectPath, "Work is still in progress.");
+  assert.equal(out.decision, "block");
+  assert.match(out.reason, /HOOK_BOOTSTRAP_REQUIRED|OWNER_HISTORY_INCOMPLETE/i);
+  assert.match(out.reason, /mode: BOOTSTRAP/);
+  assert.match(out.reason, /^next: REBIND_LATEST_AND_CONFIRM_GOAL$/m);
+  assert.doesNotMatch(out.reason, /^next: (CONTINUE_ACTIVE|REOPEN_TASK)/m);
+});
+
+test("SessionStart clears bootstrap and Stop may auto-continue again", async (t) => {
+  const projectPath = await createProject(t);
+  await initialize(projectPath);
+  await startTask(projectPath);
+  sessionStartHook(projectPath, "boot-sess");
+  const out = stopHook(projectPath, "Work is still in progress.");
+  assert.equal(out.decision, "block");
+  assert.match(out.reason, /^OHNO_AUTO_CONTINUE/m);
+  assert.match(out.reason, /OHNO_CONTINUE/);
 });
 
 test("CLI help names cooperative coverage without authority claims", async (t) => {

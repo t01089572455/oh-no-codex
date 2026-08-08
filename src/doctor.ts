@@ -363,14 +363,29 @@ export async function runDoctor(projectPath: string): Promise<DoctorReport> {
 
   try {
     const hooks = await hooksIntegrationStatus(projectPath);
-    const codexOk = hooks.codex_config !== "MISSING";
-    const gitOk = hooks.git_hook !== "MISSING";
+    const activation = hooks.activation;
+    // Field (Desktop): file presence alone is not healthy — unreviewed hooks
+    // never fire. FAIL when review is still required so doctor is not false-green.
+    let status: "PASS" | "WARN" | "FAIL" = "WARN";
+    if (activation === "ACTIVE") {
+      status = "PASS";
+    } else if (
+      activation === "REVIEW_REQUIRED"
+      || activation === "CHANGED_REVIEW_REQUIRED"
+      || activation === "MISSING"
+    ) {
+      status = "FAIL";
+    } else if (activation === "RUNTIME_UNVERIFIED") {
+      status = "WARN";
+    }
     checks.push({
       id: "hooks",
-      status: codexOk || gitOk ? "PASS" : "WARN",
+      status,
       detail:
-        `codex=${hooks.codex_config} git=${hooks.git_hook} `
-        + `classification=${hooks.classification}`,
+        `activation=${activation} codex=${hooks.codex_config} `
+        + `git=${hooks.git_hook} trusted_records=${hooks.trusted_records} `
+        + `events=[${hooks.runtime_observed_events.join(",") || "none"}] `
+        + `— ${hooks.how_to_activate}`,
     });
   } catch (error) {
     checks.push({

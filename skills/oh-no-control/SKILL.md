@@ -20,6 +20,7 @@ description: >
 | Stop | short continue card; **no** continue under Owner pause; anti-ask if 请确认 design/case |
 | PreToolUse | **silent** allow, or **short hard deny** (phase/scope/sync/recover) — never law spam |
 | Full law text | only `ohno pipeline --full` when you need the long rails |
+| Desktop trust | Codex `/hooks` must approve all 5 hooks; `ohno doctor` is **not** green until review + live fire (`ACTIVE`) |
 
 ## Standing rules
 

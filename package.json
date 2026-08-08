@@ -1,6 +1,6 @@
 {
   "name": "oh-no-codex",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "description": "A cooperative anti-drift harness for Codex vibe coding",
   "license": "MIT",
   "type": "module",

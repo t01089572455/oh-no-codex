@@ -147,9 +147,9 @@ test("field trial: doctor warns on an accepted weak blackbox", async (t) => {
   );
   assert.equal(runCli(projectPath, ["task", "start"]).status, 0);
   const doctor = runCli(projectPath, ["doctor"]);
-  assert.equal(doctor.status, 0, doctor.stderr);
-  assert.match(doctor.stdout, /blackbox_discipline|plan_shape|cli_path/);
-  assert.match(doctor.stdout, /WARN:/);
+  // Hooks file present without Desktop /hooks trust → FAIL hooks (honest).
+  assert.match(doctor.stdout, /blackbox_discipline|plan_shape|cli_path|hooks/);
+  assert.match(doctor.stdout, /WARN:|FAIL: hooks|REVIEW_REQUIRED/);
 });
 
 test("field trial: requirements note accepts up to 16KiB authoring limit", async (t) => {

@@ -16,6 +16,11 @@ import type { ReadModel } from "../read-model.js";
 import { serializeResumeWithWorktrees } from "../resume.js";
 import { readState } from "../state.js";
 import { isAbsolute } from "node:path";
+import {
+  looksLikeHostSystemCapture,
+  recordHookRuntimeEvent,
+  readHooksRuntime,
+} from "../hooks-runtime.js";
 import { findProjectRoot } from "./project-root.js";
 import {
   pathsOutsideGlobs,
@@ -722,6 +727,27 @@ async function handleStop(
     return {};
   }
 
+  // Field (Desktop mid-enable): hooks trusted after chat already ran without
+  // SessionStart — do NOT auto REOPEN/CONTINUE old board work. Force re-bind.
+  if (markers.length === 0 && inputMarkers.length === 0) {
+    const runtime = await readHooksRuntime(projectPath);
+    if (runtime.bootstrap_required) {
+      return {
+        decision: "block",
+        reason: [
+          "OHNO_AUTO_CONTINUE",
+          "HOOK_BOOTSTRAP_REQUIRED / OWNER_HISTORY_INCOMPLETE: hooks became "
+            + "active mid-session.",
+          "mode: BOOTSTRAP",
+          "next: REBIND_LATEST_AND_CONFIRM_GOAL",
+          "do: re-read Latest REQUIREMENTS + current Owner chat; do NOT reopen "
+            + "old REOPEN_TASK/CONTINUE_ACTIVE until the active goal is confirmed",
+          "prefer: new Codex session after /hooks trust so SessionStart runs",
+        ].join("\n"),
+      };
+    }
+  }
+
   // Field (radar): Agent stopped to 请确认 cases/design — force continue.
   if (
     bannedAsk
@@ -851,7 +877,10 @@ export async function handleCodexHook(
   input: HookInput,
 ): Promise<HookOutput> {
   const projectPath = findProjectRoot(input.cwd);
+  const sessionId =
+    typeof input.session_id === "string" ? input.session_id : undefined;
   if (input.hook_event_name === "SessionStart") {
+    await recordHookRuntimeEvent(projectPath, "SessionStart", sessionId);
     return {
       hookSpecificOutput: {
         hookEventName: "SessionStart",
@@ -860,6 +889,7 @@ export async function handleCodexHook(
     };
   }
   if (input.hook_event_name === "PostCompact") {
+    await recordHookRuntimeEvent(projectPath, "PostCompact", sessionId);
     return {
       systemMessage: await capsule(projectPath),
     };
@@ -878,6 +908,21 @@ export async function handleCodexHook(
     if (input.prompt.startsWith(`${automaticContinuationPrefix}\n`)) {
       return {};
     }
+    // Desktop host noise (personalized suggestions, etc.) must not become
+    // Owner authority / Latest / change triggers (field radar Desktop).
+    if (looksLikeHostSystemCapture(input.prompt)) {
+      await recordHookRuntimeEvent(
+        projectPath,
+        "UserPromptSubmit",
+        input.session_id,
+      );
+      return {};
+    }
+    await recordHookRuntimeEvent(
+      projectPath,
+      "UserPromptSubmit",
+      input.session_id,
+    );
     const { appendOwnerInput } = await import("../owner-inputs.js");
     const {
       projectLatestOwnerWords,
@@ -942,9 +987,11 @@ export async function handleCodexHook(
     };
   }
   if (input.hook_event_name === "PreToolUse") {
+    await recordHookRuntimeEvent(projectPath, "PreToolUse", sessionId);
     return handlePreToolUse(projectPath, input);
   }
   if (input.hook_event_name === "Stop") {
+    await recordHookRuntimeEvent(projectPath, "Stop", sessionId);
     return handleStop(projectPath, input);
   }
   throw new Error(`unsupported hook event ${input.hook_event_name}`);
