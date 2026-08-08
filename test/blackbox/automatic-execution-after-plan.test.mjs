@@ -329,9 +329,9 @@ test("an accepted plan automatically continues through start, failure, stale pro
     ],
   });
 
-  // SessionStart first — otherwise Stop treats mid-session hook enable as bootstrap.
+  // SessionStart first (same session_id as stop helper) — else bootstrap mode.
   parseHookResult(runHook(projectPath, "SessionStart", {
-    session_id: "auto-sess",
+    session_id: "session-auto-plan",
   }));
 
   assertAutomatic(stop(projectPath, "The plan is ready."), "START_TASK:auto-1", "NONE");

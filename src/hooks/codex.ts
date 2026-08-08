@@ -17,9 +17,12 @@ import { serializeResumeWithWorktrees } from "../resume.js";
 import { readState } from "../state.js";
 import { isAbsolute } from "node:path";
 import {
+  clearPendingLatestRebind,
   looksLikeHostSystemCapture,
   recordHookRuntimeEvent,
   readHooksRuntime,
+  sessionBootstrapRequired,
+  sessionPendingLatestRebind,
 } from "../hooks-runtime.js";
 import { findProjectRoot } from "./project-root.js";
 import {
@@ -168,10 +171,53 @@ function displayPaths(paths: ScopedPath[]): string {
   ).join(", ");
 }
 
+async function ensureLatestRebindAfterOwner(
+  projectPath: string,
+  sessionId?: string,
+): Promise<string | null> {
+  const runtime = await readHooksRuntime(projectPath);
+  if (!sessionPendingLatestRebind(runtime, sessionId)) {
+    return null;
+  }
+  const { rebindLatestAfterOwnerPrompt } = await import("../harness.js");
+  await rebindLatestAfterOwnerPrompt(projectPath).catch(() => undefined);
+  await clearPendingLatestRebind(projectPath, sessionId);
+  try {
+    const state = await readState(projectPath);
+    const model = await readModel(projectPath);
+    return (
+      "LATEST_REBIND: Owner spoke since last tool mutation — follow "
+      + ".ohno/REQUIREMENTS.md Latest; do not keep obsolete plan choices\n"
+      + formatPipelineNext(state, model.next_action, { rails: "none" }).trimEnd()
+    );
+  } catch {
+    return (
+      "LATEST_REBIND: Owner spoke since last tool mutation — open "
+      + ".ohno/REQUIREMENTS.md Latest before mutating"
+    );
+  }
+}
+
+function allowWithOptionalContext(context: string | null): HookOutput {
+  if (context == null || context.trim() === "") {
+    return allowQuietly();
+  }
+  return {
+    hookSpecificOutput: {
+      hookEventName: "PreToolUse",
+      additionalContext: context.slice(0, 2_000),
+    },
+  };
+}
+
 async function handlePreToolUse(
   projectPath: string,
   input: HookInput,
 ): Promise<HookOutput> {
+  const sessionId =
+    typeof input.session_id === "string" ? input.session_id : undefined;
+  const rebindNote = await ensureLatestRebindAfterOwner(projectPath, sessionId);
+
   const rawTargets = applyPatchTargets(input);
   if (rawTargets === null) {
     if (input.tool_name === "Bash" || input.tool_name === "Shell") {
@@ -205,7 +251,7 @@ async function handlePreToolUse(
           );
         }
       }
-      return allowQuietly();
+      return allowWithOptionalContext(rebindNote);
     }
     if (
       input.tool_name === "apply_patch"
@@ -214,7 +260,7 @@ async function handlePreToolUse(
     ) {
       return silentDeny("unsafe or unparseable apply_patch target");
     }
-    return allowQuietly();
+    return allowWithOptionalContext(rebindNote);
   }
 
   const targets = rawTargets.map((target) =>
@@ -237,7 +283,7 @@ async function handlePreToolUse(
       || !isOhnoPlanMaintenancePath(relativePath)
     );
     if (outsidePlan.length === 0) {
-      return allowQuietly();
+      return allowWithOptionalContext(rebindNote);
     }
     return silentDeny(
       "MIGRATE_ACCEPTANCE_BASIS first — only .ohno maintenance writes allowed; "
@@ -253,7 +299,7 @@ async function handlePreToolUse(
       || !requiredPaths.includes(relativePath)
     );
     if (outsideRequired.length === 0) {
-      return allowQuietly();
+      return allowWithOptionalContext(rebindNote);
     }
     return silentDeny(
       "document sync pending — only required Truth paths; "
@@ -287,7 +333,7 @@ async function handlePreToolUse(
         || !isPrepareAllowedPath(relativePath, allowed)
       );
       if (outside.length === 0) {
-        return allowQuietly();
+        return allowWithOptionalContext(rebindNote);
       }
       return silentDeny(
         `PREPARE (${next}): only Truth/design/.ohno plan files; `
@@ -341,7 +387,7 @@ async function handlePreToolUse(
       `outside task scope: ${displayPaths(outside)}`,
     );
   }
-  return allowQuietly();
+  return allowWithOptionalContext(rebindNote);
 }
 
 /** Next actions where agents prepare Truth/plan without an ACTIVE task. */
@@ -727,17 +773,19 @@ async function handleStop(
     return {};
   }
 
-  // Field (Desktop mid-enable): hooks trusted after chat already ran without
-  // SessionStart — do NOT auto REOPEN/CONTINUE old board work. Force re-bind.
+  // Field (Desktop mid-enable): per-session SessionStart missing — do NOT
+  // auto REOPEN/CONTINUE old board work. Force re-bind (Correction 6R).
   if (markers.length === 0 && inputMarkers.length === 0) {
     const runtime = await readHooksRuntime(projectPath);
-    if (runtime.bootstrap_required) {
+    const sid =
+      typeof input.session_id === "string" ? input.session_id : undefined;
+    if (sessionBootstrapRequired(runtime, sid)) {
       return {
         decision: "block",
         reason: [
           "OHNO_AUTO_CONTINUE",
           "HOOK_BOOTSTRAP_REQUIRED / OWNER_HISTORY_INCOMPLETE: hooks became "
-            + "active mid-session.",
+            + "active mid-session (this session had no SessionStart).",
           "mode: BOOTSTRAP",
           "next: REBIND_LATEST_AND_CONFIRM_GOAL",
           "do: re-read Latest REQUIREMENTS + current Owner chat; do NOT reopen "
@@ -915,6 +963,7 @@ export async function handleCodexHook(
         projectPath,
         "UserPromptSubmit",
         input.session_id,
+        { ownerInput: false },
       );
       return {};
     }
@@ -922,6 +971,7 @@ export async function handleCodexHook(
       projectPath,
       "UserPromptSubmit",
       input.session_id,
+      { ownerInput: true },
     );
     const { appendOwnerInput } = await import("../owner-inputs.js");
     const {

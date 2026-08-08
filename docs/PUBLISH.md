@@ -133,6 +133,15 @@ In the same release line (or the immediate follow-up docs commit):
 | Cockpit UX | scroll panels, silent refresh, EN/ZH, wider MISSION, no right profile chip |
 | npm publish | oh-no-codex@0.1.8 |
 
+## 0.3.8 record (Correction 6R — harden 0.3.7)
+
+| Step | Result |
+| --- | --- |
+| Source | Codex session `019fe153` review of `5e79609` (false ACTIVE, concurrent runtime corruption, overbroad filter) |
+| Scope | locked+atomic hooks-runtime; ACTIVE needs 5/5 trust + SessionStart; per-session bootstrap; precise host filter; PreToolUse Latest rebind after Owner |
+| Gate | blackbox suite including concurrent writers + 1/5 trust + quote-not-filtered + steering rebind |
+| Explicit non-claim | Not published until Owner authorizes; not aesthetic QA |
+
 ## 0.3.7 record (Correction 6 — Desktop hooks honesty)
 
 | Step | Result |
@@ -141,6 +150,7 @@ In the same release line (or the immediate follow-up docs commit):
 | Scope | hooks activation honesty; host-system capture filter; IDLE pipeline; mid-session bootstrap |
 | Gate | blackbox suite after hook/doctor test updates |
 | Explicit non-claim | Still requires Owner `npm publish` for registry; still cooperative not OS security |
+| Follow-up | Superseded for release by **0.3.8** (6R) |
 
 ## 0.3.6 record (field-trial harness close-out)
 

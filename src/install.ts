@@ -12,6 +12,8 @@ import { fileURLToPath } from "node:url";
 import { findProjectRoot } from "./hooks/project-root.js";
 import {
   deriveHookActivation,
+  REQUIRED_TRUSTED_HOOK_RECORDS,
+  sessionBootstrapRequired,
   type HookActivation,
 } from "./hooks-runtime.js";
 import {
@@ -290,12 +292,13 @@ export async function hooksIntegrationStatus(
       ? "run: ohno setup   # write .codex/hooks.json"
       : derived.activation === "REVIEW_REQUIRED"
       || derived.activation === "CHANGED_REVIEW_REQUIRED"
-      ? "open Codex Desktop /hooks for this project; approve all 5 Oh No hooks "
-        + "(they run outside the sandbox)"
+      ? `open Codex Desktop /hooks; approve all ${REQUIRED_TRUSTED_HOOK_RECORDS} `
+        + `Oh No hooks (trusted_records=${derived.trusted_records}/`
+        + `${REQUIRED_TRUSTED_HOOK_RECORDS}; outside sandbox)`
       : derived.activation === "RUNTIME_UNVERIFIED"
-      ? "hooks trusted in config — open a NEW Codex session so SessionStart fires "
-        + "(then ohno hooks status should show ACTIVE)"
-      : "ACTIVE: live hook fire observed for current hooks.json digest";
+      ? "all 5 hooks trusted in config — open a NEW Codex session so "
+        + "SessionStart fires (then ohno hooks status → ACTIVE)"
+      : "ACTIVE: 5/5 trusted + SessionStart observed for current hooks.json digest";
 
   return {
     classification: "COOPERATIVE_GUARDRAIL",
@@ -306,7 +309,7 @@ export async function hooksIntegrationStatus(
     trusted_records: derived.trusted_records,
     config_digest: derived.config_digest,
     runtime_observed_events: Object.keys(derived.runtime.last_events).sort(),
-    bootstrap_required: derived.runtime.bootstrap_required,
+    bootstrap_required: sessionBootstrapRequired(derived.runtime),
     git_hook: git.status,
     coverage: "SUPPORTED_LOCAL_PATHS_ONLY",
     how_to_activate: how,

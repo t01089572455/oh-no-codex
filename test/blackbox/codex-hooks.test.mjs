@@ -143,8 +143,9 @@ function preToolUse(
   }, executionPath));
 }
 
-function stopHook(projectPath, lastAssistantMessage) {
+function stopHook(projectPath, lastAssistantMessage, sessionId = "test-session") {
   return parseHookResult(runHook(projectPath, "Stop", {
+    session_id: sessionId,
     turn_id: "turn-1",
     stop_hook_active: false,
     last_assistant_message: lastAssistantMessage,
@@ -737,6 +738,123 @@ test("UserPromptSubmit ignores host personalized-suggestion noise", async (t) =>
   }
 });
 
+test("Owner quoting hyperpersonalized phrase is still recorded (6R filter)", async (t) => {
+  const projectPath = await createProject(t);
+  await initialize(projectPath);
+  const quote =
+    "Do not use the host phrase Generate 0 to 3 hyperpersonalized suggestions "
+    + "as a logo idea; keep brand simple.";
+  const out = parseHookResult(runHook(projectPath, "UserPromptSubmit", {
+    session_id: "quote-sess",
+    turn_id: "quote-turn",
+    prompt: quote,
+  }));
+  assert.match(
+    out.hookSpecificOutput?.additionalContext ?? "",
+    /OHNO_PIPELINE|latest:/i,
+  );
+  const raw = await readFile(
+    resolve(projectPath, ".ohno", "OWNER-INPUTS.md"),
+    "utf8",
+  );
+  assert.match(raw, /keep brand simple/);
+});
+
+test("1 of 5 trusted hook records is still REVIEW_REQUIRED (6R)", async (t) => {
+  const projectPath = await createProject(t);
+  await initialize(projectPath);
+  assert.equal(runCli(projectPath, ["install"]).status, 0);
+  const fakeHome = await createProject(t);
+  // Match path form used by hooksConfigPath (absolute resolved).
+  const hooksPath = resolve(projectPath, ".codex", "hooks.json");
+  const confDir = resolve(fakeHome, ".codex");
+  await mkdir(confDir, { recursive: true });
+  // Only one of five Desktop trust keys (both slash forms).
+  const keyWin = hooksPath;
+  const keyPosix = hooksPath.replaceAll("\\", "/");
+  await writeFile(
+    resolve(confDir, "config.toml"),
+    [
+      "[hooks.state]",
+      "",
+      `[hooks.state.'${keyWin}:pre_tool_use:0:0']`,
+      'trusted_hash = "sha256:deadbeef"',
+      "",
+      `[hooks.state.'${keyPosix}:session_start:0:0']`,
+      'trusted_hash = "sha256:cafebabe"',
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+  const statusRaw = runCli(projectPath, ["hooks", "status", "--json"], {
+    env: { ...process.env, OHNO_CODEX_HOME: fakeHome },
+  });
+  assert.equal(statusRaw.status, 0, statusRaw.stderr + statusRaw.stdout);
+  const status = JSON.parse(statusRaw.stdout);
+  assert.equal(status.activation, "REVIEW_REQUIRED");
+  assert.ok(
+    status.trusted_records >= 1 && status.trusted_records < 5,
+    `trusted_records=${status.trusted_records}`,
+  );
+});
+
+test("hooks-runtime concurrent writers leave valid JSON (6R)", async (t) => {
+  const projectPath = await createProject(t);
+  await initialize(projectPath);
+  assert.equal(runCli(projectPath, ["install"]).status, 0);
+  const { recordHookRuntimeEvent, readHooksRuntime } = await import(
+    "../../dist/hooks-runtime.js"
+  );
+  const events = [
+    "SessionStart",
+    "UserPromptSubmit",
+    "PreToolUse",
+    "Stop",
+    "PostCompact",
+  ];
+  await Promise.all(
+    events.map((ev, i) =>
+      recordHookRuntimeEvent(projectPath, ev, `sess-concurrent-${i % 2}`)
+    ),
+  );
+  const runtime = await readHooksRuntime(projectPath);
+  assert.equal(runtime.schema_version, 2);
+  assert.ok(runtime.config_digest);
+  // File must parse and retain at least one event.
+  assert.ok(Object.keys(runtime.last_events).length >= 1);
+});
+
+test("PreToolUse rebinds Latest after Owner prompt (6R steering)", async (t) => {
+  const projectPath = await createProject(t);
+  await initialize(projectPath);
+  await startTask(projectPath);
+  sessionStartHook(projectPath, "steer-sess");
+  parseHookResult(runHook(projectPath, "UserPromptSubmit", {
+    session_id: "steer-sess",
+    turn_id: "steer-1",
+    prompt: "不要做以前的旧计划了，先做头像",
+  }));
+  const withSess = parseHookResult(runHook(projectPath, "PreToolUse", {
+    session_id: "steer-sess",
+    turn_id: "turn-m",
+    tool_name: "apply_patch",
+    tool_use_id: "t1",
+    tool_input: {
+      command: [
+        "*** Begin Patch",
+        "*** Add File: src/note2.ts",
+        "+export const n = 2;",
+        "*** End Patch",
+      ].join("\n"),
+    },
+  }));
+  const ctx =
+    withSess.hookSpecificOutput?.additionalContext
+    ?? withSess.additionalContext
+    ?? JSON.stringify(withSess);
+  assert.match(String(ctx), /LATEST_REBIND|Latest|REQUIREMENTS/i);
+});
+
 test("Stop mid-session without SessionStart requires bootstrap not old REOPEN", async (t) => {
   const projectPath = await createProject(t);
   await initialize(projectPath);
@@ -755,7 +873,7 @@ test("SessionStart clears bootstrap and Stop may auto-continue again", async (t)
   await initialize(projectPath);
   await startTask(projectPath);
   sessionStartHook(projectPath, "boot-sess");
-  const out = stopHook(projectPath, "Work is still in progress.");
+  const out = stopHook(projectPath, "Work is still in progress.", "boot-sess");
   assert.equal(out.decision, "block");
   assert.match(out.reason, /^OHNO_AUTO_CONTINUE/m);
   assert.match(out.reason, /OHNO_CONTINUE/);
