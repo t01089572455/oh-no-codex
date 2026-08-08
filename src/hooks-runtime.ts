@@ -1,11 +1,13 @@
 /**
- * Non-authority runtime evidence that Codex hooks actually fired.
- * Not sole product authority (that remains .ohno/state.json) — doctor/status
- * use this only to avoid "file installed" false-green. Writes are locked +
- * atomic rename (Correction 6R).
+ * Cooperative Desktop hook activation evidence (Correction 6R.1).
+ *
+ * Not sole product authority: task/plan/proof remain only in `.ohno/state.json`.
+ * This file only answers “did Codex Desktop actually fire our hooks for the
+ * current hooks.json digest?” for doctor/status and soft mutation guards.
+ * Corrupt or digest-mismatched evidence fails closed (never ACTIVE).
  */
 import { createHash, randomUUID } from "node:crypto";
-import { mkdir, readFile, realpath, rename, writeFile } from "node:fs/promises";
+import { open, mkdir, readFile, realpath, rename, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { homedir } from "node:os";
 
@@ -21,7 +23,6 @@ export type HookEventName =
   | "PreToolUse"
   | "Stop";
 
-/** Five cooperative hooks installed by ohno setup templates. */
 export const REQUIRED_HOOK_EVENTS: readonly HookEventName[] = [
   "SessionStart",
   "PostCompact",
@@ -30,27 +31,24 @@ export const REQUIRED_HOOK_EVENTS: readonly HookEventName[] = [
   "Stop",
 ] as const;
 
-/** Desktop must trust each of the five template hooks. */
 export const REQUIRED_TRUSTED_HOOK_RECORDS = REQUIRED_HOOK_EVENTS.length;
 
 export interface SessionHookEvidence {
+  /** Events recorded while config_digest matched the live hooks.json. */
   last_events: Partial<Record<HookEventName, string>>;
-  /** Owner UserPromptSubmit seen; PreToolUse must re-bind Latest once. */
   pending_latest_rebind: boolean;
-  /** Mid-session enable: Stop/PreTool before SessionStart in this session. */
   bootstrap_required: boolean;
 }
 
 export interface HooksRuntimeEvidence {
   schema_version: 2;
-  /** sha256 of project .codex/hooks.json when evidence was last written. */
   config_digest: string | null;
-  /** Aggregate last-seen (any session) for doctor display. */
   last_events: Partial<Record<HookEventName, string>>;
   last_session_id: string | null;
-  /** Per-session isolation (mid-enable / latest rebind). */
   sessions: Record<string, SessionHookEvidence>;
   updated_at: string | null;
+  /** True when the on-disk file was unreadable/corrupt (fail-closed). */
+  corrupt?: boolean;
 }
 
 export type HookActivation =
@@ -66,13 +64,14 @@ const emptySession = (): SessionHookEvidence => ({
   bootstrap_required: false,
 });
 
-const emptyEvidence = (): HooksRuntimeEvidence => ({
+export const emptyEvidence = (): HooksRuntimeEvidence => ({
   schema_version: 2,
   config_digest: null,
   last_events: {},
   last_session_id: null,
   sessions: {},
   updated_at: null,
+  corrupt: false,
 });
 
 export function hooksRuntimePath(projectPath: string): string {
@@ -100,10 +99,9 @@ export async function digestHooksConfig(
 
 function normalizeEvidence(raw: unknown): HooksRuntimeEvidence {
   if (raw == null || typeof raw !== "object" || Array.isArray(raw)) {
-    return emptyEvidence();
+    return { ...emptyEvidence(), corrupt: true };
   }
   const o = raw as Record<string, unknown>;
-  // v1 → v2 migration (best-effort).
   if (o.schema_version === 1) {
     const lastEvents =
       (o.last_events as Partial<Record<HookEventName, string>>) ?? {};
@@ -125,7 +123,11 @@ function normalizeEvidence(raw: unknown): HooksRuntimeEvidence {
         },
       },
       updated_at: typeof o.updated_at === "string" ? o.updated_at : null,
+      corrupt: false,
     };
+  }
+  if (o.schema_version !== 2) {
+    return { ...emptyEvidence(), corrupt: true };
   }
   const sessionsIn =
     o.sessions != null && typeof o.sessions === "object" && !Array.isArray(o.sessions)
@@ -149,6 +151,7 @@ function normalizeEvidence(raw: unknown): HooksRuntimeEvidence {
       typeof o.last_session_id === "string" ? o.last_session_id : null,
     sessions,
     updated_at: typeof o.updated_at === "string" ? o.updated_at : null,
+    corrupt: false,
   };
 }
 
@@ -157,9 +160,16 @@ export async function readHooksRuntime(
 ): Promise<HooksRuntimeEvidence> {
   try {
     const raw = await readFile(hooksRuntimePath(projectPath), "utf8");
-    return normalizeEvidence(JSON.parse(raw));
-  } catch {
-    return emptyEvidence();
+    try {
+      return normalizeEvidence(JSON.parse(raw));
+    } catch {
+      return { ...emptyEvidence(), corrupt: true };
+    }
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return emptyEvidence();
+    }
+    return { ...emptyEvidence(), corrupt: true };
   }
 }
 
@@ -172,12 +182,19 @@ async function writeHooksRuntimeAtomic(
   await mkdir(dir, { recursive: true });
   const tmp = resolve(dir, `hooks-runtime.${process.pid}.${randomUUID()}.tmp`);
   const body = `${JSON.stringify(evidence, null, 2)}\n`;
-  await writeFile(tmp, body, "utf8");
+  const handle = await open(tmp, "w", 0o600);
+  try {
+    await handle.writeFile(body, "utf8");
+    await handle.sync();
+  } finally {
+    await handle.close();
+  }
   await rename(tmp, path);
 }
 
 /**
- * Record that a project hook actually ran. Locked + atomic. Best-effort.
+ * Record that a project hook actually ran. Locked + atomic + fsync.
+ * On hooks.json digest change, wipes prior evidence (no stale ACTIVE).
  */
 export async function recordHookRuntimeEvent(
   projectPath: string,
@@ -190,7 +207,19 @@ export async function recordHookRuntimeEvent(
   try {
     token = await acquirePidTokenLock(lockPath, { deadlineMs: 5_000 });
     const digest = await digestHooksConfig(projectPath);
-    const prev = await readHooksRuntime(projectPath);
+    let prev = await readHooksRuntime(projectPath);
+    // Digest change or corrupt file: start clean under the new config.
+    if (
+      prev.corrupt === true
+      || (
+        prev.config_digest != null
+        && digest != null
+        && prev.config_digest !== digest
+      )
+    ) {
+      prev = emptyEvidence();
+    }
+
     const now = new Date().toISOString();
     const sid =
       typeof sessionId === "string" && sessionId.trim() !== ""
@@ -208,15 +237,27 @@ export async function recordHookRuntimeEvent(
 
     if (event === "SessionStart") {
       session.bootstrap_required = false;
-    } else if (
-      (event === "Stop" || event === "PreToolUse")
-      && prevSession.last_events.SessionStart == null
-    ) {
-      // This session never saw SessionStart → mid-session enable.
-      session.bootstrap_required = true;
+    } else if (prevSession.last_events.SessionStart == null) {
+      // Mid-session enable only after Owner/Stop activity without SessionStart.
+      // First PreToolUse alone on a fresh session is NOT bootstrap (tests + CLI).
+      if (event === "Stop") {
+        session.bootstrap_required = true;
+      } else if (
+        event === "UserPromptSubmit"
+        && options.ownerInput !== false
+      ) {
+        session.bootstrap_required = true;
+      } else if (
+        event === "PreToolUse"
+        && (
+          prevSession.last_events.UserPromptSubmit != null
+          || prevSession.last_events.Stop != null
+        )
+      ) {
+        session.bootstrap_required = true;
+      }
     }
 
-    // Only real Owner UserPromptSubmit requires Latest rebind on next mutation.
     if (event === "UserPromptSubmit" && options.ownerInput !== false) {
       session.pending_latest_rebind = true;
     }
@@ -234,18 +275,17 @@ export async function recordHookRuntimeEvent(
         [sid]: session,
       },
       updated_at: now,
+      corrupt: false,
     };
-    // Cap session map growth (keep newest ~32).
     const ids = Object.keys(next.sessions);
     if (ids.length > 32) {
-      const drop = ids.slice(0, ids.length - 32);
-      for (const id of drop) {
+      for (const id of ids.slice(0, ids.length - 32)) {
         delete next.sessions[id];
       }
     }
     await writeHooksRuntimeAtomic(projectPath, next);
   } catch {
-    // cooperative: never break the Codex turn
+    // cooperative
   } finally {
     if (token != null) {
       await releasePidTokenLock(lockPath, token).catch(() => undefined);
@@ -262,6 +302,9 @@ export async function clearPendingLatestRebind(
   try {
     token = await acquirePidTokenLock(lockPath, { deadlineMs: 5_000 });
     const prev = await readHooksRuntime(projectPath);
+    if (prev.corrupt === true) {
+      return;
+    }
     const sid =
       typeof sessionId === "string" && sessionId.trim() !== ""
         ? sessionId.trim()
@@ -291,10 +334,12 @@ export function sessionBootstrapRequired(
   runtime: HooksRuntimeEvidence,
   sessionId?: string,
 ): boolean {
+  if (runtime.corrupt === true) {
+    return true;
+  }
   if (typeof sessionId === "string" && sessionId.trim() !== "") {
     return runtime.sessions[sessionId.trim()]?.bootstrap_required === true;
   }
-  // Unknown session: any open bootstrap, or never SessionStart aggregate.
   if (Object.values(runtime.sessions).some((s) => s.bootstrap_required)) {
     return true;
   }
@@ -308,6 +353,9 @@ export function sessionPendingLatestRebind(
   runtime: HooksRuntimeEvidence,
   sessionId?: string,
 ): boolean {
+  if (runtime.corrupt === true) {
+    return false;
+  }
   if (typeof sessionId === "string" && sessionId.trim() !== "") {
     return runtime.sessions[sessionId.trim()]?.pending_latest_rebind === true;
   }
@@ -319,12 +367,6 @@ export function sessionPendingLatestRebind(
   return false;
 }
 
-/**
- * Count trusted_hash records in ~/.codex/config.toml for this project's
- * hooks.json. Keys look like:
- * [hooks.state.'D:\proj\.codex\hooks.json:pre_tool_use:0:0']
- */
-/** Override with OHNO_CODEX_HOME in tests. */
 export function resolveCodexHome(home?: string): string {
   if (home != null && home.trim() !== "") {
     return home;
@@ -339,70 +381,72 @@ function normalizeFsPath(path: string): string {
   return path.replaceAll("/", "\\").replaceAll(/\\+/gu, "\\").toLowerCase();
 }
 
-async function pathAliases(hooksPath: string): Promise<string[]> {
-  const out = new Set<string>([
-    hooksPath,
-    hooksPath.replaceAll("/", "\\"),
-    hooksPath.replaceAll("\\", "/"),
-  ]);
-  try {
-    const real = await realpath(hooksPath);
-    out.add(real);
-    out.add(real.replaceAll("/", "\\"));
-    out.add(real.replaceAll("\\", "/"));
-  } catch {
-    // ignore
+async function sameHooksFile(a: string, b: string): Promise<boolean> {
+  if (normalizeFsPath(a) === normalizeFsPath(b)) {
+    return true;
   }
-  return [...out];
+  try {
+    return normalizeFsPath(await realpath(a))
+      === normalizeFsPath(await realpath(b));
+  } catch {
+    return false;
+  }
 }
 
+/**
+ * Count distinct trusted hook *kinds* for this project's hooks.json path.
+ * Exact path match only (after realpath normalize) — no suffix fuzzy match.
+ */
 export async function countCodexTrustedHookRecords(
   projectPath: string,
   home = resolveCodexHome(),
 ): Promise<number> {
   const hooksPath = hooksConfigPath(projectPath);
-  const aliases = await pathAliases(hooksPath);
-  const aliasNorm = new Set(aliases.map(normalizeFsPath));
   try {
     const raw = await readFile(resolve(home, ".codex", "config.toml"), "utf8");
-    const seen = new Set<string>();
-    for (const line of raw.split(/\r?\n/u)) {
+    const verified = new Set<string>();
+    const lines = raw.split(/\r?\n/u);
+    for (let i = 0; i < lines.length; i += 1) {
+      const line = lines[i] ?? "";
       if (!line.includes("[hooks.state.")) {
         continue;
       }
-      // [hooks.state.'D:\proj\.codex\hooks.json:pre_tool_use:0:0']
       const key =
         /\[hooks\.state\.'((?:\\'|[^'])+)'\]/u.exec(line)?.[1]
         ?? /\[hooks\.state\."((?:\\"|[^"])+)"\]/u.exec(line)?.[1];
       if (key == null) {
         continue;
       }
-      const pathPart = key.replace(
-        /:(session_start|post_compact|user_prompt_submit|pre_tool_use|stop):\d+:\d+$/iu,
-        "",
-      );
-      if (!aliasNorm.has(normalizeFsPath(pathPart))) {
-        // Short 8.3 vs long path fallback: same .codex\hooks.json suffix + parent name
-        const hit = aliases.some((a) =>
-          normalizeFsPath(pathPart).endsWith(
-            normalizeFsPath(a).split("\\").slice(-3).join("\\"),
-          )
-        );
-        if (!hit) {
-          continue;
+      const kindMatch =
+        /:(session_start|post_compact|user_prompt_submit|pre_tool_use|stop):(\d+):(\d+)$/iu
+          .exec(key);
+      if (kindMatch == null || kindMatch.index === undefined) {
+        continue;
+      }
+      const kindName = kindMatch[1];
+      if (kindName == null) {
+        continue;
+      }
+      const pathPart = key.slice(0, kindMatch.index);
+      if (!(await sameHooksFile(pathPart, hooksPath))) {
+        continue;
+      }
+      let hasHash = false;
+      for (let j = i + 1; j < Math.min(i + 8, lines.length); j += 1) {
+        const next = lines[j] ?? "";
+        if (next.includes("[hooks.state.")) {
+          break;
+        }
+        if (/^\s*trusted_hash\s*=/u.test(next)) {
+          hasHash = true;
+          break;
         }
       }
-      const kind =
-        /:(session_start|post_compact|user_prompt_submit|pre_tool_use|stop):/iu
-          .exec(key)?.[1]
-          ?.toLowerCase();
-      if (kind != null) {
-        seen.add(kind);
-      } else {
-        seen.add(key);
+      if (hasHash) {
+        verified.add(kindName.toLowerCase());
       }
     }
-    return seen.size;
+    return verified.size;
   } catch {
     return 0;
   }
@@ -430,7 +474,15 @@ export async function deriveHookActivation(
     };
   }
 
-  // Full five-hook Desktop review required (not 1/5 → ACTIVE).
+  if (runtime.corrupt === true) {
+    return {
+      activation: "RUNTIME_UNVERIFIED",
+      trusted_records: trusted,
+      runtime,
+      config_digest: configDigest,
+    };
+  }
+
   if (trusted < REQUIRED_TRUSTED_HOOK_RECORDS) {
     return {
       activation: "REVIEW_REQUIRED",
@@ -440,10 +492,9 @@ export async function deriveHookActivation(
     };
   }
 
-  const sawRuntime = Object.keys(runtime.last_events).length > 0;
+  // Evidence from a different hooks.json digest cannot promote ACTIVE.
   if (
-    sawRuntime
-    && runtime.config_digest != null
+    runtime.config_digest != null
     && runtime.config_digest !== configDigest
   ) {
     return {
@@ -454,11 +505,10 @@ export async function deriveHookActivation(
     };
   }
 
-  // ACTIVE only when current digest matches and SessionStart observed
-  // (proves a live cooperative session, not a single stray Stop).
+  // ACTIVE only: 5/5 trust + evidence under *this* digest + SessionStart.
   const sawSessionStart =
-    runtime.last_events.SessionStart != null
-    && runtime.config_digest === configDigest;
+    runtime.config_digest === configDigest
+    && runtime.last_events.SessionStart != null;
   if (!sawSessionStart) {
     return {
       activation: "RUNTIME_UNVERIFIED",
@@ -477,15 +527,22 @@ export async function deriveHookActivation(
 }
 
 /**
- * Codex Desktop host noise only — exact host patterns.
- * Do NOT match user messages that merely quote the phrase.
+ * Host-only captures. Prefer exact Desktop shapes; do not drop Owner quotes.
  */
 export function looksLikeHostSystemCapture(prompt: string): boolean {
   const t = prompt.trim();
   if (t === "") {
     return false;
   }
-  // Exact / near-exact host automation (not a user wrapping the phrase).
+  // Real Desktop personalized-suggestion payloads often start with # Overview.
+  if (
+    /^#\s*Overview\b/iu.test(t)
+    && /hyperpersonalized|personalized suggestions/iu.test(t)
+    && t.length < 8_000
+    && !/##\s*My request/iu.test(t)
+  ) {
+    return true;
+  }
   if (
     /^Generate 0 to 3 hyperpersonalized suggestions\b/iu.test(t)
     && t.length < 2_000
@@ -496,7 +553,6 @@ export function looksLikeHostSystemCapture(prompt: string): boolean {
   if (/^<codex[_-]system[\s>]/iu.test(t)) {
     return true;
   }
-  // Ambient UI block alone (no embedded user request section).
   if (
     /^<in-app-browser-context\b/iu.test(t)
     && /This block is automatically supplied ambient UI state/iu.test(t)

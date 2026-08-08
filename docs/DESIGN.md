@@ -467,7 +467,10 @@ it will add and labels hook trust as unverified until Codex reviews it.
 
 ## Deliberately absent
 
-There is no grant service, effect gateway, runtime event journal, adapter trust
+There is no grant service, effect gateway, product event journal, adapter trust
 grade, control-plan DAG, event bus, policy engine, mode switch, daemon,
 scheduler, or generalized migration framework. The append-only Owner prompt
-file is evidence only, never a second current-state authority.
+file is evidence only, never a second current-state authority. Optional
+`.ohno/hooks-runtime.json` only records whether cooperative Desktop hooks fired
+for the current hooks.json digest (doctor/activation); it must not store task,
+plan, or proof authority and must fail closed when corrupt.

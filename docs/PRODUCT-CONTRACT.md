@@ -142,13 +142,17 @@ V1 may contain:
 - `.ohno/truth.json` as Owner-maintained document applicability;
 - local/private `.ohno/OWNER-INPUTS.md` as raw prompt evidence and
   `.ohno/REQUIREMENTS.md` as Codex interpretation, neither as runtime state;
+- local `.ohno/hooks-runtime.json` as **cooperative Desktop hook activation
+  evidence only** (not task/plan/proof authority; fail-closed when corrupt;
+  wiped when `.codex/hooks.json` digest changes);
 - project-local Codex hooks and one Git `pre-commit` hook;
 - one local HTTP server for a read-only vanilla web Cockpit.
 
 V1 may not contain:
 
 - a database, background daemon, hosted service, queue, or second runtime
-  authority/event store;
+  authority/event store for tasks, plans, or proof (hook activation evidence
+  above is not a product event journal);
 - a policy DSL, plugin/provider framework, multi-agent scheduler, or generic
   effect gateway;
 - autonomous production identity or CI/Owner trust claims;

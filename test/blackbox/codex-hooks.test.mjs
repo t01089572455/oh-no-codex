@@ -798,7 +798,7 @@ test("1 of 5 trusted hook records is still REVIEW_REQUIRED (6R)", async (t) => {
   );
 });
 
-test("hooks-runtime concurrent writers leave valid JSON (6R)", async (t) => {
+test("hooks-runtime concurrent writers retain all five event kinds (6R.1)", async (t) => {
   const projectPath = await createProject(t);
   await initialize(projectPath);
   assert.equal(runCli(projectPath, ["install"]).status, 0);
@@ -812,19 +812,88 @@ test("hooks-runtime concurrent writers leave valid JSON (6R)", async (t) => {
     "Stop",
     "PostCompact",
   ];
+  // Same session so merges are meaningful under the lock.
   await Promise.all(
-    events.map((ev, i) =>
-      recordHookRuntimeEvent(projectPath, ev, `sess-concurrent-${i % 2}`)
-    ),
+    events.map((ev) => recordHookRuntimeEvent(projectPath, ev, "sess-all")),
   );
   const runtime = await readHooksRuntime(projectPath);
   assert.equal(runtime.schema_version, 2);
+  assert.equal(runtime.corrupt, false);
   assert.ok(runtime.config_digest);
-  // File must parse and retain at least one event.
-  assert.ok(Object.keys(runtime.last_events).length >= 1);
+  for (const ev of events) {
+    assert.ok(
+      runtime.last_events[ev],
+      `missing aggregate event ${ev}: ${JSON.stringify(runtime.last_events)}`,
+    );
+    assert.ok(
+      runtime.sessions["sess-all"]?.last_events?.[ev],
+      `missing session event ${ev}`,
+    );
+  }
 });
 
-test("PreToolUse rebinds Latest after Owner prompt (6R steering)", async (t) => {
+test("config change + Stop alone cannot restore ACTIVE (6R.1)", async (t) => {
+  const projectPath = await createProject(t);
+  await initialize(projectPath);
+  assert.equal(runCli(projectPath, ["install"]).status, 0);
+  const {
+    recordHookRuntimeEvent,
+    digestHooksConfig,
+    deriveHookActivation,
+    readHooksRuntime,
+  } = await import("../../dist/hooks-runtime.js");
+  const fakeHome = await createProject(t);
+  await mkdir(resolve(fakeHome, ".codex"), { recursive: true });
+  const hooksPath = resolve(projectPath, ".codex", "hooks.json");
+  const kinds = [
+    "session_start",
+    "post_compact",
+    "user_prompt_submit",
+    "pre_tool_use",
+    "stop",
+  ];
+  const conf = ["[hooks.state]", ""];
+  for (const k of kinds) {
+    conf.push(`[hooks.state.'${hooksPath}:${k}:0:0']`);
+    conf.push('trusted_hash = "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"');
+    conf.push("");
+  }
+  await writeFile(resolve(fakeHome, ".codex", "config.toml"), conf.join("\n"), "utf8");
+  process.env.OHNO_CODEX_HOME = fakeHome;
+
+  await recordHookRuntimeEvent(projectPath, "SessionStart", "s1");
+  let d0 = await digestHooksConfig(projectPath);
+  let act = await deriveHookActivation(projectPath, "INSTALLED_TEMPLATE");
+  assert.equal(act.activation, "ACTIVE", JSON.stringify(act));
+
+  // Change hooks.json bytes → digest moves.
+  const hooksRaw = await readFile(hooksPath, "utf8");
+  await writeFile(hooksPath, `${hooksRaw}\n`, "utf8");
+  act = await deriveHookActivation(projectPath, "INSTALLED_TEMPLATE");
+  // Evidence still has old digest until next write; derive sees mismatch.
+  assert.ok(
+    act.activation === "CHANGED_REVIEW_REQUIRED"
+      || act.activation === "RUNTIME_UNVERIFIED",
+    act.activation,
+  );
+
+  // Only Stop under new digest must NOT revive ACTIVE via stale SessionStart.
+  await recordHookRuntimeEvent(projectPath, "Stop", "s2");
+  const runtime = await readHooksRuntime(projectPath);
+  assert.equal(runtime.last_events.SessionStart, undefined);
+  act = await deriveHookActivation(projectPath, "INSTALLED_TEMPLATE");
+  assert.notEqual(act.activation, "ACTIVE");
+  assert.ok(
+    act.activation === "RUNTIME_UNVERIFIED"
+      || act.activation === "CHANGED_REVIEW_REQUIRED"
+      || act.activation === "REVIEW_REQUIRED",
+    act.activation,
+  );
+  void d0;
+  delete process.env.OHNO_CODEX_HOME;
+});
+
+test("PreToolUse denies first stale mutation after Owner prompt (6R.1)", async (t) => {
   const projectPath = await createProject(t);
   await initialize(projectPath);
   await startTask(projectPath);
@@ -848,11 +917,30 @@ test("PreToolUse rebinds Latest after Owner prompt (6R steering)", async (t) => 
       ].join("\n"),
     },
   }));
-  const ctx =
-    withSess.hookSpecificOutput?.additionalContext
-    ?? withSess.additionalContext
-    ?? JSON.stringify(withSess);
-  assert.match(String(ctx), /LATEST_REBIND|Latest|REQUIREMENTS/i);
+  assert.equal(
+    withSess.hookSpecificOutput?.permissionDecision,
+    "deny",
+  );
+  assert.match(
+    withSess.hookSpecificOutput?.permissionDecisionReason ?? "",
+    /LATEST_REBIND_REQUIRED/i,
+  );
+});
+
+test("Desktop # Overview host payload is filtered (6R.1)", async (t) => {
+  const projectPath = await createProject(t);
+  await initialize(projectPath);
+  const noise = [
+    "# Overview",
+    "Generate 0 to 3 hyperpersonalized suggestions for the user.",
+    "Keep them short.",
+  ].join("\n");
+  const out = parseHookResult(runHook(projectPath, "UserPromptSubmit", {
+    session_id: "overview-sess",
+    turn_id: "ov-1",
+    prompt: noise,
+  }));
+  assert.deepEqual(out, {});
 });
 
 test("Stop mid-session without SessionStart requires bootstrap not old REOPEN", async (t) => {

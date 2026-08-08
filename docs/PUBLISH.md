@@ -133,6 +133,15 @@ In the same release line (or the immediate follow-up docs commit):
 | Cockpit UX | scroll panels, silent refresh, EN/ZH, wider MISSION, no right profile chip |
 | npm publish | oh-no-codex@0.1.8 |
 
+## 0.3.9 record (Correction 6R.1 — Codex review of 0.3.8)
+
+| Step | Result |
+| --- | --- |
+| Source | Codex review: false ACTIVE after config change; stale mutation allow; bootstrap bypass; host `# Overview` filter |
+| Scope | wipe evidence on digest change; mutation deny+retry on Latest rebind; PreToolUse bootstrap; fsync atomic write; exact trust paths; PRODUCT-CONTRACT allows activation evidence file only |
+| Gate | blackbox including ACTIVE regression + concurrent full event set + stale mutation deny |
+| Explicit non-claim | Not published until Owner authorizes; not aesthetic/quality gates |
+
 ## 0.3.8 record (Correction 6R — harden 0.3.7)
 
 | Step | Result |

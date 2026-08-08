@@ -171,43 +171,33 @@ function displayPaths(paths: ScopedPath[]): string {
   ).join(", ");
 }
 
-async function ensureLatestRebindAfterOwner(
+/**
+ * 6R.1: stale tool intents planned before Owner's latest words must not land.
+ * Rebind Latest, clear pending only on success, then DENY so the model re-issues.
+ */
+async function denyStaleMutationAfterOwner(
   projectPath: string,
   sessionId?: string,
-): Promise<string | null> {
+): Promise<HookOutput | null> {
   const runtime = await readHooksRuntime(projectPath);
   if (!sessionPendingLatestRebind(runtime, sessionId)) {
     return null;
   }
-  const { rebindLatestAfterOwnerPrompt } = await import("../harness.js");
-  await rebindLatestAfterOwnerPrompt(projectPath).catch(() => undefined);
-  await clearPendingLatestRebind(projectPath, sessionId);
   try {
-    const state = await readState(projectPath);
-    const model = await readModel(projectPath);
-    return (
-      "LATEST_REBIND: Owner spoke since last tool mutation — follow "
-      + ".ohno/REQUIREMENTS.md Latest; do not keep obsolete plan choices\n"
-      + formatPipelineNext(state, model.next_action, { rails: "none" }).trimEnd()
-    );
+    const { rebindLatestAfterOwnerPrompt } = await import("../harness.js");
+    await rebindLatestAfterOwnerPrompt(projectPath);
+    await clearPendingLatestRebind(projectPath, sessionId);
   } catch {
-    return (
-      "LATEST_REBIND: Owner spoke since last tool mutation — open "
-      + ".ohno/REQUIREMENTS.md Latest before mutating"
+    return silentDeny(
+      "LATEST_REBIND_FAILED: could not re-bind Latest after Owner prompt — "
+        + "retry after opening .ohno/REQUIREMENTS.md",
     );
   }
-}
-
-function allowWithOptionalContext(context: string | null): HookOutput {
-  if (context == null || context.trim() === "") {
-    return allowQuietly();
-  }
-  return {
-    hookSpecificOutput: {
-      hookEventName: "PreToolUse",
-      additionalContext: context.slice(0, 2_000),
-    },
-  };
+  return silentDeny(
+    "LATEST_REBIND_REQUIRED: Owner words changed after this tool was planned. "
+      + "Re-read .ohno/REQUIREMENTS.md Latest and re-issue the mutation "
+      + "(first stale write is blocked on purpose)",
+  );
 }
 
 async function handlePreToolUse(
@@ -216,11 +206,44 @@ async function handlePreToolUse(
 ): Promise<HookOutput> {
   const sessionId =
     typeof input.session_id === "string" ? input.session_id : undefined;
-  const rebindNote = await ensureLatestRebindAfterOwner(projectPath, sessionId);
+  const runtime = await readHooksRuntime(projectPath);
 
   const rawTargets = applyPatchTargets(input);
+  const cmdForBash = isRecord(input.tool_input)
+    && typeof input.tool_input.command === "string"
+    ? input.tool_input.command
+    : "";
+  const isBashTool = input.tool_name === "Bash" || input.tool_name === "Shell";
+  const isBashMutation = isBashTool && bashLooksLikeMutation(cmdForBash);
+  const isPatchMutation = rawTargets !== null;
+  const isUnparsedMutationTool =
+    rawTargets === null
+    && (
+      input.tool_name === "apply_patch"
+      || input.tool_name === "Edit"
+      || input.tool_name === "Write"
+    );
+  const isMutation = isPatchMutation || isBashMutation || isUnparsedMutationTool;
+
+  // 6R.1: bootstrap blocks side-effecting tools, not only Stop continue.
+  if (isMutation && sessionBootstrapRequired(runtime, sessionId)) {
+    return silentDeny(
+      "HOOK_BOOTSTRAP_REQUIRED: this session had no SessionStart — "
+        + "re-read Latest Owner words and confirm goal before mutating; "
+        + "prefer a new Codex session after /hooks trust",
+    );
+  }
+
+  // 6R.1: first mutation after Owner prompt is denied after rebind (retry clean).
+  if (isMutation) {
+    const stale = await denyStaleMutationAfterOwner(projectPath, sessionId);
+    if (stale !== null) {
+      return stale;
+    }
+  }
+
   if (rawTargets === null) {
-    if (input.tool_name === "Bash" || input.tool_name === "Shell") {
+    if (isBashTool) {
       let stateForBash;
       try {
         stateForBash = await readState(projectPath);
@@ -229,11 +252,7 @@ async function handlePreToolUse(
           "state unavailable — repair .ohno/state.json or run ohno setup",
         );
       }
-      const cmd = isRecord(input.tool_input)
-        && typeof input.tool_input.command === "string"
-        ? input.tool_input.command
-        : "";
-      if (bashLooksLikeMutation(cmd)) {
+      if (isBashMutation) {
         if (!phaseAllowsProductCode(stateForBash)) {
           return silentDeny(
             (productCodeBlockedReason(stateForBash)
@@ -251,16 +270,12 @@ async function handlePreToolUse(
           );
         }
       }
-      return allowWithOptionalContext(rebindNote);
+      return allowQuietly();
     }
-    if (
-      input.tool_name === "apply_patch"
-      || input.tool_name === "Edit"
-      || input.tool_name === "Write"
-    ) {
+    if (isUnparsedMutationTool) {
       return silentDeny("unsafe or unparseable apply_patch target");
     }
-    return allowWithOptionalContext(rebindNote);
+    return allowQuietly();
   }
 
   const targets = rawTargets.map((target) =>
@@ -283,7 +298,7 @@ async function handlePreToolUse(
       || !isOhnoPlanMaintenancePath(relativePath)
     );
     if (outsidePlan.length === 0) {
-      return allowWithOptionalContext(rebindNote);
+      return allowQuietly();
     }
     return silentDeny(
       "MIGRATE_ACCEPTANCE_BASIS first — only .ohno maintenance writes allowed; "
@@ -299,7 +314,7 @@ async function handlePreToolUse(
       || !requiredPaths.includes(relativePath)
     );
     if (outsideRequired.length === 0) {
-      return allowWithOptionalContext(rebindNote);
+      return allowQuietly();
     }
     return silentDeny(
       "document sync pending — only required Truth paths; "
@@ -333,7 +348,7 @@ async function handlePreToolUse(
         || !isPrepareAllowedPath(relativePath, allowed)
       );
       if (outside.length === 0) {
-        return allowWithOptionalContext(rebindNote);
+        return allowQuietly();
       }
       return silentDeny(
         `PREPARE (${next}): only Truth/design/.ohno plan files; `
@@ -387,7 +402,7 @@ async function handlePreToolUse(
       `outside task scope: ${displayPaths(outside)}`,
     );
   }
-  return allowWithOptionalContext(rebindNote);
+  return allowQuietly();
 }
 
 /** Next actions where agents prepare Truth/plan without an ACTIVE task. */
